@@ -97,6 +97,44 @@ async def health_check():
         logger.error(f"Health check failed: {e}")
         raise HTTPException(status_code=503, detail="Service unavailable")
 
+@app.get("/debug")
+async def debug_info():
+    """Debug endpoint to check service status"""
+    try:
+        from app.services.google_service import google_service
+        
+        debug_info = {
+            "service_account_file_exists": os.path.exists(settings.GOOGLE_SERVICE_ACCOUNT_FILE),
+            "service_account_file_path": settings.GOOGLE_SERVICE_ACCOUNT_FILE,
+            "sheet_id": settings.SHEET_ID,
+            "google_service_initialized": {
+                "credentials": google_service.credentials is not None,
+                "sheets_service": google_service.sheets_service is not None,
+                "drive_service": google_service.drive_service is not None
+            }
+        }
+        
+        # Try to read the service account file if it exists
+        if os.path.exists(settings.GOOGLE_SERVICE_ACCOUNT_FILE):
+            try:
+                with open(settings.GOOGLE_SERVICE_ACCOUNT_FILE, 'r') as f:
+                    creds = json.load(f)
+                debug_info["service_account_info"] = {
+                    "client_email": creds.get("client_email"),
+                    "project_id": creds.get("project_id"),
+                    "private_key_length": len(creds.get("private_key", "")),
+                    "private_key_starts_correctly": creds.get("private_key", "").startswith("-----BEGIN PRIVATE KEY-----"),
+                    "private_key_ends_correctly": creds.get("private_key", "").endswith("-----END PRIVATE KEY-----")
+                }
+            except Exception as e:
+                debug_info["service_account_file_error"] = str(e)
+        
+        return debug_info
+        
+    except Exception as e:
+        logger.error(f"Debug check failed: {e}")
+        return {"error": str(e)}
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
     """Global exception handler"""
