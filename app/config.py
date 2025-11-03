@@ -19,7 +19,7 @@ class Settings:
         "http://localhost:3000",
         "http://localhost:5173",  # Vite dev server
         "https://house-renovators-pwa.pages.dev",  # Cloudflare Pages
-        "https://d9de26fa.house-renovators-ai-portal.pages.dev",  # Current Cloudflare deployment
+        "https://50eba8f2.house-renovators-ai-portal.pages.dev",  # Current Cloudflare deployment
     ]
 
 settings = Settings()
