@@ -151,7 +151,7 @@ async def debug_info():
                     "project_id": creds.get("project_id"),
                     "private_key_length": len(creds.get("private_key", "")),
                     "private_key_starts_correctly": creds.get("private_key", "").startswith("-----BEGIN PRIVATE KEY-----"),
-                    "private_key_ends_correctly": creds.get("private_key", "").endswith("-----END PRIVATE KEY-----")
+                    "private_key_ends_correctly": creds.get("private_key", "").endswith("-----END PRIVATE KEY-----\n")
                 }
             except Exception as e:
                 debug_info["service_account_file_error"] = str(e)
