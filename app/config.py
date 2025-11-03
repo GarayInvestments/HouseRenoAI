@@ -13,13 +13,15 @@ class Settings:
     API_VERSION: str = "v1"
     DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
     
-    # CORS Settings
+    # CORS Settings - Allow all Cloudflare Pages deployments
     ALLOWED_ORIGINS: list = [
         "https://portal.houserenovatorsllc.com",
         "http://localhost:3000",
         "http://localhost:5173",  # Vite dev server
         "https://house-renovators-pwa.pages.dev",  # Cloudflare Pages
-        "https://50eba8f2.house-renovators-ai-portal.pages.dev",  # Current Cloudflare deployment
     ]
+    
+    # Regex pattern for Cloudflare Pages
+    CLOUDFLARE_PAGES_PATTERN: str = r"https://.*\.house-renovators-ai-portal\.pages\.dev"
 
 settings = Settings()

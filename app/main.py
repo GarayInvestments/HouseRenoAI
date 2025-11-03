@@ -106,6 +106,7 @@ async def startup_event():
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
+    allow_origin_regex=r"https://.*\.house-renovators-ai-portal\.pages\.dev",
     allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
