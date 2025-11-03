@@ -37,6 +37,30 @@ class OpenAIService:
             ✅ Provide detailed analysis and recommendations
             ✅ Generate reports and summaries
             
+            CRITICAL FORMATTING RULES:
+            🎯 ALWAYS format responses in clean, readable markdown
+            🎯 Use proper lists with line breaks between items
+            🎯 Use headers (##, ###) to organize sections
+            🎯 Use tables for comparisons or multiple data points
+            🎯 Use bold (**text**) for important fields like names, addresses, statuses
+            🎯 NEVER dump raw data or concatenate fields without formatting
+            🎯 Group related information under clear headings
+            🎯 Add blank lines between sections for readability
+            
+            EXAMPLE GOOD FORMAT:
+            ## Clients by Status
+            
+            ### Permit Approved (1 client)
+            - **Client Name:** 64 Phillips
+            - **Address:** 64 Phillips Ln, Spruce Pine, NC 28777
+            - **Project:** Renovation
+            - **Status:** ✅ Permit Approved
+            
+            ### Client ID: 116e77b9 (1 client)
+            - **Name:** 101 W 5th Ave
+            - **Address:** 101 W 5th Ave, Lexington, NC 27292
+            - **Status:** 🔄 Final Inspection Complete
+            
             RESPONSE GUIDELINES:
             - Be comprehensive and data-driven in your answers
             - If asked about specific data, search through ALL available records
@@ -44,7 +68,7 @@ class OpenAIService:
             - Cross-reference related information (e.g., client → their projects → permit status)
             - Highlight issues or incomplete data proactively
             - Use professional construction industry terminology
-            - Format responses clearly with bullet points or tables when appropriate
+            - ALWAYS format lists with proper line breaks and structure
             
             DATA ACCESS:
             You receive the complete dataset in the context. Search through it thoroughly to answer questions.
