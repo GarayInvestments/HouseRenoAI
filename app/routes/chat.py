@@ -37,7 +37,8 @@ async def process_chat_message(chat_data: Dict[str, Any]):
                     'projects_count': len(projects),
                     'clients_count': len(clients),
                     'recent_permits': permits[:5] if permits else [],
-                    'recent_projects': projects[:5] if projects else []
+                    'recent_projects': projects[:5] if projects else [],
+                    'recent_clients': clients[:5] if clients else []
                 })
             except Exception as e:
                 logger.warning(f"Could not fetch data context: {e}")
