@@ -29,20 +29,42 @@ async def startup_event():
     try:
         # Check if we have the JSON credentials as environment variable
         service_account_json = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")
-        logger.info(f"Service account JSON found: {service_account_json is not None}")
+        service_account_base64 = os.getenv("GOOGLE_SERVICE_ACCOUNT_BASE64")
         
-        if service_account_json and not os.path.exists(settings.GOOGLE_SERVICE_ACCOUNT_FILE):
-            # Parse and write the service account file
-            logger.info("Parsing service account JSON...")
-            credentials = json.loads(service_account_json)
-            
-            # Fix private key newlines if they are double-escaped
-            if 'private_key' in credentials and '\\n' in credentials['private_key']:
-                credentials['private_key'] = credentials['private_key'].replace('\\n', '\n')
-                logger.info("Fixed private key newlines")
-            
+        logger.info(f"Service account JSON found: {service_account_json is not None}")
+        logger.info(f"Service account BASE64 found: {service_account_base64 is not None}")
+        
+        credentials_data = None
+        
+        # Try base64 first (preferred method)
+        if service_account_base64:
+            try:
+                import base64
+                decoded_json = base64.b64decode(service_account_base64).decode('utf-8')
+                credentials_data = json.loads(decoded_json)
+                logger.info("Successfully loaded credentials from base64 environment variable")
+            except Exception as e:
+                logger.error(f"Failed to decode base64 credentials: {e}")
+        
+        # Fallback to regular JSON
+        elif service_account_json:
+            try:
+                logger.info("Parsing service account JSON...")
+                credentials_data = json.loads(service_account_json)
+                
+                # Fix private key newlines if they are double-escaped
+                if 'private_key' in credentials_data and '\\n' in credentials_data['private_key']:
+                    credentials_data['private_key'] = credentials_data['private_key'].replace('\\n', '\n')
+                    logger.info("Fixed private key newlines")
+                    
+                logger.info("Successfully loaded credentials from JSON environment variable")
+            except Exception as e:
+                logger.error(f"Failed to parse JSON credentials: {e}")
+        
+        # Create the service account file if we have credentials
+        if credentials_data and not os.path.exists(settings.GOOGLE_SERVICE_ACCOUNT_FILE):
             with open(settings.GOOGLE_SERVICE_ACCOUNT_FILE, 'w') as f:
-                json.dump(credentials, f, indent=2)
+                json.dump(credentials_data, f, indent=2)
             logger.info(f"Created service account file: {settings.GOOGLE_SERVICE_ACCOUNT_FILE}")
             
             # Verify the file was created and is readable
@@ -50,11 +72,16 @@ async def startup_event():
                 with open(settings.GOOGLE_SERVICE_ACCOUNT_FILE, 'r') as f:
                     test_load = json.load(f)
                 logger.info(f"Service account file verified, client_email: {test_load.get('client_email')}")
+                logger.info(f"Private key length: {len(test_load.get('private_key', ''))}")
+                private_key = test_load.get('private_key', '')
+                logger.info(f"Private key starts correctly: {private_key.startswith('-----BEGIN PRIVATE KEY-----')}")
+                logger.info(f"Private key ends correctly: {private_key.endswith('-----END PRIVATE KEY-----')}")
             
         elif os.path.exists(settings.GOOGLE_SERVICE_ACCOUNT_FILE):
             logger.info(f"Service account file already exists: {settings.GOOGLE_SERVICE_ACCOUNT_FILE}")
         else:
-            logger.warning("No service account credentials found")
+            logger.warning("No service account credentials found in environment variables")
+            
     except Exception as e:
         logger.error(f"Failed to create service account file: {e}")
         logger.error(f"Exception type: {type(e)}")
