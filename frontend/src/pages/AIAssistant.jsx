@@ -1,5 +1,7 @@
 import { Send, Bot, User, AlertCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import api from '../lib/api';
 
 export default function AIAssistant() {
@@ -193,13 +195,24 @@ export default function AIAssistant() {
                     : '0 1px 3px 0 rgba(0, 0, 0, 0.05)'
                 }}
               >
-                <p style={{
-                  fontSize: '14px',
-                  lineHeight: '1.6',
-                  margin: 0
-                }}>
-                  {message.content}
-                </p>
+                {message.role === 'assistant' ? (
+                  <div style={{
+                    fontSize: '14px',
+                    lineHeight: '1.6'
+                  }} className="markdown-content">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {message.content}
+                    </ReactMarkdown>
+                  </div>
+                ) : (
+                  <p style={{
+                    fontSize: '14px',
+                    lineHeight: '1.6',
+                    margin: 0
+                  }}>
+                    {message.content}
+                  </p>
+                )}
               </div>
               {message.role === 'user' && (
                 <div style={{
