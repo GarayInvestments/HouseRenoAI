@@ -151,7 +151,10 @@ async def debug_info():
                     "project_id": creds.get("project_id"),
                     "private_key_length": len(creds.get("private_key", "")),
                     "private_key_starts_correctly": creds.get("private_key", "").startswith("-----BEGIN PRIVATE KEY-----"),
-                    "private_key_ends_correctly": creds.get("private_key", "").endswith("-----END PRIVATE KEY-----\n")
+                    "private_key_ends_correctly": creds.get("private_key", "").endswith("-----END PRIVATE KEY-----\n"),
+                    "private_key_last_50_chars": repr(creds.get("private_key", "")[-50:]) if creds.get("private_key") else "",
+                    "private_key_ends_with_newline": creds.get("private_key", "").endswith("\n"),
+                    "private_key_ends_with_marker": creds.get("private_key", "").endswith("-----END PRIVATE KEY-----")
                 }
             except Exception as e:
                 debug_info["service_account_file_error"] = str(e)
