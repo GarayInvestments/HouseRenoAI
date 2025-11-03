@@ -8,6 +8,12 @@ import app.services.google_service as google_service_module
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+def get_google_service():
+    """Helper function to get Google service with proper error handling"""
+    if not hasattr(google_service_module, 'google_service') or google_service_module.google_service is None:
+        raise HTTPException(status_code=503, detail="Google service not initialized")
+    return google_service_module.google_service
+
 @router.post("/")
 async def process_chat_message(chat_data: Dict[str, Any]):
     """
@@ -22,9 +28,9 @@ async def process_chat_message(chat_data: Dict[str, Any]):
         # Check if message requires data lookup
         if any(keyword in message.lower() for keyword in ['permit', 'project', 'client', 'status']):
             try:
-                permits = await google_service_module.google_service.get_permits_data()
-                projects = await google_service_module.google_service.get_projects_data()
-                clients = await google_service_module.google_service.get_clients_data()
+                google_service = get_google_service(); permits = await google_service.get_permits_data()
+                projects = await google_service.get_projects_data()
+                clients = await google_service.get_clients_data()
                 
                 context.update({
                     'permits_count': len(permits),
@@ -74,7 +80,7 @@ async def get_chat_status():
         # Test Google Sheets connection
         sheets_status = "connected"
         try:
-            await google_service_module.google_service.read_sheet_data("A1:A1")
+            google_service = get_google_service(); await google_service.read_sheet_data("A1:A1")
         except:
             sheets_status = "error"
         

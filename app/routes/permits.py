@@ -9,13 +9,20 @@ from app.services.openai_service import openai_service
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+def get_google_service():
+    """Helper function to get Google service with proper error handling"""
+    if not hasattr(google_service_module, 'google_service') or google_service_module.google_service is None:
+        raise HTTPException(status_code=503, detail="Google service not initialized")
+    return google_service_module.google_service
+
 @router.get("/")
 async def get_all_permits():
     """
     Get all permits from Google Sheets
     """
     try:
-        permits = await google_service_module.google_service_module.google_service.get_permits_data()
+        google_service = get_google_service()
+        permits = await google_service.get_permits_data()
         logger.info(f"Retrieved {len(permits)} permits")
         return permits
         
@@ -29,7 +36,7 @@ async def get_permit(permit_id: str):
     Get a specific permit by ID
     """
     try:
-        permits = await google_service_module.google_service.get_permits_data()
+        google_service = get_google_service(); permits = await google_service.get_permits_data()
         
         # Find permit by ID (assuming there's an ID column)
         permit = None
@@ -63,7 +70,7 @@ async def update_permit(permit_id: str, update_data: Dict[str, Any]):
         notify_team = update_data.get("notify_team", True)
         
         # Get current permits data
-        permits = await google_service_module.google_service.get_permits_data()
+        google_service = get_google_service(); permits = await google_service.get_permits_data()
         
         # Find the permit to update
         permit_index = None
@@ -86,7 +93,7 @@ async def update_permit(permit_id: str, update_data: Dict[str, Any]):
         # Send notification if requested
         if notify_team:
             message = f"Permit {permit_id} has been updated with: {', '.join(updates.keys())}"
-            await google_service_module.google_service.notify_chat(message)
+            google_service = get_google_service(); await google_service.notify_chat(message)
         
         logger.info(f"Updated permit {permit_id}")
         return {"status": "success", "message": f"Permit {permit_id} updated successfully"}
@@ -107,7 +114,7 @@ async def search_permits(
     Search permits with various filters
     """
     try:
-        permits = await google_service_module.google_service.get_permits_data()
+        google_service = get_google_service(); permits = await google_service.get_permits_data()
         
         # Apply filters
         filtered_permits = permits
@@ -147,7 +154,7 @@ async def analyze_permits():
     Generate AI analysis of all permits
     """
     try:
-        permits = await google_service_module.google_service.get_permits_data()
+        google_service = get_google_service(); permits = await google_service.get_permits_data()
         
         if not permits:
             return {"analysis": "No permits found to analyze"}
