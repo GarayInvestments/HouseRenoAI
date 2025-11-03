@@ -45,11 +45,21 @@ async def process_chat_message(chat_data: Dict[str, Any]):
             clients = await google_service.get_clients_data()
             
             # Build comprehensive context with ALL data
+            # Extract client IDs for easy reference
+            client_ids = [c.get('Client ID', 'N/A') for c in clients if c.get('Client ID')]
+            project_ids = [p.get('Project ID', 'N/A') for p in projects if p.get('Project ID')]
+            permit_ids = [p.get('Permit ID', 'N/A') for p in permits if p.get('Permit ID')]
+            
             context.update({
                 # Counts
                 'permits_count': len(permits),
                 'projects_count': len(projects),
                 'clients_count': len(clients),
+                
+                # ID Lists for quick lookup
+                'client_ids': client_ids,
+                'project_ids': project_ids,
+                'permit_ids': permit_ids,
                 
                 # Full data arrays (AI can access everything)
                 'all_permits': permits,
@@ -60,6 +70,18 @@ async def process_chat_message(chat_data: Dict[str, Any]):
                 'permits_by_status': _group_by_field(permits, 'Permit Status'),
                 'projects_by_status': _group_by_field(projects, 'Status'),
                 'clients_by_status': _group_by_field(clients, 'Status'),
+                
+                # Client summary for easy lookup
+                'clients_summary': [
+                    {
+                        'Client ID': c.get('Client ID'),
+                        'Name': c.get('Name'),
+                        'Status': c.get('Status'),
+                        'Address': c.get('Address'),
+                        'Phone': c.get('Phone Number'),
+                        'Email': c.get('Email')
+                    } for c in clients
+                ],
                 
                 # Additional metadata
                 'available_sheets': [

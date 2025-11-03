@@ -80,10 +80,53 @@ class OpenAIService:
                 {"role": "user", "content": message}
             ]
             
-            # Add context if provided
+            # Add context if provided - format it clearly for AI
             if context:
-                context_message = f"Current context: {context}"
-                messages.insert(1, {"role": "system", "content": context_message})
+                # Build a structured context message
+                context_parts = []
+                
+                # Add counts summary
+                if 'clients_count' in context:
+                    context_parts.append(f"Total Clients: {context['clients_count']}")
+                if 'projects_count' in context:
+                    context_parts.append(f"Total Projects: {context['projects_count']}")
+                if 'permits_count' in context:
+                    context_parts.append(f"Total Permits: {context['permits_count']}")
+                
+                # Add available IDs for lookup
+                if 'client_ids' in context and context['client_ids']:
+                    context_parts.append(f"\nAvailable Client IDs: {', '.join(context['client_ids'][:20])}")
+                    if len(context['client_ids']) > 20:
+                        context_parts.append(f"... and {len(context['client_ids']) - 20} more")
+                
+                # Add clients summary for easy reference
+                if 'clients_summary' in context and context['clients_summary']:
+                    context_parts.append("\n\n=== CLIENTS DATA ===")
+                    for client in context['clients_summary'][:50]:  # Limit to prevent token overflow
+                        context_parts.append(
+                            f"\nClient ID: {client.get('Client ID')}"
+                            f"\n  Name: {client.get('Name')}"
+                            f"\n  Status: {client.get('Status')}"
+                            f"\n  Address: {client.get('Address')}"
+                            f"\n  Phone: {client.get('Phone')}"
+                            f"\n  Email: {client.get('Email')}"
+                        )
+                
+                # Add full arrays for detailed queries
+                if 'all_clients' in context:
+                    context_parts.append(f"\n\n=== FULL CLIENT RECORDS ({len(context['all_clients'])} total) ===")
+                    context_parts.append(str(context['all_clients']))
+                
+                if 'all_projects' in context:
+                    context_parts.append(f"\n\n=== FULL PROJECT RECORDS ({len(context['all_projects'])} total) ===")
+                    context_parts.append(str(context['all_projects']))
+                
+                if 'all_permits' in context:
+                    context_parts.append(f"\n\n=== FULL PERMIT RECORDS ({len(context['all_permits'])} total) ===")
+                    context_parts.append(str(context['all_permits']))
+                
+                context_message = "\n".join(context_parts)
+                messages.insert(1, {"role": "system", "content": f"DATA CONTEXT:\n{context_message}"})
             
             response = self.client.chat.completions.create(
                 model="gpt-4o",
