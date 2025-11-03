@@ -21,7 +21,9 @@ class Settings:
         "https://house-renovators-pwa.pages.dev",  # Cloudflare Pages
     ]
     
-<<<<<<< HEAD
+    # Regex pattern for Cloudflare Pages
+    CLOUDFLARE_PAGES_PATTERN: str = r"https://.*\.house-renovators-ai-portal\.pages\.dev"
+    
     # Dynamic CORS check for Cloudflare Pages deployments
     @staticmethod
     def is_allowed_origin(origin: str) -> bool:
@@ -41,9 +43,5 @@ class Settings:
             return True
             
         return False
-=======
-    # Regex pattern for Cloudflare Pages
-    CLOUDFLARE_PAGES_PATTERN: str = r"https://.*\.house-renovators-ai-portal\.pages\.dev"
->>>>>>> d2d04290c3e061cb48cfda724eca6252d77eeec3
 
 settings = Settings()

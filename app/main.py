@@ -107,16 +107,12 @@ async def startup_event():
 app.add_middleware(
     CORSMiddleware,
     allow_origin_regex=r"https://.*\.house-renovators-ai-portal\.pages\.dev",
-<<<<<<< HEAD
     allow_origins=[
         "https://portal.houserenovatorsllc.com",
         "http://localhost:3000",
         "http://localhost:5173",
         "https://house-renovators-pwa.pages.dev",
     ],
-=======
-    allow_origins=settings.ALLOWED_ORIGINS,
->>>>>>> d2d04290c3e061cb48cfda724eca6252d77eeec3
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
