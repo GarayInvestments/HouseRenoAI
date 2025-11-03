@@ -103,16 +103,11 @@ async def startup_event():
         import traceback
         logger.error(f"Traceback: {traceback.format_exc()}")
 
-# Add CORS middleware with permissive settings for Cloudflare Pages
+# Add CORS middleware with dynamic origin checking for Cloudflare Pages
 app.add_middleware(
     CORSMiddleware,
     allow_origin_regex=r"https://.*\.house-renovators-ai-portal\.pages\.dev",
-    allow_origins=[
-        "https://portal.houserenovatorsllc.com",
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "https://house-renovators-pwa.pages.dev",
-    ],
+    allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],

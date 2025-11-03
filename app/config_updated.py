@@ -13,7 +13,7 @@ class Settings:
     API_VERSION: str = "v1"
     DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
     
-    # CORS Settings
+    # CORS Settings - Updated to include Cloudflare Pages domains
     ALLOWED_ORIGINS: list = [
         "https://portal.houserenovatorsllc.com",
         "http://localhost:3000",
