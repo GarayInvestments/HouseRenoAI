@@ -3,7 +3,7 @@ from typing import Dict, Any, Optional
 import logging
 
 from app.services.openai_service import openai_service
-from app.services.google_service import google_service
+import app.services.google_service as google_service_module
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -22,9 +22,9 @@ async def process_chat_message(chat_data: Dict[str, Any]):
         # Check if message requires data lookup
         if any(keyword in message.lower() for keyword in ['permit', 'project', 'client', 'status']):
             try:
-                permits = await google_service.get_permits_data()
-                projects = await google_service.get_projects_data()
-                clients = await google_service.get_clients_data()
+                permits = await google_service_module.google_service.get_permits_data()
+                projects = await google_service_module.google_service.get_projects_data()
+                clients = await google_service_module.google_service.get_clients_data()
                 
                 context.update({
                     'permits_count': len(permits),
@@ -74,7 +74,7 @@ async def get_chat_status():
         # Test Google Sheets connection
         sheets_status = "connected"
         try:
-            await google_service.read_sheet_data("A1:A1")
+            await google_service_module.google_service.read_sheet_data("A1:A1")
         except:
             sheets_status = "error"
         
