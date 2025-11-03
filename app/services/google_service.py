@@ -234,5 +234,5 @@ class GoogleService:
             logger.error(f"Failed to send chat notification: {e}")
             return False
 
-# Initialize service
-google_service = GoogleService()
+# Service instance will be initialized during startup
+google_service: Optional[GoogleService] = None

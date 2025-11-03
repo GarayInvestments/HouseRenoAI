@@ -85,9 +85,10 @@ async def startup_event():
         # Initialize Google services after ensuring service account file exists
         if os.path.exists(settings.GOOGLE_SERVICE_ACCOUNT_FILE):
             try:
-                from app.services.google_service import google_service
+                import app.services.google_service as gs
                 logger.info("Initializing Google services...")
-                google_service.initialize()
+                gs.google_service = gs.GoogleService()
+                gs.google_service.initialize()
                 logger.info("Google services initialized successfully")
             except Exception as init_error:
                 import traceback
@@ -149,9 +150,9 @@ async def debug_info():
             "service_account_file_path": settings.GOOGLE_SERVICE_ACCOUNT_FILE,
             "sheet_id": settings.SHEET_ID,
             "google_service_initialized": {
-                "credentials": google_service.credentials is not None,
-                "sheets_service": google_service.sheets_service is not None,
-                "drive_service": google_service.drive_service is not None
+                "credentials": google_service.credentials is not None if google_service else False,
+                "sheets_service": google_service.sheets_service is not None if google_service else False,
+                "drive_service": google_service.drive_service is not None if google_service else False
             }
         }
         
