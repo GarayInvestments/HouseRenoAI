@@ -82,6 +82,20 @@ async def startup_event():
         else:
             logger.warning("No service account credentials found in environment variables")
             
+        # Initialize Google services after ensuring service account file exists
+        if os.path.exists(settings.GOOGLE_SERVICE_ACCOUNT_FILE):
+            try:
+                from app.services.google_service import google_service
+                logger.info("Initializing Google services...")
+                google_service.initialize()
+                logger.info("Google services initialized successfully")
+            except Exception as init_error:
+                import traceback
+                logger.error(f"Failed to initialize Google services: {init_error}")
+                logger.error(f"Traceback: {traceback.format_exc()}")
+        else:
+            logger.warning("Skipping Google service initialization - no service account file")
+            
     except Exception as e:
         logger.error(f"Failed to create service account file: {e}")
         logger.error(f"Exception type: {type(e)}")

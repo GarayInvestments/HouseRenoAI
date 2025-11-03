@@ -14,6 +14,10 @@ class GoogleService:
         self.credentials = None
         self.sheets_service = None
         self.drive_service = None
+        # Don't initialize automatically, wait for explicit call
+        
+    def initialize(self):
+        """Initialize or re-initialize Google API services"""
         self._initialize_services()
     
     def _initialize_services(self):
