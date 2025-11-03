@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 import uvicorn
 import logging
 import os
+import json
 
 from app.config import settings
 from app.routes.chat import router as chat_router
@@ -21,6 +22,25 @@ app = FastAPI(
     docs_url="/docs" if settings.DEBUG else None,
     redoc_url="/redoc" if settings.DEBUG else None
 )
+
+@app.on_event("startup")
+async def startup_event():
+    """Create service account file from environment variable on startup"""
+    try:
+        # Check if we have the JSON credentials as environment variable
+        service_account_json = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")
+        if service_account_json and not os.path.exists(settings.GOOGLE_SERVICE_ACCOUNT_FILE):
+            # Parse and write the service account file
+            credentials = json.loads(service_account_json)
+            with open(settings.GOOGLE_SERVICE_ACCOUNT_FILE, 'w') as f:
+                json.dump(credentials, f, indent=2)
+            logger.info(f"Created service account file: {settings.GOOGLE_SERVICE_ACCOUNT_FILE}")
+        elif os.path.exists(settings.GOOGLE_SERVICE_ACCOUNT_FILE):
+            logger.info(f"Service account file already exists: {settings.GOOGLE_SERVICE_ACCOUNT_FILE}")
+        else:
+            logger.warning("No service account credentials found")
+    except Exception as e:
+        logger.error(f"Failed to create service account file: {e}")
 
 # Add CORS middleware
 app.add_middleware(
