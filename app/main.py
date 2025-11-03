@@ -29,18 +29,37 @@ async def startup_event():
     try:
         # Check if we have the JSON credentials as environment variable
         service_account_json = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")
+        logger.info(f"Service account JSON found: {service_account_json is not None}")
+        
         if service_account_json and not os.path.exists(settings.GOOGLE_SERVICE_ACCOUNT_FILE):
             # Parse and write the service account file
+            logger.info("Parsing service account JSON...")
             credentials = json.loads(service_account_json)
+            
+            # Fix private key newlines if they are double-escaped
+            if 'private_key' in credentials and '\\n' in credentials['private_key']:
+                credentials['private_key'] = credentials['private_key'].replace('\\n', '\n')
+                logger.info("Fixed private key newlines")
+            
             with open(settings.GOOGLE_SERVICE_ACCOUNT_FILE, 'w') as f:
                 json.dump(credentials, f, indent=2)
             logger.info(f"Created service account file: {settings.GOOGLE_SERVICE_ACCOUNT_FILE}")
+            
+            # Verify the file was created and is readable
+            if os.path.exists(settings.GOOGLE_SERVICE_ACCOUNT_FILE):
+                with open(settings.GOOGLE_SERVICE_ACCOUNT_FILE, 'r') as f:
+                    test_load = json.load(f)
+                logger.info(f"Service account file verified, client_email: {test_load.get('client_email')}")
+            
         elif os.path.exists(settings.GOOGLE_SERVICE_ACCOUNT_FILE):
             logger.info(f"Service account file already exists: {settings.GOOGLE_SERVICE_ACCOUNT_FILE}")
         else:
             logger.warning("No service account credentials found")
     except Exception as e:
         logger.error(f"Failed to create service account file: {e}")
+        logger.error(f"Exception type: {type(e)}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
 
 # Add CORS middleware
 app.add_middleware(

@@ -19,21 +19,41 @@ class GoogleService:
     def _initialize_services(self):
         """Initialize Google API services"""
         try:
+            logger.info(f"Initializing Google services with file: {settings.GOOGLE_SERVICE_ACCOUNT_FILE}")
+            
             # Load service account credentials
             if os.path.exists(settings.GOOGLE_SERVICE_ACCOUNT_FILE):
+                logger.info("Service account file exists, loading credentials...")
+                
                 SCOPES = [
                     "https://www.googleapis.com/auth/spreadsheets",
                     "https://www.googleapis.com/auth/drive.readonly"
                 ]
                 
-                self.credentials = service_account.Credentials.from_service_account_file(
-                    settings.GOOGLE_SERVICE_ACCOUNT_FILE, 
-                    scopes=SCOPES
-                )
+                try:
+                    self.credentials = service_account.Credentials.from_service_account_file(
+                        settings.GOOGLE_SERVICE_ACCOUNT_FILE, 
+                        scopes=SCOPES
+                    )
+                    logger.info("Credentials loaded successfully")
+                except Exception as cred_error:
+                    logger.error(f"Failed to load credentials: {cred_error}")
+                    raise
                 
                 # Build services
-                self.sheets_service = build("sheets", "v4", credentials=self.credentials)
-                self.drive_service = build("drive", "v3", credentials=self.credentials)
+                try:
+                    self.sheets_service = build("sheets", "v4", credentials=self.credentials)
+                    logger.info("Sheets service built successfully")
+                except Exception as sheets_error:
+                    logger.error(f"Failed to build sheets service: {sheets_error}")
+                    raise
+                
+                try:
+                    self.drive_service = build("drive", "v3", credentials=self.credentials)
+                    logger.info("Drive service built successfully")
+                except Exception as drive_error:
+                    logger.error(f"Failed to build drive service: {drive_error}")
+                    raise
                 
                 logger.info("Google services initialized successfully")
             else:
@@ -41,7 +61,10 @@ class GoogleService:
                 
         except Exception as e:
             logger.error(f"Failed to initialize Google services: {e}")
-            raise
+            logger.error(f"Exception type: {type(e)}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            # Don't raise here to allow the service to start, but log the error
     
     async def read_sheet_data(self, range_name: str, sheet_id: str = None) -> List[List[str]]:
         """Read data from Google Sheets"""
