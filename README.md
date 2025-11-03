@@ -1,402 +1,347 @@
-# House Renovators AI Portal - FastAPI Backend
-
-![FastAPI](https://img.shields.io/badge/FastAPI-0.103.0-blue)
-![Python](https://img.shields.io/badge/Python-3.11-blue)
-![Google Sheets](https://img.shields.io/badge/Google_Sheets-API-green)
-![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o-purple)
-![Render](https://img.shields.io/badge/Hosting-Render-orange)
-
-This is the FastAPI backend for the House Renovators AI Portal, providing AI-powered permit management, project tracking, and team communication capabilities with **full Google Sheets integration**.
-
-## ✅ **STATUS: PRODUCTION READY**
-- ✅ Google Sheets integration **WORKING**
-- ✅ AI chat with permit data access **WORKING**  
-- ✅ Permit CRUD operations **WORKING**
-- ✅ Real-time analysis and insights **WORKING**
-- ✅ Deployed at: https://houserenoai.onrender.com
-
-## 🚀 Quick Start
-
-### Local Development
-
-1. **Clone and Setup**
-```bash
-cd house-renovators-ai
-pip install -r requirements.txt
-```
-
-2. **Environment Configuration**
-```bash
-cp .env.template .env
-# Edit .env with your actual API keys and configuration
-```
-
-3. **Add Google Service Account**
-```bash
-# Place your service-account.json file in the root directory
-```
-
-4. **Run the Application**
-```bash
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-### 🔧 Automation Scripts (Available in Root Project)
-For streamlined setup and deployment, reference these automation scripts:
-- **[setup-portal.ps1](../../setup-portal.ps1)** - Complete portal setup and environment configuration
-- **[deploy-backend.ps1](../../deploy-backend.ps1)** - Automated backend deployment to Render
-- **[deploy-frontend.ps1](../../deploy-frontend.ps1)** - Automated frontend deployment to Cloudflare Pages
-
-5. **Access API Documentation**
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
-
-## 🌐 Deployment to Render
-
-### Automatic Deployment
-
-1. **Push to GitHub**
-```bash
-git init
-git add .
-git commit -m "Initial FastAPI backend"
-git remote add origin https://github.com/yourusername/house-renovators-ai.git
-git push -u origin main
-```
-
-2. **Deploy on Render**
-- Go to [Render.com](https://render.com)
-- Create New → Web Service
-- Connect your GitHub repository
-- Configure build settings:
-  - Build Command: `pip install -r requirements.txt`
-  - Start Command: `uvicorn app.main:app --host 0.0.0.0 --port 10000`
-
-3. **Environment Variables**
-Add these in Render's Environment tab:
-```
-OPENAI_API_KEY=sk-your-key
-SHEET_ID=your-sheet-id
-CHAT_WEBHOOK_URL=your-webhook-url
-DEBUG=false
-PORT=10000
-```
-
-4. **Upload Service Account**
-- Use Render's "Secret Files" feature
-- Upload your `service-account.json`
-
-## 📋 API Endpoints - **ALL WORKING ✅**
-
-### **Permit Management** 
-- ✅ `GET /v1/permits/` - Get all permits from Google Sheets *(6+ permits loaded)*
-- ✅ `GET /v1/permits/{permit_id}` - Get specific permit details
-- ✅ `PUT /v1/permits/{permit_id}` - Update permit with team notifications
-- ✅ `GET /v1/permits/search/?query=approved` - Search permits with filters
-- ✅ `POST /v1/permits/analyze` - AI analysis with insights and recommendations
-
-### **AI Chat Integration**
-- ✅ `POST /v1/chat/` - Process natural language queries with permit data access
-- ✅ `GET /v1/chat/status` - Service health: OpenAI + Google Sheets connectivity
-
-### **System Health**
-- ✅ `GET /` - Basic API health check
-- ✅ `GET /health` - Comprehensive service status
-- ✅ `GET /debug/` - Google service initialization status
-
-## 🔥 **Live API Examples**
-
-### Chat with Permit Data
-```bash
-curl -X POST "https://houserenoai.onrender.com/v1/chat/" \
-     -H "Content-Type: application/json" \
-     -d '{"message": "How many permits are currently approved?"}'
-
-# Response: "Out of the recent permits, four are currently approved..."
-```
-
-### Get All Permits  
-```bash
-curl "https://houserenoai.onrender.com/v1/permits/"
-# Returns: Real permit data from Google Sheets
-```
-
-### AI Analysis
-```bash
-curl -X POST "https://houserenoai.onrender.com/v1/permits/analyze"
-# Returns: Detailed analysis with missing approvals, timeline insights, next steps
-```
-
-## 🔧 Configuration - **FULLY CONFIGURED ✅**
-
-### Required Environment Variables *(All Set)*
-
-| Variable | Description | Status | Example |
-|----------|-------------|--------|---------|
-| `GOOGLE_CREDENTIALS_B64` | Base64 encoded service account | ✅ SET | `eyJ0eXBlI...` |
-| `OPENAI_API_KEY` | OpenAI API key | ✅ SET | `sk-...` |
-| `SHEET_ID` | Google Sheet ID | ✅ SET | `1AbCdEf...` |
-| `CHAT_WEBHOOK_URL` | Google Chat webhook | ✅ SET | `https://chat.googleapis.com/...` |
-| `DEBUG` | Enable debug mode | ✅ SET | `false` |
-| `PORT` | Server port | ✅ SET | `10000` |
-
-### Google Service Account Setup ✅ **COMPLETE**
-
-1. **✅ Service Account Created**
-   - Service account: `house-renovators-service@house-renovators-ai.iam.gserviceaccount.com`
-   - JSON key file converted to base64 for Render deployment
-
-2. **✅ APIs Enabled**
-   - Google Sheets API - **WORKING**
-   - Google Drive API - **WORKING**  
-
-3. **✅ Google Sheet Shared**
-   - Google Sheet shared with service account email
-   - Editor permissions granted
-   - **Real permit data being read successfully**
-
-### **Authentication Status: WORKING** ✅
-- Credentials properly created at startup
-- Google services initialize after FastAPI startup event
-- All API endpoints accessing Google Sheets successfully
-
-## 🏗️ Architecture - **PRODUCTION READY**
-
-### 📁 Project Structure
-
-```
-FastAPI Backend (✅ WORKING)
-├── app/
-│   ├── main.py              # FastAPI app with startup events ✅
-│   ├── config.py            # Environment configuration ✅
-│   ├── routes/
-│   │   ├── chat.py          # AI chat + Google Sheets access ✅
-│   │   └── permits.py       # Full permit CRUD operations ✅
-│   └── services/
-│       ├── openai_service.py    # OpenAI GPT integration ✅
-│       └── google_service.py    # Google Sheets/Drive APIs ✅
-├── requirements.txt         # Dependencies installed ✅
-├── Dockerfile              # Container ready ✅
-└── .env.template           # Environment template ✅
-```
-
-### 📚 Documentation Navigation
-- 📘 [API Documentation](./API_DOCUMENTATION.md) - Complete endpoint reference with examples
-- 🧰 [Troubleshooting Guide](./TROUBLESHOOTING.md) - Debug procedures and solutions
-- 🚀 [Deployment Guide](./DEPLOYMENT.md) - Production deployment procedures
-- 📋 [Project Setup](./PROJECT_SETUP.md) - Development environment setup
-
-### **Key Architecture Decisions**
-- **FastAPI Startup Events**: Google service initializes after credentials creation
-- **Dynamic Import Pattern**: Routes access `google_service_module.google_service` to avoid stale references
-- **Base64 Credential Transport**: Prevents JSON corruption in environment variables
-- **Async/Await**: Non-blocking Google API operations
-- **Error Handling**: Comprehensive exception handling with helpful error messages
-
-## ⚡ Command-Line Tools
-
-This project leverages multiple CLI tools for development and deployment automation:
-
-### **Render CLI** - Backend Deployment
-```bash
-# Install Render CLI
-npm install -g @render-api/cli
-
-# Deploy backend service
-render services create --name house-renovators-ai \
-  --type web \
-  --build-command "pip install -r requirements.txt" \
-  --start-command "uvicorn app.main:app --host 0.0.0.0 --port 10000"
-
-# Monitor deployments
-render deploys list --service house-renovators-ai
-render logs --service house-renovators-ai
-```
-
-### **Wrangler CLI** - Frontend Deployment (if using Cloudflare Pages)
-```bash
-# Install Wrangler CLI
-npm install -g wrangler
-
-# Deploy frontend to Cloudflare Pages
-wrangler pages deploy dist --project-name house-renovators-pwa
-
-# Monitor Pages deployments
-wrangler pages deployment list
-```
-
-### **Google Cloud CLI** - Service Account Management
-```bash
-# Install Google Cloud CLI
-# Download from: https://cloud.google.com/sdk/docs/install
-
-# Authenticate and manage service accounts
-gcloud auth login
-gcloud iam service-accounts create house-renovators-service
-gcloud iam service-accounts keys create service-account.json \
-  --iam-account=house-renovators-service@PROJECT_ID.iam.gserviceaccount.com
-```
-
-## 🤖 AI Features - **FULLY OPERATIONAL ✅**
-
-### **Chat Processing** ✅
-- ✅ Natural language permit queries: *"How many permits are approved?"*
-- ✅ Context-aware responses with real permit data
-- ✅ Automatic data lookup when permit keywords detected  
-- ✅ AI analysis with actionable insights
-
-### **Permit Analysis** ✅  
-- ✅ Automated status analysis: *4 approved, 1 under review, 1 pending*
-- ✅ Missing data detection: *approval dates, file uploads*
-- ✅ Timeline assessment: *average 1-day approval time*
-- ✅ Next steps recommendations: *follow up on specific permits*
-
-### **Real-Time Integration** ✅
-- ✅ Live Google Sheets data access
-- ✅ Google Chat webhook notifications 
-- ✅ Team coordination messages
-- ✅ Instant permit status updates
-
-### **Sample AI Responses**
-```json
-{
-  "summary": {
-    "total_permits": 6,
-    "approved_permits": 4,
-    "under_review_permits": 1
-  },
-  "issues": {
-    "missing_approval_dates": ["7f4f969c"],
-    "missing_file_uploads": ["7f4f969c"]
-  },
-  "next_steps": {
-    "for_under_review": "Follow up on permit 'cd7193a0'",
-    "for_missing_uploads": "Complete file uploads for '7f4f969c'"
-  }
-}
-```
-
-## 🔒 Security - **PRODUCTION SECURE ✅**
-
-- ✅ Base64 encoded credential transport (prevents JSON corruption)
-- ✅ Google OAuth2 service account authentication
-- ✅ Environment-based configuration (no hardcoded secrets)
-- ✅ CORS protection configured
-- ✅ Input validation with Pydantic models
-- ✅ Comprehensive error handling and logging
-- ✅ Service availability checks before API calls
-
-## 📊 Monitoring
-
-### Health Checks
-- API endpoint health monitoring
-- External service connectivity checks
-- Performance metrics
-
-### Logging
-- Structured logging with Python logging
-- Error tracking and debugging
-- API request/response logging
-
-## 🚀 Production Considerations
-
-### Performance
-- Async/await for non-blocking operations
-- Connection pooling for external APIs
-- Efficient data processing
-
-### Scalability
-- Stateless design
-- Horizontal scaling capability
-- Database connection management
-
-### Reliability
-- Comprehensive error handling
-- Graceful degradation
-- Health monitoring
-
-## 📞 Support & Maintenance
-
-### 📚 Documentation Resources
-- 📘 **[API Documentation](./API_DOCUMENTATION.md)** - Complete endpoint reference with request/response examples
-- 🧰 **[Troubleshooting Guide](./TROUBLESHOOTING.md)** - Debug procedures and common issue solutions  
-- 🚀 **[Deployment Guide](./DEPLOYMENT.md)** - Production deployment and monitoring procedures
-- 📋 **[Project Setup](./PROJECT_SETUP.md)** - Development environment configuration
-- 🤖 **[AI Agent Instructions](./.github/copilot-instructions.md)** - Comprehensive guide for AI-assisted development
-
-### 🔧 Support Channels
-For issues or questions:
-- Check logs in Render dashboard
-- Review API documentation at `/docs`
-- Verify environment variable configuration
-- Test Google Sheets connectivity with `/debug/` endpoint
-
-### 🔍 Health Monitoring
-- **Service Status**: https://houserenoai.onrender.com/health
-- **Google Integration**: https://houserenoai.onrender.com/debug/  
-- **API Documentation**: https://houserenoai.onrender.com/docs
-- **Render Dashboard**: Monitor deployment logs and performance metrics
-
-## 🔄 Development Workflow - **TESTED & WORKING**
-
-1. **Local Testing** ✅
-```bash
-uvicorn app.main:app --reload
-# All endpoints tested and working locally
-```
-
-2. **API Testing Examples** ✅
-```bash
-# Test chat with permit data
-curl -X POST "https://houserenoai.onrender.com/v1/chat/" \
-     -H "Content-Type: application/json" \
-     --data-binary '{"message": "Show me recent permits"}'
-
-# Test permit retrieval  
-curl "https://houserenoai.onrender.com/v1/permits/"
-
-# Test AI analysis
-curl -X POST "https://houserenoai.onrender.com/v1/permits/analyze"
-```
-
-3. **Deploy to Render** ✅
-```bash
-git add .
-git commit -m "Update API with Google Sheets integration"
-git push origin main
-# Automatic deployment triggered
-```
-
-## 🌟 **COMPLETED FEATURES** ✅
-
-- ✅ **Google Sheets Integration**: Service account authentication working
-- ✅ **Real Permit Data**: 6+ permits loading from actual Google Sheet  
-- ✅ **AI Chat**: Natural language queries with permit context
-- ✅ **CRUD Operations**: Create, read, update permit data
-- ✅ **Analysis Engine**: AI-powered insights and recommendations
-- ✅ **Error Handling**: Comprehensive exception management
-- ✅ **Production Deployment**: Live at https://houserenoai.onrender.com
-- ✅ **Documentation**: API docs at /docs endpoint
-- ✅ **Health Monitoring**: Status endpoints for service monitoring
-
-## 🚀 **NEXT PHASE ROADMAP**
-
-- [ ] Rate limiting and authentication middleware
-- [ ] Webhook endpoints for Google Sheets changes
-- [ ] Advanced permit workflow automation  
-- [ ] Mobile app API extensions
-- [ ] Advanced analytics dashboard
-- [ ] Multi-project support
-- [ ] Client portal integration
+# 🏠 House Renovators AI Portal
+
+![FastAPI](https://img.shields.io/badge/Backend-FastAPI-blue)
+![React](https://img.shields.io/badge/Frontend-React_PWA-cyan)
+![Google Sheets](https://img.shields.io/badge/Data-Google_Sheets-green)
+![OpenAI](https://img.shields.io/badge/AI-GPT--4o-purple)
+![Multi-Cloud](https://img.shields.io/badge/Platform-Multi--Cloud-orange)
+
+> **Complete AI-powered permit management and project tracking solution for construction professionals.**
+
+## ✅ **STATUS: PRODUCTION READY & RESTRUCTURED**
+- 🚀 **Live Backend**: https://houserenoai.onrender.com *(Healthy - All systems operational)*
+- 📱 **Frontend PWA**: https://portal.houserenovatorsllc.com *(Accessible and responsive)*
+- 🤖 **AI Integration**: OpenAI GPT-4o with permit data context *(Connected and responding)*
+- 📊 **Data Source**: Google Sheets real-time integration *(6 permits loaded)*
+- 🔧 **DevOps**: Complete automation toolkit *(Validated and operational)*
+- ✨ **Directory Structure**: Recently restructured for optimal organization *(Nov 2025)*
 
 ---
 
-## 📝 License & Ownership
+## 📁 Project Structure *(Recently Restructured - November 2025)*
 
-© 2025 House Renovators LLC — All rights reserved.
+```
+HouseRenovators-api/
+├── 📂 backend/                 # FastAPI Backend (Python) - Moved from nested structure
+├── 📂 frontend/                # React PWA (JavaScript) - Moved from house-renovators-pwa/
+├── 📂 automation/              # DevOps Automation Toolkit - Complete PowerShell suite
+├── 📂 docs/                    # Project Documentation - Centralized and comprehensive
+├── 📂 scripts/                 # Utility Scripts - Deployment and maintenance
+├── 📂 config/                  # Configuration Files - API payloads and settings
+└── 📄 README.md                # This file - Updated with restructuring progress
+```
 
-This software is proprietary and confidential. Unauthorized copying, distribution, or use is strictly prohibited. For licensing inquiries or partnership opportunities, please contact House Renovators LLC.
+> **✅ Restructuring Complete**: Successfully moved from redundant nested directories to clean, organized structure. All automation tools tested and validated working with new paths.
 
-**Development Team**: AI-Powered Construction Management Solutions  
-**Production Environment**: https://houserenoai.onrender.com  
-**Last Updated**: November 3, 2025
+## 🚀 Quick Start
+
+### Prerequisites
+- Python 3.11+ (for backend)
+- Node.js 18+ (for frontend)
+- Git
+- Visual Studio Code (recommended)
+
+### 1. Clone Repository
+```bash
+git clone https://github.com/GarayInvestments/HouseRenoAI.git
+cd HouseRenovators-api
+```
+
+### 2. Backend Setup
+```bash
+cd backend
+python -m venv venv
+venv\Scripts\activate  # Windows
+# source venv/bin/activate  # macOS/Linux
+pip install -r requirements.txt
+```
+
+### 3. Frontend Setup
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### 4. Automation Setup (Optional)
+```bash
+cd automation
+.\cli-tools\install-all-clis.ps1  # Windows PowerShell
+```
+
+---
+
+## 🏗️ Architecture
+
+### **Multi-Cloud Infrastructure**
+- **Backend Hosting**: Render (Production API)
+- **Frontend Hosting**: Cloudflare Pages (PWA)
+- **Data Storage**: Google Sheets (Real-time)
+- **AI Processing**: OpenAI GPT-4o
+- **Source Control**: GitHub
+- **DevOps**: Automated CI/CD pipelines
+
+### **Technology Stack**
+
+#### Backend (FastAPI)
+- **Framework**: FastAPI with async support
+- **AI Integration**: OpenAI GPT-4o for intelligent responses
+- **Data Layer**: Google Sheets API with caching
+- **Authentication**: API key-based security
+- **Deployment**: Docker containers on Render
+
+#### Frontend (React PWA)
+- **Framework**: React 18 with Vite
+- **UI**: Responsive design with offline support
+- **PWA Features**: Service workers, offline caching
+- **Deployment**: Cloudflare Pages with edge optimization
+
+#### Automation & DevOps
+- **CLI Tools**: Render, Cloudflare, Google Cloud, GitHub CLIs
+- **Monitoring**: Comprehensive health checks and alerting
+- **Deployment**: Automated full-stack deployment workflows
+- **Scripts**: PowerShell automation for all platforms
+
+---
+
+## 📚 Documentation
+
+### **Core Documentation**
+- 📖 [**API Documentation**](docs/API_DOCUMENTATION.md) - Complete API reference
+- 🚀 [**Deployment Guide**](docs/DEPLOYMENT.md) - Production deployment
+- 🔧 [**Project Setup**](docs/PROJECT_SETUP.md) - Development environment
+- 🩺 [**Troubleshooting**](docs/TROUBLESHOOTING.md) - Common issues and solutions
+
+### **Architecture & Development**
+- 📁 [**Directory Structure**](docs/directory-structure.md) - Project organization
+- 🤖 [**AI Instructions**](backend/.github/copilot-instructions.md) - AI development guide
+- 🔄 [**Implementation Progress**](docs/IMPLEMENTATION_PROGRESS.md) - Development status
+
+### **DevOps & Automation**
+- 🛠️ [**Automation Toolkit**](automation/README.md) - DevOps tools overview
+- 📊 [**Monitoring Guide**](automation/api-scripts/health-check.ps1) - Health monitoring
+- 🚀 [**Deployment Workflows**](automation/workflows/deploy-all.ps1) - Automated deployment
+
+---
+
+## 🛠️ Development
+
+### **Backend Development**
+```bash
+cd backend
+# Install dependencies
+pip install -r requirements.txt
+
+# Run development server
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# Run tests
+pytest
+
+# API Documentation: http://localhost:8000/docs
+```
+
+### **Frontend Development**
+```bash
+cd frontend
+# Install dependencies
+npm install
+
+# Run development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
+```
+
+### **Full Stack Development**
+```bash
+# Start backend (Terminal 1)
+cd backend && uvicorn app.main:app --reload
+
+# Start frontend (Terminal 2)  
+cd frontend && npm run dev
+
+# Monitor health (Terminal 3)
+.\automation\api-scripts\health-check.ps1 -All -Continuous
+```
+
+---
+
+## 🚀 Deployment
+
+### **Automated Deployment**
+```bash
+# Complete stack deployment
+.\automation\workflows\deploy-all.ps1
+
+# Backend only
+.\automation\workflows\deploy-all.ps1 -BackendOnly
+
+# Frontend only
+.\automation\workflows\deploy-all.ps1 -FrontendOnly
+```
+
+### **Manual Deployment**
+
+#### Backend (Render)
+- Connected to GitHub repository
+- Auto-deploys on push to main branch
+- Environment variables configured in Render dashboard
+
+#### Frontend (Cloudflare Pages)
+- Connected to GitHub repository
+- Auto-deploys on push to main branch
+- Edge optimization and global CDN
+
+### **Environment Variables**
+```bash
+# Backend (.env)
+OPENAI_API_KEY=your_openai_key
+GOOGLE_APPLICATION_CREDENTIALS=path/to/credentials.json
+SHEET_ID=your_google_sheet_id
+
+# Frontend (.env.local)
+VITE_API_URL=https://houserenoai.onrender.com
+```
+
+---
+
+## 🤖 AI Features
+
+### **Intelligent Permit Assistant**
+- **Contextual Responses**: AI has access to complete permit database
+- **Smart Analysis**: Automatic permit status insights and recommendations
+- **Natural Language**: Conversational interface for permit inquiries
+- **Real-time Data**: Always current with Google Sheets integration
+
+### **Advanced Capabilities**
+- Permit status tracking and notifications
+- Project timeline analysis and predictions
+- Compliance checking and recommendations
+- Team communication and coordination
+
+---
+
+## 🔧 DevOps & Automation
+
+### **CLI Tools Management**
+```bash
+# Install all required CLI tools
+.\automation\cli-tools\install-all-clis.ps1
+
+# Setup individual services
+.\automation\cli-tools\setup-render-cli.ps1
+.\automation\cli-tools\setup-cloudflare-cli.ps1
+.\automation\cli-tools\setup-google-cloud-cli.ps1
+```
+
+### **API Management**
+```bash
+# Render service management
+.\automation\api-scripts\render-api.ps1 status
+.\automation\api-scripts\render-api.ps1 deploy
+
+# Cloudflare Pages management
+.\automation\api-scripts\cloudflare-api.ps1 status
+.\automation\api-scripts\cloudflare-api.ps1 deploy
+
+# Health monitoring
+.\automation\api-scripts\health-check.ps1 -All
+```
+
+### **Continuous Monitoring**
+```bash
+# Start continuous monitoring
+.\automation\api-scripts\continuous-monitoring.ps1 -EnableAlerts -EnableMetrics
+
+# Health dashboard
+.\automation\api-scripts\health-check.ps1 -All -Json > health-report.json
+```
+
+---
+
+## 📊 Monitoring & Health
+
+### **Health Endpoints**
+- **Backend Health**: https://houserenoai.onrender.com/health
+- **Debug Info**: https://houserenoai.onrender.com/debug/
+- **API Docs**: https://houserenoai.onrender.com/docs
+
+### **Monitoring Features**
+- Real-time health checks across all services
+- Performance metrics and response time tracking
+- Automated alerting via webhooks (Google Chat, Slack, Teams)
+- Historical data and trend analysis
+- Multi-platform status monitoring
+
+---
+
+## 🤝 Contributing
+
+### **Development Workflow**
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly (both backend and frontend)
+5. Submit a pull request
+
+### **Code Standards**
+- **Backend**: Follow PEP 8 for Python code
+- **Frontend**: Use ESLint and Prettier for JavaScript
+- **Documentation**: Update relevant docs with changes
+- **Testing**: Include tests for new features
+
+---
+
+## 📞 Support
+
+### **Getting Help**
+- 📖 Check [**Troubleshooting Guide**](docs/TROUBLESHOOTING.md)
+- 🔍 Review [**API Documentation**](docs/API_DOCUMENTATION.md)
+- 🤖 Use [**AI Instructions**](backend/.github/copilot-instructions.md) for development
+
+### **Issue Reporting**
+- Use GitHub Issues for bug reports
+- Include detailed reproduction steps
+- Provide relevant logs and environment info
+
+---
+
+## 📄 License
+
+This project is proprietary software developed for House Renovators AI Portal.
+
+---
+
+## 🎯 Project Status
+
+| Component | Status | URL | Last Tested |
+|-----------|--------|-----|-------------|
+| **Backend API** | ✅ Production | https://houserenoai.onrender.com | Nov 3, 2025 *(Healthy - 360ms response)*|
+| **Frontend PWA** | ✅ Production | https://portal.houserenovatorsllc.com | Nov 3, 2025 *(200 OK response)* |
+| **Google Sheets** | ✅ Integrated | Connected | Nov 3, 2025 *(6 permits loaded - 1251ms)* |
+| **AI Chat** | ✅ Working | GPT-4o | Nov 3, 2025 *(Responding - 2560ms)* |
+| **Automation** | ✅ Complete | Multi-cloud | Nov 3, 2025 *(All scripts validated)* |
+| **Monitoring** | ✅ Active | Real-time | Nov 3, 2025 *(Health check operational)* |
+
+### 🎯 **Recent Achievements (November 2025)**
+- ✅ **Directory Restructuring**: Completed migration from nested `house-renovators-ai/house-renovators-ai/` to clean `backend/` structure
+- ✅ **Script Path Updates**: All PowerShell automation tools updated and validated with new directory structure
+- ✅ **Documentation Overhaul**: Created comprehensive documentation including directory structure guide
+- ✅ **Syntax Fixes**: Resolved PowerShell parameter issues in health check scripts
+- ✅ **Service Validation**: Confirmed all services operational after restructuring
+- ✅ **Performance Verification**: All endpoints responding within acceptable timeframes
+
+---
+
+<div align="center">
+
+**Built with ❤️ for construction professionals**
+
+[🚀 Live Demo](https://houserenoai.onrender.com) • [📖 Documentation](docs/) • [🤖 AI Chat](https://houserenoai.onrender.com/docs)
+
+</div>

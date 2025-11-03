@@ -1,38 +1,411 @@
-# Environment files
-.env
-.env.local
-.env.production
+# House Renovators AI Portal - Git Ignore Patterns
+# Updated for new directory structure
 
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# IDE
+# ===== ROOT LEVEL =====
+# Workspace and IDE files
+*.code-workspace
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
-# OS
+# OS generated files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
+# ===== BACKEND (Python/FastAPI) =====
+backend/__pycache__/
+backend/*.py[cod]
+backend/*$py.class
+backend/*.so
+backend/.Python
+backend/build/
+backend/develop-eggs/
+backend/dist/
+backend/downloads/
+backend/eggs/
+backend/.eggs/
+backend/lib/
+backend/lib64/
+backend/parts/
+backend/sdist/
+backend/var/
+backend/wheels/
+backend/share/python-wheels/
+backend/*.egg-info/
+backend/.installed.cfg
+backend/*.egg
+backend/MANIFEST
+
+# PyInstaller
+backend/*.manifest
+backend/*.spec
+
+# Installer logs
+backend/pip-log.txt
+backend/pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+backend/htmlcov/
+backend/.tox/
+backend/.nox/
+backend/.coverage
+backend/.coverage.*
+backend/.cache
+backend/nosetests.xml
+backend/coverage.xml
+backend/*.cover
+backend/*.py,cover
+backend/.hypothesis/
+backend/.pytest_cache/
+backend/cover/
+
+# Translations
+backend/*.mo
+backend/*.pot
+
+# Django stuff (if applicable):
+backend/*.log
+backend/local_settings.py
+backend/db.sqlite3
+backend/db.sqlite3-journal
+
+# Flask stuff (if applicable):
+backend/instance/
+backend/.webassets-cache
+
+# Scrapy stuff (if applicable):
+backend/.scrapy
+
+# Sphinx documentation
+backend/docs/_build/
+
+# PyBuilder
+backend/.pybuilder/
+backend/target/
+
+# Jupyter Notebook
+backend/.ipynb_checkpoints
+
+# IPython
+backend/profile_default/
+backend/ipython_config.py
+
+# pyenv
+backend/.python-version
+
+# pipenv
+backend/Pipfile.lock
+
+# poetry
+backend/poetry.lock
+
+# pdm
+backend/.pdm.toml
+
+# PEP 582
+backend/__pypackages__/
+
+# Celery stuff
+backend/celerybeat-schedule
+backend/celerybeat.pid
+
+# SageMath parsed files
+backend/*.sage.py
+
+# Environments
+backend/.env
+backend/.venv
+backend/env/
+backend/venv/
+backend/ENV/
+backend/env.bak/
+backend/venv.bak/
+
+# Spyder project settings
+backend/.spyderproject
+backend/.spyproject
+
+# Rope project settings
+backend/.ropeproject
+
+# mkdocs documentation
+backend/site/
+
+# mypy
+backend/.mypy_cache/
+backend/.dmypy.json
+backend/dmypy.json
+
+# Pyre type checker
+backend/.pyre/
+
+# pytype static type analyzer
+backend/.pytype/
+
+# Cython debug symbols
+backend/cython_debug/
+
+# ===== FRONTEND (Node.js/React/Vite) =====
 # Logs
-*.log
-logs/
+frontend/logs
+frontend/*.log
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+frontend/lerna-debug.log*
 
-# Service account files
-service-account.json
-*.json
+# Node modules
+frontend/node_modules/
+frontend/.npm
+frontend/.eslintcache
 
-# Temporary files
-.tmp/
-temp/
+# Runtime data
+frontend/pids
+frontend/*.pid
+frontend/*.seed
+frontend/*.pid.lock
+
+# Coverage directory used by tools like istanbul
+frontend/coverage/
+frontend/*.lcov
+
+# nyc test coverage
+frontend/.nyc_output
+
+# Grunt intermediate storage
+frontend/.grunt
+
+# Bower dependency directory
+frontend/bower_components
+
+# node-waf configuration
+frontend/.lock-wscript
+
+# Compiled binary addons
+frontend/build/Release
+
+# Dependency directories
+frontend/jspm_packages/
+
+# TypeScript cache
+frontend/*.tsbuildinfo
+
+# Optional npm cache directory
+frontend/.npm
+
+# Optional eslint cache
+frontend/.eslintcache
+
+# Optional stylelint cache
+frontend/.stylelintcache
+
+# Microbundle cache
+frontend/.rpt2_cache/
+frontend/.rts2_cache_cjs/
+frontend/.rts2_cache_es/
+frontend/.rts2_cache_umd/
+
+# Optional REPL history
+frontend/.node_repl_history
+
+# Output of 'npm pack'
+frontend/*.tgz
+
+# Yarn Integrity file
+frontend/.yarn-integrity
+
+# dotenv environment variable files
+frontend/.env
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+frontend/.env.local
+
+# parcel-bundler cache
+frontend/.cache
+frontend/.parcel-cache
+
+# Next.js build output
+frontend/.next
+frontend/out
+
+# Nuxt.js build / generate output
+frontend/.nuxt
+frontend/dist
+
+# Gatsby files
+frontend/.cache/
+frontend/public
+
+# Vite build output
+frontend/dist/
+frontend/dist-ssr/
+
+# Vite cache
+frontend/.vite/
+
+# Rollup cache
+frontend/.rollup.cache/
+
+# Storybook build outputs
+frontend/.out
+frontend/.storybook-out
+frontend/storybook-static
+
+# Temporary folders
+frontend/tmp/
+frontend/temp/
+
+# ===== AUTOMATION =====
+# PowerShell execution logs
+automation/*.log
+automation/**/*.log
+
+# CLI configuration files with sensitive data
+automation/cli-tools/auth-tokens.json
+automation/cli-tools/credentials.json
+
+# Monitoring output files
+automation/api-scripts/monitoring-dashboard.json
+automation/api-scripts/health-report.json
+automation/api-scripts/monitoring.log
+
+# Temporary deployment files
+automation/workflows/deployment-*.json
+automation/workflows/rollback-*.json
+
+# ===== CONFIG =====
+# Sensitive configuration files
+config/*-credentials.json
+config/service-account-*.json
+config/api-keys.json
+config/secrets.json
+
+# Environment-specific configs
+config/.env.*
+config/local-*.json
+config/dev-*.json
+
+# CLI authentication files
+config/auth-*.json
+config/tokens.json
+
+# ===== SCRIPTS =====
+# Script output files
+scripts/output/
+scripts/logs/
+scripts/*.log
+
+# Temporary script files
+scripts/tmp/
+scripts/temp/
+
+# Generated files
+scripts/generated-*
+
+# ===== DOCS =====
+# Generated documentation
+docs/generated/
+docs/build/
+docs/_site/
+
+# Temporary doc files
+docs/*.tmp
+docs/*.temp
+
+# ===== GLOBAL PATTERNS =====
+# Credential files (anywhere in project)
+**/credentials.json
+**/service-account-*.json
+**/*-credentials.json
+**/.env
+**/.env.local
+**/.env.*.local
+
+# Log files (anywhere in project)
+**/*.log
+**/logs/
+
+# Temporary files (anywhere in project)
+**/tmp/
+**/temp/
+**/*.tmp
+**/*.temp
+
+# Backup files (anywhere in project)
+**/*.bak
+**/*.backup
+**/*~
+
+# System files (anywhere in project)
+**/.DS_Store
+**/Thumbs.db
+
+# Cache directories (anywhere in project)
+**/.cache/
+**/cache/
+
+# IDE files (anywhere in project)
+**/.vscode/
+**/.idea/
+
+# Compressed files
+**/*.zip
+**/*.tar.gz
+**/*.rar
+
+# ===== SECURITY =====
+# Never commit these patterns anywhere
+**/*password*
+**/*secret*
+**/*private*
+**/*token*
+**/*key*.json
+**/*auth*.json
+
+# API keys and tokens in any file format
+**/*api-key*
+**/*access-token*
+**/*refresh-token*
+
+# Certificate files
+**/*.pem
+**/*.key
+**/*.cert
+**/*.crt
+**/*.p12
+**/*.pfx
+
+# ===== DEPLOYMENT =====
+# Docker files (if not needed)
+**/.dockerignore
+**/docker-compose.override.yml
+
+# Kubernetes files (if not needed)
+**/k8s-secrets.yml
+**/kubernetes-secrets.yml
+
+# Terraform files (if used)
+**/*.tfstate
+**/*.tfstate.*
+**/.terraform/
+
+# ===== MONITORING =====
+# Monitoring data files
+**/monitoring-data/
+**/metrics/
+**/alerts/
+**/health-checks/
+
+# Performance data
+**/performance-*.json
+**/metrics-*.json
+**/health-*.json
