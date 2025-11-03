@@ -208,6 +208,52 @@ class GoogleService:
             logger.error(f"Failed to get clients data: {e}")
             raise
     
+    async def get_all_sheet_data(self, sheet_name: str, max_rows: int = 1000) -> List[Dict[str, Any]]:
+        """Generic method to get data from any sheet"""
+        try:
+            data = await self.read_sheet_data(f'{sheet_name}!A1:Z{max_rows}')
+            
+            if not data or len(data) < 2:
+                return []
+            
+            headers = data[0]
+            records = []
+            
+            for row in data[1:]:
+                if len(row) > 0:
+                    record = {}
+                    for i, header in enumerate(headers):
+                        record[header] = row[i] if i < len(row) else ""
+                    records.append(record)
+            
+            logger.info(f"Retrieved {len(records)} records from {sheet_name}")
+            return records
+            
+        except Exception as e:
+            logger.error(f"Failed to get {sheet_name} data: {e}")
+            return []
+    
+    async def get_comprehensive_data(self) -> Dict[str, Any]:
+        """Get data from all sheets for comprehensive AI context"""
+        try:
+            return {
+                'Clients': await self.get_clients_data(),
+                'Projects': await self.get_projects_data(),
+                'Permits': await self.get_permits_data(),
+                'Site Visits': await self.get_all_sheet_data('Site Visits'),
+                'Subcontractors': await self.get_all_sheet_data('Subcontractors'),
+                'Documents': await self.get_all_sheet_data('Documents'),
+                'Tasks': await self.get_all_sheet_data('Tasks'),
+                'Payments': await self.get_all_sheet_data('Payments'),
+                'Jurisdiction': await self.get_all_sheet_data('Jurisdiction'),
+                'Inspectors': await self.get_all_sheet_data('Inspectors'),
+                'Construction Phase Tracking': await self.get_all_sheet_data('Construction Phase Tracking'),
+                'Phase Tracking Images': await self.get_all_sheet_data('Phase Tracking Images')
+            }
+        except Exception as e:
+            logger.error(f"Failed to get comprehensive data: {e}")
+            return {}
+    
     async def notify_chat(self, message: str) -> bool:
         """Send notification to Google Chat webhook"""
         try:
