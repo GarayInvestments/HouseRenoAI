@@ -18,7 +18,8 @@ class Settings:
         "https://portal.houserenovatorsllc.com",
         "http://localhost:3000",
         "http://localhost:5173",  # Vite dev server
-        "https://house-renovators-pwa.pages.dev"  # Cloudflare Pages
+        "https://house-renovators-pwa.pages.dev",  # Cloudflare Pages
+        "*"  # Allow all origins for now - we'll restrict this later
     ]
 
 settings = Settings()
