@@ -1,5 +1,4 @@
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
 from typing import Dict, Any, Optional
 import logging
 
@@ -9,28 +8,19 @@ from app.services.google_service import google_service
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-class ChatMessage(BaseModel):
-    message: str
-    context: Optional[Dict[str, Any]] = None
-
-class ChatResponse(BaseModel):
-    response: str
-    action_taken: Optional[str] = None
-    data_updated: bool = False
-
-@router.post("/", response_model=ChatResponse)
-async def process_chat_message(chat_message: ChatMessage):
+@router.post("/")
+async def process_chat_message(chat_data: Dict[str, Any]):
     """
     Process a chat message using OpenAI and perform any necessary actions
     """
     try:
-        logger.info(f"Processing chat message: {chat_message.message[:100]}...")
+        message = chat_data.get("message", "")
+        context = chat_data.get("context", {})
         
-        # Get current data context if needed
-        context = chat_message.context or {}
+        logger.info(f"Processing chat message: {message[:100]}...")
         
         # Check if message requires data lookup
-        if any(keyword in chat_message.message.lower() for keyword in ['permit', 'project', 'client', 'status']):
+        if any(keyword in message.lower() for keyword in ['permit', 'project', 'client', 'status']):
             try:
                 permits = await google_service.get_permits_data()
                 projects = await google_service.get_projects_data()
@@ -47,25 +37,22 @@ async def process_chat_message(chat_message: ChatMessage):
                 logger.warning(f"Could not fetch data context: {e}")
         
         # Process message with OpenAI
-        ai_response = await openai_service.process_chat_message(
-            chat_message.message, 
-            context
-        )
+        ai_response = await openai_service.process_chat_message(message, context)
         
         # Check if AI response indicates an action should be taken
         action_taken = None
         data_updated = False
         
         # Simple action detection (can be enhanced with function calling)
-        if 'update' in chat_message.message.lower() or 'change' in chat_message.message.lower():
+        if 'update' in message.lower() or 'change' in message.lower():
             action_taken = "Data update request detected"
             # Here you would implement actual data update logic
         
-        return ChatResponse(
-            response=ai_response,
-            action_taken=action_taken,
-            data_updated=data_updated
-        )
+        return {
+            "response": ai_response,
+            "action_taken": action_taken,
+            "data_updated": data_updated
+        }
         
     except Exception as e:
         logger.error(f"Chat processing error: {e}")

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
+from datetime import datetime
 import logging
 
 from app.services.google_service import google_service
@@ -9,17 +9,7 @@ from app.services.openai_service import openai_service
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-class PermitUpdate(BaseModel):
-    permit_id: str
-    updates: Dict[str, Any]
-    notify_team: bool = True
-
-class PermitResponse(BaseModel):
-    permit_id: str
-    data: Dict[str, Any]
-    last_updated: str
-
-@router.get("/", response_model=List[Dict[str, Any]])
+@router.get("/")
 async def get_all_permits():
     """
     Get all permits from Google Sheets
@@ -33,7 +23,7 @@ async def get_all_permits():
         logger.error(f"Failed to get permits: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to retrieve permits: {str(e)}")
 
-@router.get("/{permit_id}", response_model=PermitResponse)
+@router.get("/{permit_id}")
 async def get_permit(permit_id: str):
     """
     Get a specific permit by ID
@@ -51,11 +41,11 @@ async def get_permit(permit_id: str):
         if not permit:
             raise HTTPException(status_code=404, detail=f"Permit {permit_id} not found")
         
-        return PermitResponse(
-            permit_id=permit_id,
-            data=permit,
-            last_updated=permit.get('Last Updated', 'Unknown')
-        )
+        return {
+            "permit_id": permit_id,
+            "data": permit,
+            "last_updated": permit.get('Last Updated', 'Unknown')
+        }
         
     except HTTPException:
         raise
@@ -64,11 +54,14 @@ async def get_permit(permit_id: str):
         raise HTTPException(status_code=500, detail=f"Failed to retrieve permit: {str(e)}")
 
 @router.put("/{permit_id}")
-async def update_permit(permit_id: str, update_data: PermitUpdate):
+async def update_permit(permit_id: str, update_data: Dict[str, Any]):
     """
     Update a specific permit
     """
     try:
+        updates = update_data.get("updates", {})
+        notify_team = update_data.get("notify_team", True)
+        
         # Get current permits data
         permits = await google_service.get_permits_data()
         
@@ -84,15 +77,15 @@ async def update_permit(permit_id: str, update_data: PermitUpdate):
         
         # Update the permit data
         updated_permit = permits[permit_index].copy()
-        updated_permit.update(update_data.updates)
+        updated_permit.update(updates)
         updated_permit['Last Updated'] = str(datetime.now())
         
         # Here you would implement the actual sheet update logic
         # This is a simplified example - you'd need to map back to sheet rows/columns
         
         # Send notification if requested
-        if update_data.notify_team:
-            message = f"Permit {permit_id} has been updated with: {', '.join(update_data.updates.keys())}"
+        if notify_team:
+            message = f"Permit {permit_id} has been updated with: {', '.join(updates.keys())}"
             await google_service.notify_chat(message)
         
         logger.info(f"Updated permit {permit_id}")
@@ -175,6 +168,3 @@ async def analyze_permits():
     except Exception as e:
         logger.error(f"Failed to analyze permits: {e}")
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
-
-# Add missing import
-from datetime import datetime
