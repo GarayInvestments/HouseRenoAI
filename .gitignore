@@ -298,6 +298,14 @@ config/dev-*.json
 config/auth-*.json
 config/tokens.json
 
+# Payload files with secrets (NEVER commit these)
+config/env_payload.json
+config/new_env_payload.json
+config/payload.json
+
+# Template files with real secrets
+house-renovators-ai/.env.template
+
 # ===== SCRIPTS =====
 # Script output files
 scripts/output/
