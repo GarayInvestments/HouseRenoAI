@@ -76,6 +76,29 @@ class ApiService {
     });
   }
 
+  // Projects endpoints
+  async getProjects() {
+    return this.request('/projects', {
+      method: 'GET',
+    });
+  }
+
+  async getProject(projectId) {
+    return this.request(`/projects/${projectId}`, {
+      method: 'GET',
+    });
+  }
+
+  async updateProject(projectId, updates, notifyTeam = true) {
+    return this.request(`/projects/${projectId}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        updates,
+        notify_team: notifyTeam,
+      }),
+    });
+  }
+
   // Health check
   async healthCheck() {
     const url = `${API_URL}/health`;
