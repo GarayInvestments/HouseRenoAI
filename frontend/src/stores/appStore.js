@@ -21,3 +21,5 @@ export const useAppStore = create((set) => ({
   connectionStatus: 'connected',
   setConnectionStatus: (status) => set({ connectionStatus: status }),
 }))
+
+export default useAppStore
