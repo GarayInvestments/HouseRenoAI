@@ -94,54 +94,77 @@ PORT=10000
 
 **Error**: `POST /v1/documents/create-from-extract 422 (Unprocessable Content)`
 
-**Cause**: Extracted fields don't match Google Sheets column headers exactly
+**⚠️ IMPORTANT: ASK USER WHICH ISSUE TO INVESTIGATE FIRST**
 
-**Debugging Steps**:
+Don't assume the problem. Ask the user which troubleshooting path to try:
 
-1. **Check Render Logs** for detailed field information:
-   ```
-   [INFO] Creating project from extracted data
-   [DEBUG] Received extracted_data keys: ['Project ID', 'Client ID', ...]
-   [INFO] Projects headers: ['Project ID', 'Client ID', 'Project Name', ...]
-   [WARNING] Fields not found in Projects headers: ['Square Footage', 'Parcel Number']
-   ```
+**Quick Diagnostic Questions**:
+1. Is the error showing a specific field name or validation error?
+2. Are you seeing this in browser console or Render logs?
+3. Did this work before or is this a new feature?
+4. Have you verified Render dashboard shows latest commit deployed?
 
-2. **Verify Google Sheets columns** match extracted fields:
-   - **Projects sheet has 17 columns**:
-     - Project ID, Client ID, Project Name, Address, City, State, Zip Code
-     - Property Type, Square Footage (if added), Estimated Start Date, Estimated End Date
-     - Actual Start Date, Actual End Date, Budget, Status, Notes, Last Updated
-   
-3. **Check field extraction** in backend logs:
-   ```
-   [DEBUG] Extracted data: {'Project ID': 'P-001', 'Client ID': 'C-123', ...}
-   [INFO] Appending row with 17 values to Projects
-   [DEBUG] Row values: ['P-001', 'C-123', 'Main St Renovation', ...]
-   ```
+**Common Root Causes** (in order of likelihood):
 
-4. **Common Issues**:
-   - **Extra fields extracted** that don't exist in sheet (e.g., Parcel Number, Permit Record Number)
-   - **Field name mismatches** (e.g., 'Full Name' vs 'Client Name')
-   - **Missing required fields** (e.g., Project ID not generated)
-
-**Solutions**:
-
-- **Backend filters unwanted fields** before sending to Google Sheets
-- **Extra fields are combined into Notes** field (Square Footage, Parcel Number, Permit Record Number)
-- **Applicant fields** (Name, Company, Phone, Email) are used for Client ID lookup only, not saved to sheet
-
-**Verify Fix**:
-```bash
-# Check logs show field filtering
-curl https://houserenoai.onrender.com/v1/documents/create-from-extract \
-  -F "document_type=project" \
-  -F "extracted_data={...}" \
-  | grep "WARNING.*Fields not found"
-
-# Should show NO warnings about unmatched fields
+#### A. **Content-Type Mismatch** (Most Common)
+**Symptom**: 422 with no specific field errors, just "Unprocessable Entity"
+**Cause**: Frontend sending JSON but backend expecting Form data (or vice versa)
+**Fix**: Check that frontend Content-Type matches backend expectation
+```python
+# Backend should accept what frontend sends:
+async def create_record_from_extraction(request_data: dict):  # For JSON
+# OR
+async def create_record_from_extraction(
+    document_type: str = Form(...),
+    extracted_data: dict = Form(...)
+):  # For Form data
 ```
 
-**Enable Debug Logging** (if needed):
+#### B. **Field Mapping Issues**
+**Symptom**: 422 with warnings about specific fields in Render logs
+**Check Render Logs** for:
+```
+[WARNING] Fields not found in Projects headers: ['Square Footage', 'Parcel Number']
+```
+**Solution**: Extra fields should be filtered or combined into Notes
+
+#### C. **Missing Required Fields**
+**Symptom**: Error mentions missing fields like 'document_type' or 'extracted_data'
+**Check**: Request payload includes all required fields
+```javascript
+// Frontend should send:
+{
+  document_type: 'project',
+  extracted_data: { ... }
+}
+```
+
+#### D. **Google Sheets Column Mismatch**
+**Symptom**: Logs show field names that don't exist in sheet
+**Verify**: Google Sheets has exact column names being sent
+- **Projects sheet expected columns** (17 total):
+  - Project ID, Client ID, Project Name, Address, City, State, Zip Code
+  - Property Type, Estimated Start Date, Estimated End Date
+  - Actual Start Date, Actual End Date, Budget, Status, Notes, Last Updated
+
+**Debugging Commands**:
+```bash
+# 1. Check if endpoint exists
+curl -X OPTIONS https://houserenoai.onrender.com/v1/documents/create-from-extract
+
+# 2. Check Render logs (Render Dashboard → Logs tab)
+# Look for: [INFO], [DEBUG], [WARNING], [ERROR] messages
+
+# 3. Check deployed version (if /version endpoint exists)
+curl https://houserenoai.onrender.com/version
+
+# 4. Test with minimal payload
+curl -X POST https://houserenoai.onrender.com/v1/documents/create-from-extract \
+  -H "Content-Type: application/json" \
+  -d '{"document_type":"project","extracted_data":{"Project ID":"TEST-001"}}'
+```
+
+**Enable Debug Logging**:
 ```bash
 # In Render dashboard, set environment variable:
 LOG_LEVEL=DEBUG
