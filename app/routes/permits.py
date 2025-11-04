@@ -63,40 +63,49 @@ async def get_permit(permit_id: str):
 @router.put("/{permit_id}")
 async def update_permit(permit_id: str, update_data: Dict[str, Any]):
     """
-    Update a specific permit
+    Update a specific permit in Google Sheets
     """
     try:
         updates = update_data.get("updates", {})
         notify_team = update_data.get("notify_team", True)
         
-        # Get current permits data
-        google_service = get_google_service(); permits = await google_service.get_permits_data()
+        if not updates:
+            raise HTTPException(status_code=400, detail="No updates provided")
         
-        # Find the permit to update
-        permit_index = None
-        for i, p in enumerate(permits):
-            if p.get('ID') == permit_id or p.get('Permit ID') == permit_id:
-                permit_index = i
-                break
+        google_service = get_google_service()
         
-        if permit_index is None:
+        # Verify permit exists first
+        permits = await google_service.get_permits_data()
+        permit_exists = any(
+            p.get('ID') == permit_id or p.get('Permit ID') == permit_id 
+            for p in permits
+        )
+        
+        if not permit_exists:
             raise HTTPException(status_code=404, detail=f"Permit {permit_id} not found")
         
-        # Update the permit data
-        updated_permit = permits[permit_index].copy()
-        updated_permit.update(updates)
-        updated_permit['Last Updated'] = str(datetime.now())
+        # Update the permit in Google Sheets
+        success = await google_service.update_record_by_id(
+            sheet_name='Permits',
+            id_field='Permit ID',
+            record_id=permit_id,
+            updates=updates
+        )
         
-        # Here you would implement the actual sheet update logic
-        # This is a simplified example - you'd need to map back to sheet rows/columns
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to update permit in Google Sheets")
         
         # Send notification if requested
         if notify_team:
-            message = f"Permit {permit_id} has been updated with: {', '.join(updates.keys())}"
-            google_service = get_google_service(); await google_service.notify_chat(message)
+            message = f"✅ Permit {permit_id} updated: {', '.join([f'{k}={v}' for k, v in updates.items()])}"
+            await google_service.notify_chat(message)
         
-        logger.info(f"Updated permit {permit_id}")
-        return {"status": "success", "message": f"Permit {permit_id} updated successfully"}
+        logger.info(f"Successfully updated permit {permit_id} in Google Sheets")
+        return {
+            "status": "success", 
+            "message": f"Permit {permit_id} updated successfully",
+            "updated_fields": list(updates.keys())
+        }
         
     except HTTPException:
         raise

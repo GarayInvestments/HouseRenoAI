@@ -233,6 +233,87 @@ class GoogleService:
             logger.error(f"Failed to get {sheet_name} data: {e}")
             return []
     
+    async def update_record_by_id(
+        self, 
+        sheet_name: str, 
+        id_field: str, 
+        record_id: str, 
+        updates: Dict[str, Any]
+    ) -> bool:
+        """
+        Update a specific record in a sheet by ID
+        
+        Args:
+            sheet_name: Name of the sheet (e.g., 'Projects', 'Permits')
+            id_field: Name of the ID column (e.g., 'Project ID', 'Permit ID')
+            record_id: The ID value to search for
+            updates: Dictionary of field names and new values
+            
+        Returns:
+            True if update succeeded, False otherwise
+        """
+        try:
+            # Read the sheet data
+            data = await self.read_sheet_data(f'{sheet_name}!A1:Z1000')
+            
+            if not data or len(data) < 2:
+                logger.error(f"No data found in {sheet_name}")
+                return False
+            
+            headers = data[0]
+            
+            # Find the ID column index
+            try:
+                id_column_index = headers.index(id_field)
+            except ValueError:
+                logger.error(f"ID field '{id_field}' not found in {sheet_name} headers: {headers}")
+                return False
+            
+            # Find the row with matching ID
+            row_index = None
+            for i, row in enumerate(data[1:], start=2):  # Start at 2 because row 1 is headers
+                if len(row) > id_column_index and row[id_column_index] == record_id:
+                    row_index = i
+                    break
+            
+            if row_index is None:
+                logger.error(f"Record with {id_field}='{record_id}' not found in {sheet_name}")
+                return False
+            
+            # Update the specific cells
+            update_success = True
+            for field_name, new_value in updates.items():
+                try:
+                    field_column_index = headers.index(field_name)
+                except ValueError:
+                    logger.warning(f"Field '{field_name}' not found in {sheet_name} headers, skipping")
+                    continue
+                
+                # Convert column index to letter (A=0, B=1, etc.)
+                column_letter = self._column_index_to_letter(field_column_index)
+                cell_range = f'{sheet_name}!{column_letter}{row_index}'
+                
+                try:
+                    await self.write_sheet_data(cell_range, [[str(new_value)]])
+                    logger.info(f"Updated {sheet_name} {id_field}={record_id}, {field_name}={new_value} at {cell_range}")
+                except Exception as e:
+                    logger.error(f"Failed to update {cell_range}: {e}")
+                    update_success = False
+            
+            return update_success
+            
+        except Exception as e:
+            logger.error(f"Failed to update record in {sheet_name}: {e}")
+            return False
+    
+    def _column_index_to_letter(self, index: int) -> str:
+        """Convert 0-based column index to Excel column letter (0='A', 25='Z', 26='AA')"""
+        result = ""
+        while index >= 0:
+            result = chr(index % 26 + ord('A')) + result
+            index = index // 26 - 1
+        return result
+    
     async def get_comprehensive_data(self) -> Dict[str, Any]:
         """Get data from all sheets for comprehensive AI context"""
         try:
