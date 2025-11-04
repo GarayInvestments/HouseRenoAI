@@ -8,6 +8,7 @@ import BottomNav from './components/BottomNav';
 import Dashboard from './pages/Dashboard';
 import AIAssistant from './pages/AIAssistant';
 import Permits from './pages/Permits';
+import PermitDetails from './pages/PermitDetails';
 import Projects from './pages/Projects';
 import ProjectDetails from './pages/ProjectDetails';
 import Documents from './pages/Documents';
@@ -15,7 +16,7 @@ import Settings from './pages/Settings';
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
-  const { currentView, currentProjectId } = useAppStore();
+  const { currentView, currentProjectId, currentPermitId } = useAppStore();
 
   useEffect(() => {
     // Simulate initial load
@@ -30,6 +31,11 @@ function App() {
     // If viewing project details
     if (currentView === 'project-details' && currentProjectId) {
       return <ProjectDetails />;
+    }
+
+    // If viewing permit details
+    if (currentView === 'permit-details' && currentPermitId) {
+      return <PermitDetails />;
     }
 
     switch (currentView) {

@@ -42,7 +42,8 @@ export default function BottomNav() {
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentView === item.id || 
-                           (item.id === 'projects' && currentView === 'project-details');
+                           (item.id === 'projects' && currentView === 'project-details') ||
+                           (item.id === 'permits' && currentView === 'permit-details');
 
             return (
               <button
@@ -51,6 +52,9 @@ export default function BottomNav() {
                   if (item.id === 'projects' && currentView === 'project-details') {
                     // If on project details and clicking projects, navigate to projects list
                     setCurrentView('projects');
+                  } else if (item.id === 'permits' && currentView === 'permit-details') {
+                    // If on permit details and clicking permits, navigate to permits list
+                    setCurrentView('permits');
                   } else {
                     setCurrentView(item.id);
                   }

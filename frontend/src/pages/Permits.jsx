@@ -1,34 +1,69 @@
-import { FileText, Plus, Search, Filter, CheckCircle, Clock, AlertCircle } from 'lucide-react';
-import { useState } from 'react';
+import { FileText, Plus, Search, Filter, CheckCircle, Clock, AlertCircle, Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import api from '../lib/api';
+import { useAppStore } from '../stores/appStore';
 
 export default function Permits() {
+  const { navigateToPermit } = useAppStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [hoveredCard, setHoveredCard] = useState(null);
   const [hoveredButton, setHoveredButton] = useState(false);
+  const [permits, setPermits] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const permits = [
-    { id: 1, name: 'Building Permit #2024-001', status: 'approved', date: '2024-10-15', location: '123 Main St' },
-    { id: 2, name: 'Electrical Permit #2024-042', status: 'pending', date: '2024-10-28', location: '456 Oak Ave' },
-    { id: 3, name: 'Plumbing Permit #2024-038', status: 'approved', date: '2024-10-20', location: '789 Pine Rd' },
-    { id: 4, name: 'HVAC Permit #2024-055', status: 'review', date: '2024-11-01', location: '321 Elm St' },
-  ];
+  useEffect(() => {
+    fetchPermits();
+    // Set initial history state for permits page
+    window.history.replaceState({ page: 'permits' }, '');
+  }, []);
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'approved': return { bg: '#ECFDF5', text: '#059669', border: '#A7F3D0' };
-      case 'pending': return { bg: '#FEF3C7', text: '#D97706', border: '#FCD34D' };
-      case 'review': return { bg: '#DBEAFE', text: '#2563EB', border: '#93C5FD' };
-      default: return { bg: '#F3F4F6', text: '#6B7280', border: '#D1D5DB' };
+  const fetchPermits = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await api.getPermits();
+      // API returns array directly
+      setPermits(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Failed to fetch permits:', err);
+      setError('Failed to load permits. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'approved': return <CheckCircle size={16} />;
-      case 'pending': return <Clock size={16} />;
-      case 'review': return <AlertCircle size={16} />;
-      default: return null;
+  const filteredPermits = permits.filter(permit =>
+    permit['Permit Number']?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    permit['Permit Status']?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const getStatusColor = (status) => {
+    const lowerStatus = status?.toLowerCase();
+    if (lowerStatus?.includes('approved')) {
+      return { bg: '#ECFDF5', text: '#059669', border: '#A7F3D0' };
     }
+    if (lowerStatus?.includes('pending') || lowerStatus?.includes('submitted')) {
+      return { bg: '#FEF3C7', text: '#D97706', border: '#FCD34D' };
+    }
+    if (lowerStatus?.includes('review')) {
+      return { bg: '#DBEAFE', text: '#2563EB', border: '#93C5FD' };
+    }
+    return { bg: '#F3F4F6', text: '#6B7280', border: '#D1D5DB' };
+  };
+
+  const getStatusIcon = (status) => {
+    const lowerStatus = status?.toLowerCase();
+    if (lowerStatus?.includes('approved')) return <CheckCircle size={16} />;
+    if (lowerStatus?.includes('pending') || lowerStatus?.includes('submitted')) return <Clock size={16} />;
+    if (lowerStatus?.includes('review')) return <AlertCircle size={16} />;
+    return null;
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Not set';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
   return (
@@ -173,23 +208,63 @@ export default function Permits() {
         overflowY: 'auto',
         padding: '32px'
       }}>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
-          gap: '24px',
-          maxWidth: '1400px',
-          margin: '0 auto'
-        }}>
-          {permits.map((permit) => {
-            const statusStyle = getStatusColor(permit.status);
-            const isHovered = hoveredCard === permit.id;
+        {loading ? (
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '400px',
+            gap: '16px'
+          }}>
+            <Loader2 className="animate-spin" size={40} style={{ color: '#2563EB' }} />
+            <p style={{ color: '#64748B', fontSize: '14px' }}>Loading permits...</p>
+          </div>
+        ) : error ? (
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '400px',
+            gap: '16px'
+          }}>
+            <AlertCircle size={40} style={{ color: '#DC2626' }} />
+            <p style={{ color: '#DC2626', fontSize: '14px' }}>{error}</p>
+            <button
+              onClick={fetchPermits}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#2563EB',
+                color: '#FFFFFF',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '14px',
+                cursor: 'pointer'
+              }}
+            >
+              Retry
+            </button>
+          </div>
+        ) : (
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
+            gap: '24px',
+            maxWidth: '1400px',
+            margin: '0 auto'
+          }}>
+            {filteredPermits.map((permit) => {
+              const statusStyle = getStatusColor(permit['Permit Status']);
+              const isHovered = hoveredCard === permit['Permit ID'];
 
-            return (
-              <div
-                key={permit.id}
-                onMouseEnter={() => setHoveredCard(permit.id)}
-                onMouseLeave={() => setHoveredCard(null)}
-                style={{
+              return (
+                <div
+                  key={permit['Permit ID']}
+                  onClick={() => navigateToPermit(permit['Permit ID'])}
+                  onMouseEnter={() => setHoveredCard(permit['Permit ID'])}
+                  onMouseLeave={() => setHoveredCard(null)}
+                  style={{
                   backgroundColor: '#FFFFFF',
                   borderRadius: '12px',
                   padding: '20px',
@@ -221,51 +296,52 @@ export default function Permits() {
                   }}>
                     <FileText size={22} style={{ color: '#FFFFFF' }} />
                   </div>
-                  <div style={{ flex: 1 }}>
-                    <h3 style={{
-                      fontSize: '16px',
-                      fontWeight: '600',
-                      color: '#1E293B',
-                      marginBottom: '4px'
-                    }}>{permit.name}</h3>
-                    <p style={{
+                    <div style={{ flex: 1 }}>
+                      <h3 style={{
+                        fontSize: '16px',
+                        fontWeight: '600',
+                        color: '#1E293B',
+                        marginBottom: '4px'
+                      }}>{permit['Permit Number'] || 'Unknown Permit'}</h3>
+                      <p style={{
+                        fontSize: '13px',
+                        color: '#64748B'
+                      }}>Project ID: {permit['Project ID']}</p>
+                    </div>
+                  </div>
+
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    paddingTop: '16px',
+                    borderTop: '1px solid #F1F5F9'
+                  }}>
+                    <span style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '6px 12px',
+                      borderRadius: '8px',
+                      backgroundColor: statusStyle.bg,
+                      color: statusStyle.text,
+                      fontSize: '13px',
+                      fontWeight: '500',
+                      border: `1px solid ${statusStyle.border}`
+                    }}>
+                      {getStatusIcon(permit['Permit Status'])}
+                      {permit['Permit Status'] || 'Unknown'}
+                    </span>
+                    <span style={{
                       fontSize: '13px',
                       color: '#64748B'
-                    }}>{permit.location}</p>
+                    }}>{formatDate(permit['Date Submitted'])}</span>
                   </div>
                 </div>
-
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  paddingTop: '16px',
-                  borderTop: '1px solid #F1F5F9'
-                }}>
-                  <span style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    padding: '6px 12px',
-                    borderRadius: '8px',
-                    backgroundColor: statusStyle.bg,
-                    color: statusStyle.text,
-                    fontSize: '13px',
-                    fontWeight: '500',
-                    border: `1px solid ${statusStyle.border}`
-                  }}>
-                    {getStatusIcon(permit.status)}
-                    {permit.status.charAt(0).toUpperCase() + permit.status.slice(1)}
-                  </span>
-                  <span style={{
-                    fontSize: '13px',
-                    color: '#64748B'
-                  }}>{permit.date}</span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
