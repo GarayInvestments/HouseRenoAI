@@ -1,22 +1,25 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException
 from typing import List, Dict, Any
 import logging
-import traceback
-from app.services.google_service import google_service
+
+import app.services.google_service as google_service_module
 
 logger = logging.getLogger(__name__)
-
 router = APIRouter()
 
-@router.get("/", response_model=List[Dict[str, Any]])
-async def get_clients():
-    """Get all clients from Google Sheets"""
+def get_google_service():
+    """Helper function to get Google service with proper error handling"""
+    if not hasattr(google_service_module, 'google_service') or google_service_module.google_service is None:
+        raise HTTPException(status_code=503, detail="Google service not initialized")
+    return google_service_module.google_service
+
+@router.get("/")
+async def get_all_clients():
+    """
+    Get all clients from Google Sheets
+    """
     try:
-        if not google_service:
-            logger.error("Google service not initialized")
-            raise HTTPException(status_code=500, detail="Google service not initialized")
-        
-        logger.info("Attempting to fetch clients data from Google Sheets")
+        google_service = get_google_service()
         
         # Try to get clients data from the Clients sheet
         try:
@@ -57,20 +60,16 @@ async def get_clients():
         return clients
         
     except Exception as e:
-        error_type = type(e).__name__
-        error_str = str(e) if str(e) else f"No error message - {error_type}"
-        error_trace = traceback.format_exc()
-        error_msg = f"Failed to get clients: {error_str}"
-        logger.error(f"{error_msg}\nTraceback:\n{error_trace}")
-        raise HTTPException(status_code=500, detail=error_msg)
+        logger.error(f"Failed to get clients: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve clients: {str(e)}")
 
-@router.get("/{client_id}", response_model=Dict[str, Any])
+@router.get("/{client_id}")
 async def get_client(client_id: str):
-    """Get a specific client by ID"""
+    """
+    Get a specific client by ID
+    """
     try:
-        if not google_service:
-            raise HTTPException(status_code=500, detail="Google service not initialized")
-        
+        google_service = get_google_service()
         clients = await google_service.get_clients_data()
         
         # Find client by ID - try both 'Client ID' and 'ID' fields
@@ -83,11 +82,14 @@ async def get_client(client_id: str):
         if not client:
             raise HTTPException(status_code=404, detail=f"Client {client_id} not found")
         
-        logger.info(f"Retrieved client: {client_id}")
-        return client
+        return {
+            "client_id": client_id,
+            "data": client,
+            "last_updated": client.get('Last Updated', 'Unknown')
+        }
         
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Failed to get client {client_id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve client: {str(e)}")
