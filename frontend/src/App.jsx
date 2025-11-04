@@ -8,12 +8,13 @@ import Dashboard from './pages/Dashboard';
 import AIAssistant from './pages/AIAssistant';
 import Permits from './pages/Permits';
 import Projects from './pages/Projects';
+import ProjectDetails from './pages/ProjectDetails';
 import Documents from './pages/Documents';
 import Settings from './pages/Settings';
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
-  const { currentView } = useAppStore();
+  const { currentView, currentProjectId } = useAppStore();
 
   useEffect(() => {
     // Simulate initial load
@@ -25,6 +26,11 @@ function App() {
   }
 
   const renderContent = () => {
+    // If viewing project details
+    if (currentView === 'project-details' && currentProjectId) {
+      return <ProjectDetails />;
+    }
+
     switch (currentView) {
       case 'dashboard':
         return <Dashboard />;

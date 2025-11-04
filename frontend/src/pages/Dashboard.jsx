@@ -1,4 +1,5 @@
 import { TrendingUp, FileCheck, AlertCircle, Clock } from 'lucide-react';
+import { useAppStore } from '../stores/appStore';
 
 const stats = [
   {
@@ -7,6 +8,7 @@ const stats = [
     change: '+2 this month',
     icon: TrendingUp,
     changeColor: 'text-green-600',
+    action: 'projects',
   },
   {
     label: 'Permits Approved',
@@ -32,6 +34,14 @@ const stats = [
 ];
 
 export default function Dashboard() {
+  const { setCurrentView } = useAppStore();
+
+  const handleStatClick = (action) => {
+    if (action) {
+      setCurrentView(action);
+    }
+  };
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#F8FAFC', padding: '32px' }}>
       <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
@@ -57,6 +67,7 @@ export default function Dashboard() {
             return (
               <div
                 key={index}
+                onClick={() => handleStatClick(stat.action)}
                 style={{
                   backgroundColor: '#FFFFFF',
                   borderRadius: '16px',
@@ -64,11 +75,13 @@ export default function Dashboard() {
                   border: '1px solid #E2E8F0',
                   boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
                   transition: 'all 0.2s ease',
-                  cursor: 'pointer'
+                  cursor: stat.action ? 'pointer' : 'default'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
-                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  if (stat.action) {
+                    e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                  }
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)';

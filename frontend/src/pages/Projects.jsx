@@ -1,8 +1,10 @@
 import { FolderKanban, Plus, Search, MapPin, Users, Calendar, AlertCircle, Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import api from '../lib/api';
+import { useAppStore } from '../stores/appStore';
 
 export default function Projects() {
+  const { navigateToProject } = useAppStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [hoveredCard, setHoveredCard] = useState(null);
   const [hoveredButton, setHoveredButton] = useState(false);
@@ -12,6 +14,8 @@ export default function Projects() {
 
   useEffect(() => {
     fetchProjects();
+    // Set initial history state for projects page
+    window.history.replaceState({ page: 'projects' }, '');
   }, []);
 
   const fetchProjects = async () => {
@@ -238,6 +242,9 @@ export default function Projects() {
               return (
                 <div
                   key={project['Project ID']}
+                  onClick={() => {
+                    navigateToProject(project['Project ID']);
+                  }}
                   onMouseEnter={() => setHoveredCard(project['Project ID'])}
                   onMouseLeave={() => setHoveredCard(null)}
                   style={{
