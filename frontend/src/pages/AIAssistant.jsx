@@ -150,13 +150,13 @@ export default function AIAssistant() {
       
       setUploadProgress({ status: 'extracting', message: 'AI is extracting data...' });
       
-      // Auto-lookup Client ID if Applicant Name or Email is present
+      // Auto-lookup Client ID using applicant_info (not shown to user)
       let clientLookupData = null;
       const extractedData = response.extracted_data;
       
-      if (documentType === 'project') {
-        const applicantName = extractedData['Applicant Name'];
-        const applicantEmail = extractedData['Applicant Email'];
+      if (documentType === 'project' && response.applicant_info) {
+        const applicantName = response.applicant_info['Applicant Name'];
+        const applicantEmail = response.applicant_info['Applicant Email'];
         
         if (applicantName || applicantEmail) {
           try {
@@ -429,33 +429,62 @@ export default function AIAssistant() {
                                     </span>
                                   )}
                                 </label>
-                                <div
-                                  onMouseEnter={() => setHoveredClientId(tooltipId)}
-                                  onMouseLeave={() => setHoveredClientId(null)}
-                                  style={{ position: 'relative' }}
-                                >
-                                  <input
-                                    type="text"
-                                    value={value || ''}
-                                    onChange={(e) => handleEditField(index, key, e.target.value)}
-                                    style={{
-                                      width: '100%',
+                                <div style={{ position: 'relative' }}>
+                                  <div
+                                    onMouseEnter={() => setHoveredClientId(tooltipId)}
+                                    onMouseLeave={() => setHoveredClientId(null)}
+                                  >
+                                    <input
+                                      type="text"
+                                      value={value || ''}
+                                      onChange={(e) => handleEditField(index, key, e.target.value)}
+                                      style={{
+                                        width: '100%',
+                                        padding: '8px 10px',
+                                        border: '1px solid #E2E8F0',
+                                        borderRadius: '6px',
+                                        fontSize: '13px',
+                                        color: '#1E293B',
+                                        backgroundColor: '#FFFFFF'
+                                      }}
+                                      onFocus={(e) => {
+                                        e.target.style.borderColor = '#2563EB';
+                                        e.target.style.boxShadow = '0 0 0 2px rgba(37, 99, 235, 0.1)';
+                                      }}
+                                      onBlur={(e) => {
+                                        e.target.style.borderColor = '#E2E8F0';
+                                        e.target.style.boxShadow = 'none';
+                                      }}
+                                    />
+                                  </div>
+                                  
+                                  {/* Show client full name below Client ID field */}
+                                  {isClientIdField && hasLookupData && (
+                                    <div style={{
+                                      marginTop: '6px',
                                       padding: '8px 10px',
-                                      border: '1px solid #E2E8F0',
+                                      backgroundColor: '#F0FDF4',
+                                      border: '1px solid #BBF7D0',
                                       borderRadius: '6px',
-                                      fontSize: '13px',
-                                      color: '#1E293B',
-                                      backgroundColor: '#FFFFFF'
-                                    }}
-                                    onFocus={(e) => {
-                                      e.target.style.borderColor = '#2563EB';
-                                      e.target.style.boxShadow = '0 0 0 2px rgba(37, 99, 235, 0.1)';
-                                    }}
-                                    onBlur={(e) => {
-                                      e.target.style.borderColor = '#E2E8F0';
-                                      e.target.style.boxShadow = 'none';
-                                    }}
-                                  />
+                                      fontSize: '12px',
+                                      color: '#166534'
+                                    }}>
+                                      <div style={{ fontWeight: '600', marginBottom: '2px' }}>
+                                        {message.clientLookup.full_name || 'Unknown Client'}
+                                      </div>
+                                      {message.clientLookup.company && (
+                                        <div style={{ fontSize: '11px', color: '#15803D' }}>
+                                          {message.clientLookup.company}
+                                        </div>
+                                      )}
+                                      {message.clientLookup.email && (
+                                        <div style={{ fontSize: '11px', color: '#15803D', marginTop: '2px' }}>
+                                          {message.clientLookup.email}
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                  
                                   {/* Enhanced tooltip on hover for Client ID */}
                                   {isClientIdField && hasLookupData && hoveredClientId === tooltipId && (
                                     <div

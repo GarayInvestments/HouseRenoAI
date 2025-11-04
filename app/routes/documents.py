@@ -60,18 +60,32 @@ async def extract_document_data(
             base64_image = base64.b64encode(file_content).decode('utf-8')
             extracted_data = await process_with_gpt4_vision(base64_image, file.content_type, document_type)
         
+        # Store Applicant info for Client ID lookup (will be sent separately)
+        applicant_info = {}
+        if document_type == 'project':
+            lookup_only_fields = ['Applicant Name', 'Applicant Company', 'Applicant Phone', 'Applicant Email']
+            for field in lookup_only_fields:
+                if field in extracted_data:
+                    applicant_info[field] = extracted_data.pop(field)
+        
         # Add client_id if provided
         if client_id:
             extracted_data['Client ID'] = client_id
         
         logger.info(f"Successfully extracted data from {file.filename}")
-        return {
+        response = {
             "status": "success",
             "filename": file.filename,
             "document_type": document_type,
             "extracted_data": extracted_data,
             "message": f"Data extracted successfully. Review and confirm to create {document_type}."
         }
+        
+        # Include applicant info separately (for frontend Client ID lookup, not for display)
+        if applicant_info:
+            response["applicant_info"] = applicant_info
+        
+        return response
         
     except HTTPException:
         raise
@@ -93,6 +107,7 @@ async def create_record_from_extraction(
         if document_type == 'project':
             sheet_name = 'Projects'
             id_field = 'Project ID'
+            
             # Generate project ID if not provided
             if 'Project ID' not in extracted_data:
                 projects = await google_service.get_projects_data()
