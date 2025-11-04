@@ -16,8 +16,43 @@ async def get_clients():
             raise HTTPException(status_code=500, detail="Google service not initialized")
         
         logger.info("Attempting to fetch clients data from Google Sheets")
-        clients = await google_service.get_clients_data()
-        logger.info(f"Successfully retrieved {len(clients)} clients")
+        
+        # Try to get clients data from the Clients sheet
+        try:
+            clients = await google_service.get_clients_data()
+            if clients and len(clients) > 0:
+                logger.info(f"Successfully retrieved {len(clients)} clients from Clients sheet")
+                return clients
+        except Exception as sheet_error:
+            logger.warning(f"Could not read Clients sheet: {sheet_error}")
+        
+        # Fallback: If Clients sheet doesn't exist or is empty, derive from Projects
+        logger.info("Falling back to deriving clients from Projects data")
+        projects = await google_service.get_projects_data()
+        
+        # Extract unique clients from projects
+        clients_dict = {}
+        for project in projects:
+            client_id = project.get('Client ID', '')
+            if client_id and client_id not in clients_dict:
+                clients_dict[client_id] = {
+                    'Client ID': client_id,
+                    'Client Name': project.get('Owner Name (PM\'s Client)', 'Unknown Client'),
+                    'Active Projects': '1',
+                    'Email': '',
+                    'Phone': '',
+                    'Address': '',
+                    'City': '',
+                    'State': '',
+                    'Notes': f'Derived from project: {project.get("Project Name", "")}'
+                }
+            elif client_id and client_id in clients_dict:
+                # Increment project count
+                current_count = int(clients_dict[client_id].get('Active Projects', '0'))
+                clients_dict[client_id]['Active Projects'] = str(current_count + 1)
+        
+        clients = list(clients_dict.values())
+        logger.info(f"Derived {len(clients)} clients from projects data")
         return clients
         
     except Exception as e:
