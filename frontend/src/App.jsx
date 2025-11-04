@@ -4,6 +4,7 @@ import LoadingScreen from './components/LoadingScreen';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
 import MobileDrawer from './components/MobileDrawer';
+import BottomNav from './components/BottomNav';
 import Dashboard from './pages/Dashboard';
 import AIAssistant from './pages/AIAssistant';
 import Permits from './pages/Permits';
@@ -66,6 +67,9 @@ function App() {
         <main className="flex-1 overflow-y-auto">
           {renderContent()}
         </main>
+
+        {/* Bottom Navigation - Mobile Only */}
+        <BottomNav />
       </div>
     </div>
   );
