@@ -33,7 +33,7 @@ export default function Clients() {
     if (!searchQuery) return true;
     
     const query = searchQuery.toLowerCase();
-    const clientName = (client['Client Name'] || '').toLowerCase();
+    const clientName = (client['Full Name'] || client['Client Name'] || '').toLowerCase();
     const email = (client['Email'] || '').toLowerCase();
     const phone = (client['Phone'] || '').toLowerCase();
     const address = (client['Address'] || '').toLowerCase();
@@ -175,7 +175,7 @@ export default function Clients() {
           }}>
             {filteredClients.map((client, index) => {
               const clientId = client['Client ID'] || client['ID'] || index;
-              const clientName = client['Client Name'] || 'Unnamed Client';
+              const clientName = client['Full Name'] || client['Client Name'] || 'Unnamed Client';
               const email = client['Email'] || '';
               const phone = client['Phone'] || '';
               const address = client['Address'] || '';

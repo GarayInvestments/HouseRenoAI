@@ -82,11 +82,8 @@ async def get_client(client_id: str):
         if not client:
             raise HTTPException(status_code=404, detail=f"Client {client_id} not found")
         
-        return {
-            "client_id": client_id,
-            "data": client,
-            "last_updated": client.get('Last Updated', 'Unknown')
-        }
+        # Return the client data directly (not wrapped in an object)
+        return client
         
     except HTTPException:
         raise

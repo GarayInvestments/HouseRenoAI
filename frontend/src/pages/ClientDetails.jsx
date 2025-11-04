@@ -34,6 +34,8 @@ export default function ClientDetails() {
       setLoading(true);
       setError(null);
       const data = await api.getClient(currentClientId);
+      console.log('Client data received:', data);
+      console.log('Available keys:', Object.keys(data));
       setClient(data);
     } catch (err) {
       console.error('Error fetching client details:', err);
@@ -74,7 +76,7 @@ export default function ClientDetails() {
     );
   }
 
-  const clientName = client['Client Name'] || 'Unnamed Client';
+  const clientName = client['Full Name'] || client['Client Name'] || 'Unnamed Client';
   const clientId = client['Client ID'] || client['ID'] || '';
   const email = client['Email'] || '';
   const phone = client['Phone'] || '';
@@ -212,7 +214,11 @@ export default function ClientDetails() {
           {Object.entries(client).map(([key, value]) => (
             <div key={key} className="flex border-b border-gray-200 pb-2">
               <span className="text-sm font-medium text-gray-600 w-1/3">{key}:</span>
-              <span className="text-sm text-gray-900 w-2/3 break-all">{value || '—'}</span>
+              <span className="text-sm text-gray-900 w-2/3 break-all">
+                {typeof value === 'object' && value !== null 
+                  ? JSON.stringify(value, null, 2) 
+                  : (value || '—')}
+              </span>
             </div>
           ))}
         </div>
