@@ -10,6 +10,7 @@ from app.config import settings
 from app.routes.chat import router as chat_router
 from app.routes.permits import router as permits_router
 from app.routes.projects import router as projects_router
+from app.routes.clients import router as clients_router
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -124,6 +125,7 @@ app.add_middleware(
 app.include_router(chat_router, prefix=f"/{settings.API_VERSION}/chat", tags=["chat"])
 app.include_router(permits_router, prefix=f"/{settings.API_VERSION}/permits", tags=["permits"])
 app.include_router(projects_router, prefix=f"/{settings.API_VERSION}/projects", tags=["projects"])
+app.include_router(clients_router, prefix=f"/{settings.API_VERSION}/clients", tags=["clients"])
 
 @app.get("/")
 async def root():
