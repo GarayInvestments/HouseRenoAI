@@ -146,6 +146,8 @@ async def extract_text_from_pdf(pdf_content: bytes) -> str:
 
 async def process_with_gpt4_text(text: str, document_type: str) -> dict:
     """Process extracted text with GPT-4 to get structured data"""
+    import json
+    
     try:
         openai_service = get_openai_service()
         
@@ -180,14 +182,28 @@ Document text:
 
 Return only valid JSON, no other text."""
         
-        # Use OpenAI to extract structured data
-        import json
-        response = await openai_service.get_completion(prompt)
+        # Use OpenAI client to extract structured data
+        response = openai_service.client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=1000,
+            temperature=0.3
+        )
+        
+        if not response or not response.choices:
+            raise ValueError("No response from AI")
         
         # Parse JSON from response
-        extracted_data = json.loads(response)
+        content = response.choices[0].message.content
+        if not content:
+            raise ValueError("AI returned empty response")
+        
+        extracted_data = json.loads(content)
         return extracted_data
         
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse AI response as JSON: {e}")
+        raise HTTPException(status_code=500, detail="AI returned invalid data format")
     except Exception as e:
         logger.error(f"GPT-4 text processing failed: {e}")
         raise HTTPException(status_code=500, detail="AI processing failed")
