@@ -10,6 +10,7 @@ import {
   Download,
   Hash,
   FolderKanban,
+  User,
   Loader2
 } from 'lucide-react';
 import api from '../lib/api';
@@ -18,10 +19,54 @@ import { useAppStore } from '../stores/appStore';
 export default function PermitDetails() {
   const { currentPermitId, navigateToPermits } = useAppStore();
   const [permit, setPermit] = useState(null);
+  const [project, setProject] = useState(null);
+  const [client, setClient] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    const fetchPermitDetails = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Fetch permits, projects, and clients in parallel
+        const [permitsData, projectsData, clientsData] = await Promise.all([
+          api.getPermits(),
+          api.getProjects(),
+          api.getClients()
+        ]);
+        
+        const foundPermit = Array.isArray(permitsData) 
+          ? permitsData.find(p => p['Permit ID'] === currentPermitId)
+          : null;
+        
+        if (foundPermit) {
+          setPermit(foundPermit);
+          
+          // Find related project
+          const relatedProject = Array.isArray(projectsData)
+            ? projectsData.find(p => p['Project ID'] === foundPermit['Project ID'])
+            : null;
+          setProject(relatedProject);
+          
+          // Find related client through project
+          if (relatedProject && relatedProject['Client ID']) {
+            const relatedClient = Array.isArray(clientsData)
+              ? clientsData.find(c => c['Client ID'] === relatedProject['Client ID'] || c['ID'] === relatedProject['Client ID'])
+              : null;
+            setClient(relatedClient);
+          }
+        } else {
+          setError('Permit not found');
+        }
+      } catch {
+        setError('Failed to load permit details');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
     fetchPermitDetails();
   }, [currentPermitId]);
 
@@ -41,28 +86,6 @@ export default function PermitDetails() {
       window.removeEventListener('popstate', handlePopState);
     };
   }, [navigateToPermits]);
-
-  const fetchPermitDetails = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await api.getPermits();
-      const foundPermit = Array.isArray(data) 
-        ? data.find(p => p['Permit ID'] === currentPermitId)
-        : null;
-      
-      if (foundPermit) {
-        setPermit(foundPermit);
-      } else {
-        setError('Permit not found');
-      }
-    } catch (err) {
-      console.error('Failed to fetch permit details:', err);
-      setError('Failed to load permit details');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Not set';
@@ -296,12 +319,70 @@ export default function PermitDetails() {
                 <FolderKanban size={20} style={{ color: '#D97706' }} />
               </div>
               <div>
-                <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '2px' }}>Project ID</p>
-                <p style={{ fontSize: '14px', color: '#1E293B', fontWeight: '500' }}>
-                  {permit['Project ID'] || 'N/A'}
-                </p>
+                <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '2px' }}>Project</p>
+                {project ? (
+                  <button
+                    onClick={() => useAppStore.getState().navigateToProject(permit['Project ID'])}
+                    style={{
+                      fontSize: '14px',
+                      color: '#2563EB',
+                      fontWeight: '500',
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                      textAlign: 'left'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.color = '#1D4ED8'}
+                    onMouseLeave={(e) => e.currentTarget.style.color = '#2563EB'}
+                  >
+                    {project['Project Name'] || permit['Project ID']}
+                  </button>
+                ) : (
+                  <p style={{ fontSize: '14px', color: '#1E293B', fontWeight: '500' }}>
+                    {permit['Project ID'] || 'N/A'}
+                  </p>
+                )}
               </div>
             </div>
+
+            {client && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '8px',
+                  backgroundColor: '#FEE2E2',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <User size={20} style={{ color: '#DC2626' }} />
+                </div>
+                <div>
+                  <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '2px' }}>Client</p>
+                  <button
+                    onClick={() => useAppStore.getState().navigateToClient(client['Client ID'] || client['ID'])}
+                    style={{
+                      fontSize: '14px',
+                      color: '#2563EB',
+                      fontWeight: '500',
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                      textAlign: 'left'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.color = '#1D4ED8'}
+                    onMouseLeave={(e) => e.currentTarget.style.color = '#2563EB'}
+                  >
+                    {client['Full Name'] || client['Client Name'] || client['Client ID'] || client['ID']}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

@@ -112,6 +112,38 @@ class ApiService {
     });
   }
 
+  // Document upload endpoints
+  async uploadDocument(formData) {
+    const url = `${this.baseUrl}/documents/extract`;
+    
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        body: formData, // Don't set Content-Type header - browser will set it with boundary
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || `Upload failed: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Document upload failed:', error);
+      throw error;
+    }
+  }
+
+  async createFromExtract(documentType, extractedData) {
+    return this.request('/documents/create-from-extract', {
+      method: 'POST',
+      body: JSON.stringify({
+        document_type: documentType,
+        extracted_data: extractedData,
+      }),
+    });
+  }
+
   // Health check
   async healthCheck() {
     const url = `${API_URL}/health`;

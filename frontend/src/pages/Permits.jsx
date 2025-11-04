@@ -1,42 +1,92 @@
-import { FileText, Plus, Search, Filter, CheckCircle, Clock, AlertCircle, Loader2 } from 'lucide-react';
+import { FileText, Plus, Search, Filter, CheckCircle, Clock, AlertCircle, Loader2, User, FolderKanban } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import api from '../lib/api';
 import { useAppStore } from '../stores/appStore';
 
 export default function Permits() {
-  const { navigateToPermit } = useAppStore();
+  const { navigateToPermit, permitsFilter, setPermitsFilter } = useAppStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [hoveredCard, setHoveredCard] = useState(null);
   const [hoveredButton, setHoveredButton] = useState(false);
   const [permits, setPermits] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchPermits();
+    fetchAllData();
     // Set initial history state for permits page
     window.history.replaceState({ page: 'permits' }, '');
   }, []);
 
-  const fetchPermits = async () => {
+  const fetchAllData = async () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await api.getPermits();
-      // API returns array directly
-      setPermits(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error('Failed to fetch permits:', err);
+      
+      // Fetch all data in parallel
+      const [permitsData, projectsData, clientsData] = await Promise.all([
+        api.getPermits(),
+        api.getProjects(),
+        api.getClients()
+      ]);
+      
+      setPermits(Array.isArray(permitsData) ? permitsData : []);
+      setProjects(Array.isArray(projectsData) ? projectsData : []);
+      setClients(Array.isArray(clientsData) ? clientsData : []);
+    } catch {
       setError('Failed to load permits. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredPermits = permits.filter(permit =>
+  const getProjectName = (projectId) => {
+    const project = projects.find(p => p['Project ID'] === projectId);
+    return project?.['Project Name'] || projectId || 'Unknown Project';
+  };
+
+  const getClientNameForPermit = (permit) => {
+    // First, find the project for this permit
+    const project = projects.find(p => p['Project ID'] === permit['Project ID']);
+    if (!project) return null;
+    
+    // Then find the client using the project's client ID
+    const clientId = project['Client ID'];
+    if (!clientId) return null;
+    
+    const client = clients.find(c => c['Client ID'] === clientId || c['ID'] === clientId);
+    return client?.['Full Name'] || client?.['Client Name'] || clientId;
+  };
+
+  // Apply client filter first if present
+  let baseFilteredPermits = permits;
+  if (permitsFilter?.clientId) {
+    // Get all project IDs for this client
+    const clientProjectIds = projects
+      .filter(p => p['Client ID'] === permitsFilter.clientId)
+      .map(p => p['Project ID']);
+    // Filter permits by those project IDs
+    baseFilteredPermits = permits.filter(permit => clientProjectIds.includes(permit['Project ID']));
+  }
+
+  // Then apply search filter
+  const filteredPermits = baseFilteredPermits.filter(permit =>
     permit['Permit Number']?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     permit['Permit Status']?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Get client name for filter badge
+  const getFilteredClientName = () => {
+    if (!permitsFilter?.clientId) return null;
+    const client = clients.find(c => c['Client ID'] === permitsFilter.clientId || c['ID'] === permitsFilter.clientId);
+    return client?.['Full Name'] || client?.['Client Name'] || permitsFilter.clientId;
+  };
+
+  const clearFilter = () => {
+    setPermitsFilter(null);
+  };
 
   const getStatusColor = (status) => {
     const lowerStatus = status?.toLowerCase();
@@ -86,19 +136,56 @@ export default function Permits() {
           alignItems: 'center',
           marginBottom: '16px'
         }}>
-          <div>
-            <h1 style={{
-              fontSize: '24px',
-              fontWeight: '600',
-              color: '#1E293B',
-              marginBottom: '4px'
-            }}>Permits</h1>
-            <p style={{
-              color: '#64748B',
-              fontSize: '14px'
-            }}>
-              Manage and track all your building permits
-            </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div>
+              <h1 style={{
+                fontSize: '24px',
+                fontWeight: '600',
+                color: '#1E293B',
+                marginBottom: '4px'
+              }}>Permits</h1>
+              <p style={{
+                color: '#64748B',
+                fontSize: '14px'
+              }}>
+                {permitsFilter?.clientId 
+                  ? `Showing permits for ${getFilteredClientName()}` 
+                  : 'Manage and track all your building permits'
+                }
+              </p>
+            </div>
+            {permitsFilter?.clientId && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '4px 12px',
+                backgroundColor: '#DBEAFE',
+                borderRadius: '6px',
+                fontSize: '14px',
+                color: '#1E40AF'
+              }}>
+                <span style={{ fontWeight: '500' }}>Client: {getFilteredClientName()}</span>
+                <button
+                  onClick={clearFilter}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#1E40AF',
+                    fontSize: '18px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    padding: '0 4px',
+                    lineHeight: 1,
+                    transition: 'color 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => e.target.style.color = '#1E3A8A'}
+                  onMouseLeave={(e) => e.target.style.color = '#1E40AF'}
+                >
+                  ×
+                </button>
+              </div>
+            )}
           </div>
           <button
             onMouseEnter={() => setHoveredButton(true)}
@@ -232,7 +319,7 @@ export default function Permits() {
             <AlertCircle size={40} style={{ color: '#DC2626' }} />
             <p style={{ color: '#DC2626', fontSize: '14px' }}>{error}</p>
             <button
-              onClick={fetchPermits}
+              onClick={fetchAllData}
               style={{
                 padding: '8px 16px',
                 backgroundColor: '#2563EB',
@@ -303,10 +390,36 @@ export default function Permits() {
                         color: '#1E293B',
                         marginBottom: '4px'
                       }}>{permit['Permit Number'] || 'Unknown Permit'}</h3>
-                      <p style={{
-                        fontSize: '13px',
-                        color: '#64748B'
-                      }}>Project ID: {permit['Project ID']}</p>
+                      <div style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '2px'
+                      }}>
+                        {permit['Project ID'] && (
+                          <p style={{
+                            fontSize: '12px',
+                            color: '#64748B',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}>
+                            <FolderKanban size={12} />
+                            {getProjectName(permit['Project ID'])}
+                          </p>
+                        )}
+                        {getClientNameForPermit(permit) && (
+                          <p style={{
+                            fontSize: '12px',
+                            color: '#64748B',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}>
+                            <User size={12} />
+                            {getClientNameForPermit(permit)}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
 

@@ -4,11 +4,12 @@ import api from '../lib/api';
 import { useAppStore } from '../stores/appStore';
 
 export default function Projects() {
-  const { navigateToProject } = useAppStore();
+  const { navigateToProject, projectsFilter, setProjectsFilter } = useAppStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [hoveredCard, setHoveredCard] = useState(null);
   const [hoveredButton, setHoveredButton] = useState(false);
   const [projects, setProjects] = useState([]);
+  const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -22,28 +23,66 @@ export default function Projects() {
     try {
       setLoading(true);
       setError(null);
-      const data = await api.getProjects();
-      // API returns array directly, not wrapped in 'projects' key
-      setProjects(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error('Failed to fetch projects:', err);
+      const [projectsData, clientsData] = await Promise.all([
+        api.getProjects(),
+        api.getClients()
+      ]);
+      setProjects(Array.isArray(projectsData) ? projectsData : []);
+      setClients(Array.isArray(clientsData) ? clientsData : []);
+    } catch {
       setError('Failed to load projects. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredProjects = projects.filter(project =>
+  // Apply client filter first if present
+  let baseFilteredProjects = projects;
+  if (projectsFilter?.clientId) {
+    baseFilteredProjects = projects.filter(project => project['Client ID'] === projectsFilter.clientId);
+  }
+
+  // Then apply search filter
+  const filteredProjects = baseFilteredProjects.filter(project =>
     project['Project Name']?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     project['Project Address']?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Get client name for filter badge
+  const getFilteredClientName = () => {
+    if (!projectsFilter?.clientId) return null;
+    const client = clients.find(c => c['Client ID'] === projectsFilter.clientId || c['ID'] === projectsFilter.clientId);
+    return client?.['Full Name'] || client?.['Client Name'] || projectsFilter.clientId;
+  };
+
+  const clearFilter = () => {
+    setProjectsFilter(null);
+  };
+
+  // Get client name for a project card
+  const getClientName = (clientId) => {
+    if (!clientId) return 'Unknown Client';
+    const client = clients.find(c => c['Client ID'] === clientId || c['ID'] === clientId);
+    return client?.['Full Name'] || client?.['Client Name'] || clientId;
+  };
+
   const getStatusColor = (status) => {
-    switch (status) {
-      case 'active': return { bg: '#DBEAFE', text: '#2563EB', border: '#93C5FD' };
-      case 'completed': return { bg: '#ECFDF5', text: '#059669', border: '#A7F3D0' };
-      case 'planning': return { bg: '#FEF3C7', text: '#D97706', border: '#FCD34D' };
-      default: return { bg: '#F3F4F6', text: '#6B7280', border: '#D1D5DB' };
+    switch (status?.toLowerCase()) {
+      case 'completed':
+      case 'final inspection complete':
+        return { bg: '#ECFDF5', text: '#059669', border: '#A7F3D0' };
+      case 'permit approved':
+      case 'active':
+        return { bg: '#DBEAFE', text: '#2563EB', border: '#93C5FD' };
+      case 'permit submitted':
+      case 'planning':
+        return { bg: '#FEF3C7', text: '#D97706', border: '#FCD34D' };
+      case 'closed / archived':
+        return { bg: '#F3F4F6', text: '#6B7280', border: '#D1D5DB' };
+      case 'inquiry received':
+        return { bg: '#FEF2F2', text: '#DC2626', border: '#FECACA' };
+      default:
+        return { bg: '#F3F4F6', text: '#6B7280', border: '#D1D5DB' };
     }
   };
 
@@ -98,17 +137,50 @@ export default function Projects() {
           marginBottom: '16px'
         }}>
           <div>
-            <h1 style={{
-              fontSize: '24px',
-              fontWeight: '600',
-              color: '#1E293B',
-              marginBottom: '4px'
-            }}>Projects</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
+              <h1 style={{
+                fontSize: '24px',
+                fontWeight: '600',
+                color: '#1E293B'
+              }}>Projects</h1>
+              {projectsFilter?.clientId && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '4px 12px',
+                  backgroundColor: '#DBEAFE',
+                  borderRadius: '6px',
+                  fontSize: '13px',
+                  color: '#1E40AF'
+                }}>
+                  <span>Client: {getFilteredClientName()}</span>
+                  <button
+                    onClick={clearFilter}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#1E40AF',
+                      cursor: 'pointer',
+                      fontSize: '16px',
+                      lineHeight: '1',
+                      padding: '0 2px'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.color = '#1E3A8A'}
+                    onMouseLeave={(e) => e.currentTarget.style.color = '#1E40AF'}
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+            </div>
             <p style={{
               color: '#64748B',
               fontSize: '14px'
             }}>
-              Track and manage all your construction projects
+              {projectsFilter?.clientId 
+                ? `Showing projects for ${getFilteredClientName()}`
+                : 'Track and manage all your construction projects'}
             </p>
           </div>
           <button
@@ -326,7 +398,7 @@ export default function Projects() {
                       color: '#64748B'
                     }}>
                       <Users size={16} style={{ color: '#2563EB' }} />
-                      Client: {project['Owner Name (PM\'s Client)'] || project['Client ID'] || 'Unknown'}
+                      Client: {getClientName(project['Client ID'])}
                     </div>
                     <div style={{
                       display: 'flex',

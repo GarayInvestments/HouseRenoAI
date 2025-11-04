@@ -6,6 +6,7 @@ import useAppStore from '../stores/appStore';
 export default function Clients() {
   // Clients page with card layout
   const [clients, setClients] = useState([]);
+  const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -19,14 +20,51 @@ export default function Clients() {
     try {
       setLoading(true);
       setError(null);
-      const data = await api.getClients();
-      setClients(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error('Error fetching clients:', err);
+      const [clientsData, projectsData] = await Promise.all([
+        api.getClients(),
+        api.getProjects()
+      ]);
+      setClients(Array.isArray(clientsData) ? clientsData : []);
+      setProjects(Array.isArray(projectsData) ? projectsData : []);
+    } catch {
       setError('Failed to load clients. Please try again.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const getProjectCount = (clientId) => {
+    return projects.filter(project => project['Client ID'] === clientId).length;
+  };
+
+  const getProjectStatusCounts = (clientId) => {
+    const clientProjects = projects.filter(project => project['Client ID'] === clientId);
+    const statusCounts = {
+      active: 0,
+      completed: 0,
+      planning: 0,
+      other: 0
+    };
+
+    clientProjects.forEach(project => {
+      const status = (project.Status || '').toLowerCase().trim();
+      
+      // Match the actual status values from Google Sheets
+      if (status === 'permit approved' || status === 'active') {
+        statusCounts.active++;
+      } else if (status === 'completed' || status === 'final inspection complete') {
+        statusCounts.completed++;
+      } else if (status === 'permit submitted' || status === 'planning') {
+        statusCounts.planning++;
+      } else if (status === 'closed / archived' || status === 'inquiry received') {
+        statusCounts.other++;
+      } else if (status) {
+        // Any other non-empty status
+        statusCounts.other++;
+      }
+    });
+
+    return statusCounts;
   };
 
   const filteredClients = clients.filter((client) => {
@@ -181,7 +219,8 @@ export default function Clients() {
               const address = client['Address'] || '';
               const city = client['City'] || '';
               const state = client['State'] || '';
-              const projectCount = client['Active Projects'] || client['Projects'] || '0';
+              const projectCount = getProjectCount(clientId);
+              const statusCounts = getProjectStatusCounts(clientId);
 
               return (
                 <div
@@ -294,18 +333,76 @@ export default function Clients() {
                     )}
                   </div>
 
-                  {/* Projects Count */}
+                  {/* Projects Status Breakdown */}
                   <div style={{
                     paddingTop: '16px',
                     borderTop: '1px solid #F1F5F9'
                   }}>
-                    <span style={{
-                      fontSize: '13px',
-                      fontWeight: '500',
-                      color: '#475569'
-                    }}>
-                      {projectCount} Active {projectCount === '1' ? 'Project' : 'Projects'}
-                    </span>
+                    {projectCount === 0 ? (
+                      <span style={{
+                        fontSize: '13px',
+                        fontWeight: '500',
+                        color: '#94A3B8'
+                      }}>
+                        No Projects
+                      </span>
+                    ) : (
+                      <div style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '8px',
+                        alignItems: 'center'
+                      }}>
+                        {statusCounts.active > 0 && (
+                          <span style={{
+                            fontSize: '12px',
+                            fontWeight: '500',
+                            color: '#2563EB',
+                            backgroundColor: '#DBEAFE',
+                            padding: '4px 10px',
+                            borderRadius: '6px'
+                          }}>
+                            {statusCounts.active} Active
+                          </span>
+                        )}
+                        {statusCounts.completed > 0 && (
+                          <span style={{
+                            fontSize: '12px',
+                            fontWeight: '500',
+                            color: '#059669',
+                            backgroundColor: '#ECFDF5',
+                            padding: '4px 10px',
+                            borderRadius: '6px'
+                          }}>
+                            {statusCounts.completed} Completed
+                          </span>
+                        )}
+                        {statusCounts.planning > 0 && (
+                          <span style={{
+                            fontSize: '12px',
+                            fontWeight: '500',
+                            color: '#D97706',
+                            backgroundColor: '#FEF3C7',
+                            padding: '4px 10px',
+                            borderRadius: '6px'
+                          }}>
+                            {statusCounts.planning} Planning
+                          </span>
+                        )}
+                        {statusCounts.other > 0 && (
+                          <span style={{
+                            fontSize: '12px',
+                            fontWeight: '500',
+                            color: '#6B7280',
+                            backgroundColor: '#F3F4F6',
+                            padding: '4px 10px',
+                            borderRadius: '6px'
+                          }}>
+                            {statusCounts.other} Other
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               );

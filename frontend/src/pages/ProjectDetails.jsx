@@ -56,8 +56,7 @@ export default function ProjectDetails() {
       } else {
         setError('Project not found');
       }
-    } catch (err) {
-      console.error('Failed to fetch project details:', err);
+    } catch {
       setError('Failed to load project details');
     } finally {
       setLoading(false);
@@ -323,9 +322,30 @@ export default function ProjectDetails() {
               </div>
               <div>
                 <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '2px' }}>Client</p>
-                <p style={{ fontSize: '14px', color: '#1E293B', fontWeight: '500' }}>
-                  {project['Owner Name (PM\'s Client)'] || project['Client ID'] || 'Unknown'}
-                </p>
+                {project['Client ID'] ? (
+                  <button
+                    onClick={() => useAppStore.getState().navigateToClient(project['Client ID'])}
+                    style={{
+                      fontSize: '14px',
+                      color: '#2563EB',
+                      fontWeight: '500',
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                      textAlign: 'left'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.color = '#1D4ED8'}
+                    onMouseLeave={(e) => e.currentTarget.style.color = '#2563EB'}
+                  >
+                    {project['Owner Name (PM\'s Client)'] || project['Client ID']}
+                  </button>
+                ) : (
+                  <p style={{ fontSize: '14px', color: '#1E293B', fontWeight: '500' }}>
+                    {project['Owner Name (PM\'s Client)'] || 'Unknown'}
+                  </p>
+                )}
               </div>
             </div>
           </div>
