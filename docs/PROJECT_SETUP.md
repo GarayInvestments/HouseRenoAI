@@ -54,7 +54,9 @@ house-renovators-ai/
 ### **Core Features** 
 - ✅ **Google Sheets Integration**: Live permit data access
 - ✅ **AI Chat Interface**: Natural language permit queries  
-- ✅ **REST API**: Full CRUD operations for permits
+- ✅ **AI Document Processing**: Upload PDFs/images with GPT-4 Vision extraction (NEW)
+- ✅ **Automated Data Entry**: One-click creation from extracted document data (NEW)
+- ✅ **REST API**: Full CRUD operations for permits, projects, and clients
 - ✅ **Real-time Analysis**: Dynamic permit statistics
 - ✅ **Production Deployment**: Live on Render.com
 

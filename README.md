@@ -18,20 +18,50 @@
 
 ---
 
-## 📁 Project Structure *(Recently Restructured - November 2025)*
+## 📁 Project Structure
 
 ```
 HouseRenovators-api/
-├── 📂 backend/                 # FastAPI Backend (Python) - Moved from nested structure
-├── 📂 frontend/                # React PWA (JavaScript) - Moved from house-renovators-pwa/
-├── 📂 automation/              # DevOps Automation Toolkit - Complete PowerShell suite
-├── 📂 docs/                    # Project Documentation - Centralized and comprehensive
-├── 📂 scripts/                 # Utility Scripts - Deployment and maintenance
-├── 📂 config/                  # Configuration Files - API payloads and settings
-└── 📄 README.md                # This file - Updated with restructuring progress
-```
+├── 📂 app/                     # FastAPI Backend Application (ACTIVE)
+│   ├── config.py               # Configuration and environment variables
+│   ├── main.py                 # FastAPI application entry point
+│   ├── routes/                 # API endpoint routes
+│   │   ├── chat.py            # AI chat endpoints
+│   │   ├── clients.py         # Client management endpoints
+│   │   ├── documents.py       # Document upload & AI extraction (NEW)
+│   │   ├── permits.py         # Permit management endpoints
+│   │   └── projects.py        # Project management endpoints
+│   └── services/               # Core business logic
+│       ├── google_service.py  # Google Sheets integration
+│       └── openai_service.py  # OpenAI GPT-4 integration
+├── 📂 frontend/                # React PWA Frontend Application
+│   ├── src/
+│   │   ├── components/        # Reusable UI components
+│   │   ├── lib/               # Utilities and API client
+│   │   ├── pages/             # Main application pages
+│   │   │   ├── AIAssistant.jsx  # Chat interface with document upload
+│   │   │   ├── Clients.jsx      # Client list with status breakdown
+│   │   │   ├── Projects.jsx     # Project list with filters
+│   │   │   └── ...
+│   │   └── stores/            # Zustand state management
+│   ├── package.json
+│   └── vite.config.js
+├── 📂 backend/                 # Legacy backend directory (for reference)
+├── 📂 docs/                    # Project Documentation
+│   ├── API_DOCUMENTATION.md   # Complete API reference (UPDATED)
+│   ├── DEPLOYMENT.md          # Production deployment guide
+│   ├── PROJECT_SETUP.md       # Development setup (UPDATED)
+│   ├── PROGRESS_REPORT_NOV_2025.md  # Latest progress report (NEW)
+│   └── TROUBLESHOOTING.md     # Debug and solutions guide
+├── 📂 config/                  # Configuration Files
+├── 📂 scripts/                 # Utility Scripts
+├── 📄 requirements.txt         # Python dependencies (Pillow, PyPDF2 added)
+├── 📄 runtime.txt              # Python version specification
+├── � Dockerfile               # Container configuration
+├── 📄 .env                     # Environment variables (not in git)
+└── 📄 README.md                # This file
 
-> **✅ Restructuring Complete**: Successfully moved from redundant nested directories to clean, organized structure. All automation tools tested and validated working with new paths.
+**NOTE**: The active backend code is in the `app/` directory at the root level. The `backend/` directory contains legacy/reference files from previous restructuring.
 
 ## 🚀 Quick Start
 
@@ -49,11 +79,19 @@ cd HouseRenovators-api
 
 ### 2. Backend Setup
 ```bash
+# The backend code is in the root app/ directory
+# Create virtual environment in backend/ folder for organization
 cd backend
 python -m venv venv
 venv\Scripts\activate  # Windows
 # source venv/bin/activate  # macOS/Linux
+
+# Install dependencies from root requirements.txt
+cd ..
 pip install -r requirements.txt
+
+# Run from root directory
+python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ### 3. Frontend Setup
@@ -212,17 +250,27 @@ VITE_API_URL=https://houserenoai.onrender.com
 
 ## 🤖 AI Features
 
-### **Intelligent Permit Assistant**
-- **Contextual Responses**: AI has access to complete permit database
+### **Intelligent AI Assistant**
+- **Contextual Responses**: AI has access to complete permit and project database
+- **Document Upload & Extraction**: Upload PDFs or images to automatically extract project/permit data
 - **Smart Analysis**: Automatic permit status insights and recommendations
 - **Natural Language**: Conversational interface for permit inquiries
 - **Real-time Data**: Always current with Google Sheets integration
+- **Editable Extraction**: Review and edit AI-extracted data before creating records
+
+### **Document Intelligence (NEW)**
+- **📄 PDF Processing**: Extract text from permit documents and proposals
+- **🖼️ Image Analysis**: GPT-4 Vision analyzes photos of permits and plans
+- **✏️ Field Editing**: Edit any extracted field before creating records
+- **🤖 Smart Extraction**: AI identifies permit numbers, dates, types, addresses
+- **✅ One-Click Creation**: Confirm extraction and create projects/permits instantly
 
 ### **Advanced Capabilities**
 - Permit status tracking and notifications
 - Project timeline analysis and predictions
 - Compliance checking and recommendations
 - Team communication and coordination
+- Automated data entry from documents
 
 ---
 
@@ -329,12 +377,16 @@ This project is proprietary software developed for House Renovators AI Portal.
 | **Monitoring** | ✅ Active | Real-time | Nov 3, 2025 *(Health check operational)* |
 
 ### 🎯 **Recent Achievements (November 2025)**
-- ✅ **Directory Restructuring**: Completed migration from nested `house-renovators-ai/house-renovators-ai/` to clean `backend/` structure
-- ✅ **Script Path Updates**: All PowerShell automation tools updated and validated with new directory structure
+- ✅ **AI Document Upload**: Upload PDFs/images to extract project/permit data with GPT-4 Vision
+- ✅ **Editable Extraction Fields**: Review and edit AI-extracted data before creating records
+- ✅ **Enhanced UI**: Client cards show status breakdown (1 Active, 1 Completed, etc.)
+- ✅ **Consistent Styling**: Unified status colors and formatting across all pages
+- ✅ **Filtered Navigation**: Click client counts to view filtered projects/permits
+- ✅ **Client Names on Projects**: Project cards now display client full names
+- ✅ **Directory Restructuring**: Completed migration from nested structure to clean `backend/` organization
+- ✅ **Script Path Updates**: All PowerShell automation tools updated and validated
 - ✅ **Documentation Overhaul**: Created comprehensive documentation including directory structure guide
-- ✅ **Syntax Fixes**: Resolved PowerShell parameter issues in health check scripts
-- ✅ **Service Validation**: Confirmed all services operational after restructuring
-- ✅ **Performance Verification**: All endpoints responding within acceptable timeframes
+- ✅ **Service Validation**: Confirmed all services operational with new features
 
 ---
 

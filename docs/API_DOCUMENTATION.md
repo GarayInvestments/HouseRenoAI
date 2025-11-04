@@ -455,9 +455,247 @@ curl -s -X POST "$BASE_URL/v1/permits/analyze" | jq .
 
 ---
 
+## 📄 **Document Processing API**
+
+### **POST /v1/documents/extract**
+
+Extract structured data from uploaded documents (PDFs or images) using AI.
+
+**Request Format:** `multipart/form-data`
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| file | File | Yes | PDF, JPG, JPEG, PNG, or WEBP file (max 10MB) |
+| document_type | string | Yes | Type of document: "project" or "permit" |
+| client_id | string | No | Client ID to associate with the extracted data |
+
+**Supported File Types:**
+- PDF documents (.pdf)
+- Images: JPG, JPEG, PNG, WEBP
+
+**AI Processing:**
+- PDFs: Text extraction with PyPDF2 + GPT-4 analysis
+- Images: GPT-4 Vision analysis
+
+**Response Format:**
+```json
+{
+  "success": true,
+  "document_type": "project",
+  "extracted_data": {
+    "Project Name": "Kitchen Renovation",
+    "Description": "Complete kitchen remodel with new cabinets",
+    "Status": "Planning",
+    "Budget": "$25,000",
+    "Start Date": "2025-12-01",
+    "Address": "123 Main St"
+  },
+  "client_id": "CLI-001"
+}
+```
+
+**Error Response:**
+```json
+{
+  "success": false,
+  "error": "Unsupported file type"
+}
+```
+
+**Example (cURL):**
+```bash
+curl -X POST "https://houserenoai.onrender.com/v1/documents/extract" \
+  -F "file=@kitchen_plans.pdf" \
+  -F "document_type=project" \
+  -F "client_id=CLI-001"
+```
+
+**Example (JavaScript):**
+```javascript
+const formData = new FormData();
+formData.append('file', fileInput.files[0]);
+formData.append('document_type', 'project');
+formData.append('client_id', 'CLI-001');
+
+const response = await fetch('https://houserenoai.onrender.com/v1/documents/extract', {
+  method: 'POST',
+  body: formData
+});
+const result = await response.json();
+```
+
+---
+
+### **POST /v1/documents/create-from-extract**
+
+Create a project or permit record from AI-extracted document data.
+
+**Request Body:**
+```json
+{
+  "document_type": "project",
+  "extracted_data": {
+    "Project Name": "Kitchen Renovation",
+    "Description": "Complete kitchen remodel",
+    "Status": "Planning",
+    "Budget": "$25,000",
+    "Start Date": "2025-12-01",
+    "Client ID": "CLI-001"
+  }
+}
+```
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| document_type | string | Yes | "project" or "permit" |
+| extracted_data | object | Yes | Field-value pairs extracted from document |
+
+**Response Format:**
+```json
+{
+  "success": true,
+  "message": "Project created successfully",
+  "record_id": "PROJ-123",
+  "created_data": {
+    "Project Name": "Kitchen Renovation",
+    "Description": "Complete kitchen remodel",
+    "Status": "Planning",
+    "Budget": "$25,000",
+    "Start Date": "2025-12-01",
+    "Client ID": "CLI-001",
+    "Created Date": "2025-11-04"
+  }
+}
+```
+
+**Error Response:**
+```json
+{
+  "success": false,
+  "error": "Invalid document type. Must be 'project' or 'permit'."
+}
+```
+
+**Example (cURL):**
+```bash
+curl -X POST "https://houserenoai.onrender.com/v1/documents/create-from-extract" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "document_type": "project",
+    "extracted_data": {
+      "Project Name": "Kitchen Renovation",
+      "Description": "Complete kitchen remodel",
+      "Status": "Planning",
+      "Budget": "$25,000",
+      "Client ID": "CLI-001"
+    }
+  }'
+```
+
+**Example (JavaScript):**
+```javascript
+const response = await fetch('https://houserenoai.onrender.com/v1/documents/create-from-extract', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    document_type: 'project',
+    extracted_data: {
+      'Project Name': 'Kitchen Renovation',
+      'Description': 'Complete kitchen remodel',
+      'Status': 'Planning',
+      'Budget': '$25,000',
+      'Client ID': 'CLI-001'
+    }
+  })
+});
+const result = await response.json();
+```
+
+---
+
+### **Document Processing Workflow**
+
+**Complete Upload & Create Flow:**
+
+1. **Upload Document**
+   ```javascript
+   // Step 1: Extract data from document
+   const formData = new FormData();
+   formData.append('file', document);
+   formData.append('document_type', 'project');
+   
+   const extractResponse = await fetch('/v1/documents/extract', {
+     method: 'POST',
+     body: formData
+   });
+   const { extracted_data } = await extractResponse.json();
+   ```
+
+2. **Review & Edit** (Optional)
+   ```javascript
+   // User can review and modify extracted fields
+   extracted_data['Project Name'] = 'Updated Name';
+   extracted_data['Budget'] = '$30,000';
+   ```
+
+3. **Create Record**
+   ```javascript
+   // Step 2: Create record from extracted data
+   const createResponse = await fetch('/v1/documents/create-from-extract', {
+     method: 'POST',
+     headers: { 'Content-Type': 'application/json' },
+     body: JSON.stringify({
+       document_type: 'project',
+       extracted_data: extracted_data
+     })
+   });
+   const { success, record_id } = await createResponse.json();
+   ```
+
+---
+
+### **AI Extraction Fields**
+
+**Project Documents:**
+- Project Name
+- Description
+- Status
+- Budget
+- Start Date
+- End Date (if available)
+- Address
+- Client ID (if provided in upload)
+- Contractor Name (if available)
+- Scope of Work
+
+**Permit Documents:**
+- Permit Number
+- Permit Type
+- Status
+- Issue Date
+- Expiration Date
+- Description
+- Address
+- Project ID (if provided)
+- Inspector Name (if available)
+- Approval Conditions
+
+---
+
 ## 🆕 **Version History**
 
-### **v1.0.0** (Current) - November 2025
+### **v1.1.0** (Current) - November 2025
+- ✅ AI Document Processing (GPT-4 Vision)
+- ✅ PDF and Image Upload
+- ✅ Automated Data Extraction
+- ✅ Editable Field Validation
+- ✅ One-Click Record Creation
+- ✅ Enhanced Status Tracking
+- ✅ Client Status Breakdown
+
+### **v1.0.0** - November 2025
 - ✅ Full Google Sheets integration
 - ✅ AI chat with permit data access
 - ✅ Complete CRUD operations
@@ -465,7 +703,8 @@ curl -s -X POST "$BASE_URL/v1/permits/analyze" | jq .
 - ✅ Production deployment
 
 ### **Upcoming Features**
-- v1.1.0: Authentication and rate limiting
-- v1.2.0: Webhook endpoints
-- v1.3.0: Advanced analytics
+- v1.2.0: Authentication and rate limiting
+- v1.3.0: Webhook endpoints for real-time updates
+- v1.4.0: Advanced analytics and reporting
+- v1.5.0: Batch document processing
 - v2.0.0: Multi-project support
