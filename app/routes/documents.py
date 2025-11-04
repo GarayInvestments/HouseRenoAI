@@ -153,14 +153,25 @@ async def process_with_gpt4_text(text: str, document_type: str) -> dict:
         
         if document_type == 'project':
             prompt = f"""Extract project information from this document and return it as a JSON object with these fields:
-- Project Name
-- Project Address
-- Project Type (e.g., Residential, Commercial)
-- Client ID (if mentioned)
-- Start Date (format: YYYY-MM-DD)
-- Status (default: "Planning")
-- Budget (if mentioned)
-- Description
+- Project Name: The project identifier or name
+- Project Address: Full street address
+- City: City name
+- County: County name (if available)
+- Jurisdiction: The permitting jurisdiction (e.g., "Concord", "Kannapolis")
+- Project Type: Type of project (e.g., "Residential", "Commercial", "Remodel")
+- Status: Current status (default: "Planning" if not specified)
+- Start Date: Start date in YYYY-MM-DD format (if available)
+- Project Cost: Total project cost/budget (extract the number only, no currency symbols)
+- Scope of Work: Description of the project scope
+- Client Name: The name of the PRIMARY CLIENT (look for "Applicant:", "Owner:", or "Client:" sections - extract the PERSON'S NAME, e.g., "Ajay R Nair", NOT the company name like "2States Carolinas LLC")
+- Client Company: Company/business name if mentioned (optional)
+- Client Phone: Client contact phone number (if available)
+- Client Email: Client email address (if available)
+- Square Footage: Total square footage (Heated + Unheated if mentioned, number only)
+- Parcel Number: Property parcel/tax ID number (if available)
+- Permit Record Number: Any permit/record number (e.g., "PRB2025-02843") if visible
+
+IMPORTANT: For "Client Name", look for sections labeled "Applicant:", "Owner:", or "Client:". Extract the INDIVIDUAL'S FULL NAME (person), NOT the company/business name. The client is the person managing or requesting the project.
 
 Document text:
 {text}
@@ -223,13 +234,25 @@ async def process_with_gpt4_vision(base64_image: str, mime_type: str, document_t
         
         if document_type == 'project':
             prompt = """Analyze this image/document and extract project information. Return a JSON object with these fields:
-- Project Name
-- Project Address
-- Project Type (e.g., Residential, Commercial, Renovation)
-- Start Date (format: YYYY-MM-DD, if visible)
-- Status (default: "Planning")
-- Budget (if mentioned)
-- Description (brief summary of what you see)
+- Project Name: The project identifier or name
+- Project Address: Full street address
+- City: City name
+- County: County name (if visible)
+- Jurisdiction: The permitting jurisdiction
+- Project Type: Type (e.g., Residential, Commercial, Remodel)
+- Status: Current status (default: "Planning")
+- Start Date: YYYY-MM-DD format (if visible)
+- Project Cost: Total project cost/budget (number only, no $ signs)
+- Scope of Work: Project description/scope
+- Client Name: PRIMARY CLIENT name (look for "Applicant" or "Owner" - extract PERSON'S NAME like "Ajay R Nair", NOT company name)
+- Client Company: Company name (if different from person's name)
+- Client Phone: Contact phone
+- Client Email: Email address
+- Square Footage: Total sq ft (number only)
+- Parcel Number: Property parcel/tax ID
+- Permit Record Number: Any permit/record number visible
+
+IMPORTANT: "Client Name" should be the INDIVIDUAL'S NAME from Applicant/Owner section, not the business name.
 
 Return only valid JSON, no other text."""
         else:  # permit
