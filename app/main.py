@@ -26,6 +26,9 @@ app = FastAPI(
     redoc_url="/redoc" if settings.DEBUG else None
 )
 
+# Git commit for version tracking
+GIT_COMMIT = "0e8fc6e"
+
 @app.on_event("startup")
 async def startup_event():
     """Create service account file from environment variable on startup"""
@@ -192,6 +195,16 @@ async def debug_info():
     except Exception as e:
         logger.error(f"Debug check failed: {e}")
         return {"error": str(e)}
+
+@app.get("/version")
+async def get_version():
+    """Get deployed version info"""
+    import app.services.google_service as google_service_module
+    return {
+        "version": "1.0.0",
+        "git_commit": GIT_COMMIT,
+        "has_append_record": hasattr(google_service_module.google_service, 'append_record') if google_service_module.google_service else False
+    }
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
