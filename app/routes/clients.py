@@ -12,15 +12,19 @@ async def get_clients():
     """Get all clients from Google Sheets"""
     try:
         if not google_service:
+            logger.error("Google service not initialized")
             raise HTTPException(status_code=500, detail="Google service not initialized")
         
+        logger.info("Attempting to fetch clients data from Google Sheets")
         clients = await google_service.get_clients_data()
-        logger.info(f"Retrieved {len(clients)} clients")
+        logger.info(f"Successfully retrieved {len(clients)} clients")
         return clients
         
     except Exception as e:
-        logger.error(f"Failed to get clients: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        error_msg = f"Failed to get clients: {str(e)}"
+        logger.error(error_msg)
+        logger.exception(e)  # This will log the full traceback
+        raise HTTPException(status_code=500, detail=error_msg)
 
 @router.get("/{client_id}", response_model=Dict[str, Any])
 async def get_client(client_id: str):
