@@ -20,6 +20,13 @@ ehthumbs.db
 Thumbs.db
 
 # ===== BACKEND (Python/FastAPI) =====
+# Python cache files - root level (new structure)
+app/__pycache__/
+app/**/__pycache__/
+*.py[cod]
+*$py.class
+
+# Backend subfolder (legacy)
 backend/__pycache__/
 backend/*.py[cod]
 backend/*$py.class
@@ -318,6 +325,12 @@ scripts/temp/
 
 # Generated files
 scripts/generated-*
+
+# Helper/utility scripts that shouldn't be committed
+scripts/check-cloudflare-github.ps1
+scripts/link-github-to-cloudflare.ps1
+scripts/link-github.js
+scripts/setup-github-secrets.ps1
 
 # ===== DOCS =====
 # Generated documentation
