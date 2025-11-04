@@ -61,12 +61,31 @@ async def extract_document_data(
             extracted_data = await process_with_gpt4_vision(base64_image, file.content_type, document_type)
         
         # Store Applicant info for Client ID lookup (will be sent separately)
+        # Also remove fields that don't exist in Projects sheet
         applicant_info = {}
         if document_type == 'project':
+            # Fields used only for Client ID lookup
             lookup_only_fields = ['Applicant Name', 'Applicant Company', 'Applicant Phone', 'Applicant Email']
+            # Fields that don't exist as columns in Projects sheet (can go in Notes if needed)
+            extra_fields = ['Square Footage', 'Parcel Number', 'Permit Record Number']
+            
             for field in lookup_only_fields:
                 if field in extracted_data:
                     applicant_info[field] = extracted_data.pop(field)
+            
+            # Remove extra fields that aren't in the sheet (or optionally combine into Notes)
+            notes_parts = []
+            for field in extra_fields:
+                if field in extracted_data:
+                    value = extracted_data.pop(field)
+                    if value:
+                        notes_parts.append(f"{field}: {value}")
+            
+            # Add extra info to Notes field if it exists
+            if notes_parts:
+                existing_notes = extracted_data.get('Notes', '')
+                combined_notes = existing_notes + '\n' + '\n'.join(notes_parts) if existing_notes else '\n'.join(notes_parts)
+                extracted_data['Notes'] = combined_notes.strip()
         
         # Add client_id if provided
         if client_id:
@@ -183,9 +202,10 @@ async def process_with_gpt4_text(text: str, document_type: str) -> dict:
 - Applicant Company: Applicant's company/business name if mentioned (optional)
 - Applicant Phone: Applicant's contact phone number (if available)
 - Applicant Email: Applicant's email address (if available)
-- Square Footage: Total square footage (Heated + Unheated if mentioned, number only)
-- Parcel Number: Property parcel/tax ID number (if available)
-- Permit Record Number: Any permit/record number (e.g., "PRB2025-02843") if visible
+- Square Footage: Total square footage (Heated + Unheated if mentioned, number only) - will be added to Notes
+- Parcel Number: Property parcel/tax ID number (if available) - will be added to Notes
+- Permit Record Number: Any permit/record number (e.g., "PRB2025-02843") if visible - will be added to Notes
+- Notes: Any additional notes or information
 
 IMPORTANT: 
 1. "Owner Name (PM's Client)" is the PROPERTY OWNER from the "Owner:" section
@@ -268,9 +288,10 @@ async def process_with_gpt4_vision(base64_image: str, mime_type: str, document_t
 - Applicant Company: Applicant's company name (optional)
 - Applicant Phone: Applicant's contact phone
 - Applicant Email: Applicant's email address
-- Square Footage: Total sq ft (number only)
-- Parcel Number: Property parcel/tax ID
-- Permit Record Number: Permit/record number visible
+- Square Footage: Total sq ft (number only) - will be added to Notes
+- Parcel Number: Property parcel/tax ID - will be added to Notes
+- Permit Record Number: Permit/record number visible - will be added to Notes
+- Notes: Any additional notes or information
 
 IMPORTANT: 
 1. "Owner Name (PM's Client)" is the PROPERTY OWNER
