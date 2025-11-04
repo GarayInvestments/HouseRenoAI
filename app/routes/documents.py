@@ -198,6 +198,12 @@ Return only valid JSON, no other text."""
         if not content:
             raise ValueError("AI returned empty response")
         
+        # Strip markdown code blocks (same logic as vision processing)
+        if "```json" in content:
+            content = content.split("```json")[1].split("```")[0].strip()
+        elif "```" in content:
+            content = content.split("```")[1].split("```")[0].strip()
+        
         extracted_data = json.loads(content)
         return extracted_data
         
