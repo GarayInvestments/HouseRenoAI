@@ -417,3 +417,9 @@ docs/*.temp
 **/performance-*.json
 **/metrics-*.json
 **/health-*.json
+
+# ===== BACKUPS =====
+# Backup folders created by cleanup scripts
+workspace-backup-*/
+organization-backup-*/
+frontend-archive/
