@@ -117,22 +117,91 @@ async def process_chat_message(chat_data: Dict[str, Any]):
                 'available_data': 'limited'
             })
         
-        # Process message with OpenAI
-        ai_response = await openai_service.process_chat_message(message, context)
+        # Process message with OpenAI (now returns tuple: response, function_calls)
+        ai_response, function_calls = await openai_service.process_chat_message(message, context)
         
-        # Check if AI response indicates an action should be taken
+        # Execute any function calls requested by AI
         action_taken = None
         data_updated = False
+        function_results = []
         
-        # Simple action detection (can be enhanced with function calling)
-        if 'update' in message.lower() or 'change' in message.lower():
-            action_taken = "Data update request detected"
-            # Here you would implement actual data update logic
+        if function_calls:
+            google_service = get_google_service()
+            
+            for func_call in function_calls:
+                func_name = func_call["name"]
+                func_args = func_call["arguments"]
+                
+                try:
+                    if func_name == "update_project_status":
+                        project_id = func_args["project_id"]
+                        new_status = func_args["new_status"]
+                        
+                        # Execute the update
+                        success = await google_service.update_record_by_id(
+                            sheet_name='Projects',
+                            id_field='Project ID',
+                            record_id=project_id,
+                            updates={'Status': new_status}
+                        )
+                        
+                        if success:
+                            action_taken = f"Updated project {project_id} status to {new_status}"
+                            data_updated = True
+                            function_results.append({
+                                "function": func_name,
+                                "status": "success",
+                                "details": f"Project {project_id} status updated to {new_status}"
+                            })
+                            logger.info(f"AI executed: {action_taken}")
+                        else:
+                            function_results.append({
+                                "function": func_name,
+                                "status": "failed",
+                                "error": "Update operation failed"
+                            })
+                    
+                    elif func_name == "update_permit_status":
+                        permit_id = func_args["permit_id"]
+                        new_status = func_args["new_status"]
+                        
+                        # Execute the update
+                        success = await google_service.update_record_by_id(
+                            sheet_name='Permits',
+                            id_field='Permit ID',
+                            record_id=permit_id,
+                            updates={'Permit Status': new_status}
+                        )
+                        
+                        if success:
+                            action_taken = f"Updated permit {permit_id} status to {new_status}"
+                            data_updated = True
+                            function_results.append({
+                                "function": func_name,
+                                "status": "success",
+                                "details": f"Permit {permit_id} status updated to {new_status}"
+                            })
+                            logger.info(f"AI executed: {action_taken}")
+                        else:
+                            function_results.append({
+                                "function": func_name,
+                                "status": "failed",
+                                "error": "Update operation failed"
+                            })
+                    
+                except Exception as e:
+                    logger.error(f"Function call execution error: {e}")
+                    function_results.append({
+                        "function": func_name,
+                        "status": "error",
+                        "error": str(e)
+                    })
         
         return {
             "response": ai_response,
             "action_taken": action_taken,
-            "data_updated": data_updated
+            "data_updated": data_updated,
+            "function_results": function_results if function_results else None
         }
         
     except Exception as e:

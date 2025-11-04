@@ -10,9 +10,10 @@ class OpenAIService:
         openai.api_key = settings.OPENAI_API_KEY
         self.client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
     
-    async def process_chat_message(self, message: str, context: Dict[str, Any] = None) -> str:
+    async def process_chat_message(self, message: str, context: Dict[str, Any] = None) -> tuple:
         """
-        Process a chat message using OpenAI GPT-4o model
+        Process a chat message using OpenAI GPT-4o model with function calling
+        Returns: (response_text, function_calls_list)
         """
         try:
             # Enhanced system prompt for House Renovators AI Portal
@@ -128,14 +129,68 @@ class OpenAIService:
                 context_message = "\n".join(context_parts)
                 messages.insert(1, {"role": "system", "content": f"DATA CONTEXT:\n{context_message}"})
             
+            # Define available functions for the AI to call
+            functions = [
+                {
+                    "name": "update_project_status",
+                    "description": "Update the status of a construction project in Google Sheets",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "project_id": {
+                                "type": "string",
+                                "description": "The unique Project ID (e.g., '12b59b62')"
+                            },
+                            "new_status": {
+                                "type": "string",
+                                "description": "The new status value (e.g., 'Completed', 'In Progress', 'Permit Approved')"
+                            }
+                        },
+                        "required": ["project_id", "new_status"]
+                    }
+                },
+                {
+                    "name": "update_permit_status",
+                    "description": "Update the status of a construction permit in Google Sheets",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "permit_id": {
+                                "type": "string",
+                                "description": "The unique Permit ID"
+                            },
+                            "new_status": {
+                                "type": "string",
+                                "description": "The new permit status (e.g., 'Approved', 'Pending', 'Under Review')"
+                            }
+                        },
+                        "required": ["permit_id", "new_status"]
+                    }
+                }
+            ]
+            
             response = self.client.chat.completions.create(
                 model="gpt-4o",
                 messages=messages,
                 max_tokens=1000,
-                temperature=0.7
+                temperature=0.7,
+                functions=functions,
+                function_call="auto"  # Let AI decide when to call functions
             )
             
-            return response.choices[0].message.content
+            message_response = response.choices[0].message
+            
+            # Check if AI wants to call a function
+            function_calls = []
+            if message_response.function_call:
+                import json
+                function_calls.append({
+                    "name": message_response.function_call.name,
+                    "arguments": json.loads(message_response.function_call.arguments)
+                })
+            
+            # Return both the text response and any function calls
+            return (message_response.content or "", function_calls)
             
         except Exception as e:
             logger.error(f"OpenAI API error: {e}")
