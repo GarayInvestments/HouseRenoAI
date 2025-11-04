@@ -113,6 +113,7 @@ app.add_middleware(
         "http://localhost:3000",
         "http://localhost:5173",
         "https://house-renovators-pwa.pages.dev",
+        "https://house-renovators-ai-portal.pages.dev",  # Main Cloudflare Pages domain
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
