@@ -17,6 +17,7 @@ export default function AIAssistant() {
   const [uploadedFile, setUploadedFile] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(null);
   const [showUploadOptions, setShowUploadOptions] = useState(false);
+  const [hoveredClientId, setHoveredClientId] = useState(null);
   
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
@@ -149,6 +150,31 @@ export default function AIAssistant() {
       
       setUploadProgress({ status: 'extracting', message: 'AI is extracting data...' });
       
+      // Auto-lookup Client ID if Applicant Name or Email is present
+      let clientLookupData = null;
+      const extractedData = response.extracted_data;
+      
+      if (documentType === 'project') {
+        const applicantName = extractedData['Applicant Name'];
+        const applicantEmail = extractedData['Applicant Email'];
+        
+        if (applicantName || applicantEmail) {
+          try {
+            setUploadProgress({ status: 'extracting', message: 'Looking up client...' });
+            const lookupResult = await api.lookupClient(applicantName, applicantEmail);
+            
+            if (lookupResult && lookupResult.client_id && lookupResult.confidence > 30) {
+              // Auto-fill Client ID
+              extractedData['Client ID'] = lookupResult.client_id;
+              clientLookupData = lookupResult;
+            }
+          } catch (lookupErr) {
+            console.warn('Client lookup failed:', lookupErr);
+            // Continue without client lookup
+          }
+        }
+      }
+      
       // Add message showing what was extracted
       setMessages(prev => [
         ...prev,
@@ -156,7 +182,8 @@ export default function AIAssistant() {
         { 
           role: 'assistant', 
           content: `I've analyzed the document and extracted the following information. You can edit any fields before creating the ${documentType}.`,
-          extractedData: response.extracted_data,
+          extractedData: extractedData,
+          clientLookup: clientLookupData,
           documentType,
           isEditable: true
         }
@@ -365,41 +392,115 @@ export default function AIAssistant() {
                           gap: '12px',
                           marginBottom: '16px'
                         }}>
-                          {Object.entries(message.extractedData).map(([key, value]) => (
-                            <div key={key}>
-                              <label style={{
-                                display: 'block',
-                                fontSize: '12px',
-                                fontWeight: '500',
-                                color: '#64748B',
-                                marginBottom: '4px'
-                              }}>
-                                {key}
-                              </label>
-                              <input
-                                type="text"
-                                value={value || ''}
-                                onChange={(e) => handleEditField(index, key, e.target.value)}
-                                style={{
-                                  width: '100%',
-                                  padding: '8px 10px',
-                                  border: '1px solid #E2E8F0',
-                                  borderRadius: '6px',
-                                  fontSize: '13px',
-                                  color: '#1E293B',
-                                  backgroundColor: '#FFFFFF'
-                                }}
-                                onFocus={(e) => {
-                                  e.target.style.borderColor = '#2563EB';
-                                  e.target.style.boxShadow = '0 0 0 2px rgba(37, 99, 235, 0.1)';
-                                }}
-                                onBlur={(e) => {
-                                  e.target.style.borderColor = '#E2E8F0';
-                                  e.target.style.boxShadow = 'none';
-                                }}
-                              />
-                            </div>
-                          ))}
+                          {Object.entries(message.extractedData).map(([key, value]) => {
+                            const isClientIdField = key === 'Client ID';
+                            const hasLookupData = message.clientLookup && message.clientLookup.confidence > 30;
+                            const tooltipId = `${index}-clientid`;
+                            
+                            return (
+                              <div key={key} style={{ position: 'relative' }}>
+                                <label style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  fontSize: '12px',
+                                  fontWeight: '500',
+                                  color: '#64748B',
+                                  marginBottom: '4px'
+                                }}>
+                                  {key}
+                                  {/* Show badge for auto-matched Client ID */}
+                                  {isClientIdField && hasLookupData && (
+                                    <span
+                                      style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
+                                        fontSize: '11px',
+                                        fontWeight: '400',
+                                        color: '#059669',
+                                        backgroundColor: '#D1FAE5',
+                                        padding: '2px 6px',
+                                        borderRadius: '4px',
+                                        cursor: 'help'
+                                      }}
+                                    >
+                                      ✓ Auto-matched ({message.clientLookup.confidence}%)
+                                    </span>
+                                  )}
+                                </label>
+                                <div
+                                  onMouseEnter={() => setHoveredClientId(tooltipId)}
+                                  onMouseLeave={() => setHoveredClientId(null)}
+                                  style={{ position: 'relative' }}
+                                >
+                                  <input
+                                    type="text"
+                                    value={value || ''}
+                                    onChange={(e) => handleEditField(index, key, e.target.value)}
+                                    style={{
+                                      width: '100%',
+                                      padding: '8px 10px',
+                                      border: '1px solid #E2E8F0',
+                                      borderRadius: '6px',
+                                      fontSize: '13px',
+                                      color: '#1E293B',
+                                      backgroundColor: '#FFFFFF'
+                                    }}
+                                    onFocus={(e) => {
+                                      e.target.style.borderColor = '#2563EB';
+                                      e.target.style.boxShadow = '0 0 0 2px rgba(37, 99, 235, 0.1)';
+                                    }}
+                                    onBlur={(e) => {
+                                      e.target.style.borderColor = '#E2E8F0';
+                                      e.target.style.boxShadow = 'none';
+                                    }}
+                                  />
+                                  {/* Enhanced tooltip on hover for Client ID */}
+                                  {isClientIdField && hasLookupData && hoveredClientId === tooltipId && (
+                                    <div
+                                      style={{
+                                        position: 'absolute',
+                                        bottom: '100%',
+                                        left: '0',
+                                        marginBottom: '8px',
+                                        padding: '10px 12px',
+                                        backgroundColor: '#1E293B',
+                                        color: '#FFFFFF',
+                                        borderRadius: '6px',
+                                        fontSize: '12px',
+                                        whiteSpace: 'nowrap',
+                                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3)',
+                                        zIndex: 10
+                                      }}
+                                    >
+                                      <div style={{ fontWeight: '600', marginBottom: '4px' }}>
+                                        {message.clientLookup.full_name || 'Unknown Client'}
+                                      </div>
+                                      {message.clientLookup.company && (
+                                        <div style={{ fontSize: '11px', color: '#94A3B8', marginBottom: '2px' }}>
+                                          {message.clientLookup.company}
+                                        </div>
+                                      )}
+                                      {message.clientLookup.email && (
+                                        <div style={{ fontSize: '11px', color: '#94A3B8', marginBottom: '2px' }}>
+                                          {message.clientLookup.email}
+                                        </div>
+                                      )}
+                                      {message.clientLookup.phone && (
+                                        <div style={{ fontSize: '11px', color: '#94A3B8', marginBottom: '2px' }}>
+                                          {message.clientLookup.phone}
+                                        </div>
+                                      )}
+                                      <div style={{ fontSize: '11px', color: '#10B981', marginTop: '4px', paddingTop: '4px', borderTop: '1px solid #374151' }}>
+                                        Match Confidence: {message.clientLookup.confidence}%
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                         <button
                           onClick={() => handleConfirmExtractedData(index)}

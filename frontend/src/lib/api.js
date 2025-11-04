@@ -112,6 +112,16 @@ class ApiService {
     });
   }
 
+  async lookupClient(name = null, email = null) {
+    const params = new URLSearchParams();
+    if (name) params.append('name', name);
+    if (email) params.append('email', email);
+    
+    return this.request(`/clients/lookup?${params.toString()}`, {
+      method: 'GET',
+    });
+  }
+
   // Document upload endpoints
   async uploadDocument(formData) {
     const url = `${this.baseUrl}/documents/extract`;

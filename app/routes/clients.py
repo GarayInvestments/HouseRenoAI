@@ -1,5 +1,5 @@
-from fastapi import APIRouter, HTTPException
-from typing import List, Dict, Any
+from fastapi import APIRouter, HTTPException, Query
+from typing import List, Dict, Any, Optional
 import logging
 
 import app.services.google_service as google_service_module
@@ -62,6 +62,120 @@ async def get_all_clients():
     except Exception as e:
         logger.error(f"Failed to get clients: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to retrieve clients: {str(e)}")
+
+@router.get("/lookup")
+async def lookup_client(
+    name: Optional[str] = Query(None, description="Client name to search for"),
+    email: Optional[str] = Query(None, description="Client email to search for")
+):
+    """
+    Lookup client by name or email (fuzzy matching)
+    Returns best match with confidence score
+    """
+    try:
+        if not name and not email:
+            raise HTTPException(status_code=400, detail="Must provide name or email parameter")
+        
+        google_service = get_google_service()
+        clients = await google_service.get_clients_data()
+        
+        best_match = None
+        best_score = 0
+        
+        for client in clients:
+            score = 0
+            matches = []
+            
+            # Try multiple field name variations
+            client_name = (
+                client.get('Full Name') or 
+                client.get('Client Name') or 
+                client.get('Name') or 
+                ''
+            ).strip().lower()
+            
+            client_email = (
+                client.get('Email') or 
+                client.get('Client Email') or 
+                ''
+            ).strip().lower()
+            
+            client_company = (
+                client.get('Company') or 
+                client.get('Client Company') or 
+                ''
+            ).strip().lower()
+            
+            # Name matching (if provided)
+            if name:
+                search_name = name.strip().lower()
+                
+                # Exact match
+                if search_name == client_name:
+                    score += 100
+                    matches.append("exact_name")
+                # Contains match
+                elif search_name in client_name or client_name in search_name:
+                    score += 70
+                    matches.append("partial_name")
+                # Check if name matches company
+                elif search_name in client_company or client_company in search_name:
+                    score += 50
+                    matches.append("company_name")
+                # Word overlap (e.g., "Ajay R Nair" vs "Ajay Nair")
+                else:
+                    name_words = set(search_name.split())
+                    client_words = set(client_name.split())
+                    overlap = len(name_words & client_words)
+                    if overlap > 0:
+                        score += overlap * 30
+                        matches.append("word_overlap")
+            
+            # Email matching (if provided)
+            if email:
+                search_email = email.strip().lower()
+                
+                # Exact match
+                if search_email == client_email:
+                    score += 100
+                    matches.append("exact_email")
+                # Domain match
+                elif search_email and client_email and search_email.split('@')[-1] == client_email.split('@')[-1]:
+                    score += 40
+                    matches.append("email_domain")
+            
+            # Update best match if this is better
+            if score > best_score:
+                best_score = score
+                best_match = {
+                    'client': client,
+                    'confidence': min(100, score),  # Cap at 100
+                    'matches': matches,
+                    'client_id': client.get('Client ID') or client.get('ID'),
+                    'full_name': client.get('Full Name') or client.get('Client Name') or client.get('Name'),
+                    'email': client.get('Email') or client.get('Client Email'),
+                    'company': client.get('Company') or client.get('Client Company'),
+                    'phone': client.get('Phone') or client.get('Client Phone')
+                }
+        
+        # Return best match if confidence is reasonable (>30)
+        if best_match and best_match['confidence'] > 30:
+            logger.info(f"Found client match: {best_match['full_name']} (confidence: {best_match['confidence']})")
+            return best_match
+        else:
+            # No good match found
+            return {
+                'client': None,
+                'confidence': 0,
+                'matches': [],
+                'message': 'No matching client found'
+            }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to lookup client: {e}")
+        raise HTTPException(status_code=500, detail=f"Client lookup failed: {str(e)}")
 
 @router.get("/{client_id}")
 async def get_client(client_id: str):
