@@ -1,5 +1,5 @@
-import { Send, Bot, User, AlertCircle } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { Send, Bot, User, AlertCircle, ArrowDown } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import api from '../lib/api';
@@ -13,11 +13,39 @@ export default function AIAssistant() {
   const [isLoading, setIsLoading] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState(null);
+  const [showScrollButton, setShowScrollButton] = useState(false);
+  
+  const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   // Check backend connection on mount
   useEffect(() => {
     checkConnection();
   }, []);
+
+  // Detect if user has scrolled up
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+      setShowScrollButton(!isNearBottom);
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   const checkConnection = async () => {
     try {
@@ -146,11 +174,15 @@ export default function AIAssistant() {
       </div>
 
       {/* Chat Messages */}
-      <div style={{
-        flex: 1,
-        overflowY: 'auto',
-        padding: '24px 32px'
-      }}>
+      <div 
+        ref={messagesContainerRef}
+        style={{
+          flex: 1,
+          overflowY: 'auto',
+          padding: '24px 32px',
+          position: 'relative'
+        }}
+      >
         <div style={{
           maxWidth: '900px',
           margin: '0 auto',
@@ -285,7 +317,47 @@ export default function AIAssistant() {
               </div>
             </div>
           )}
+          
+          {/* Invisible element to scroll to */}
+          <div ref={messagesEndRef} />
         </div>
+
+        {/* Scroll to Bottom Button */}
+        {showScrollButton && (
+          <button
+            onClick={scrollToBottom}
+            style={{
+              position: 'absolute',
+              bottom: '24px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #E2E8F0',
+              borderRadius: '50%',
+              width: '44px',
+              height: '44px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+              transition: 'all 0.2s ease',
+              zIndex: 10
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#F8FAFC';
+              e.currentTarget.style.transform = 'translateX(-50%) scale(1.05)';
+              e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#FFFFFF';
+              e.currentTarget.style.transform = 'translateX(-50%) scale(1)';
+              e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
+            }}
+          >
+            <ArrowDown size={20} style={{ color: '#64748B' }} />
+          </button>
+        )}
       </div>
 
       {/* Input Area */}
