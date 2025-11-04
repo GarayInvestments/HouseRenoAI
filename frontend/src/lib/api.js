@@ -99,6 +99,19 @@ class ApiService {
     });
   }
 
+  // Clients endpoints
+  async getClients() {
+    return this.request('/clients', {
+      method: 'GET',
+    });
+  }
+
+  async getClient(clientId) {
+    return this.request(`/clients/${clientId}`, {
+      method: 'GET',
+    });
+  }
+
   // Health check
   async healthCheck() {
     const url = `${API_URL}/health`;

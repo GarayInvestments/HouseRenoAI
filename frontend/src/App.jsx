@@ -11,12 +11,14 @@ import Permits from './pages/Permits';
 import PermitDetails from './pages/PermitDetails';
 import Projects from './pages/Projects';
 import ProjectDetails from './pages/ProjectDetails';
+import Clients from './pages/Clients';
+import ClientDetails from './pages/ClientDetails';
 import Documents from './pages/Documents';
 import Settings from './pages/Settings';
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
-  const { currentView, currentProjectId, currentPermitId } = useAppStore();
+  const { currentView, currentProjectId, currentPermitId, currentClientId } = useAppStore();
 
   useEffect(() => {
     // Simulate initial load
@@ -38,6 +40,11 @@ function App() {
       return <PermitDetails />;
     }
 
+    // If viewing client details
+    if (currentView === 'client-details' && currentClientId) {
+      return <ClientDetails />;
+    }
+
     switch (currentView) {
       case 'dashboard':
         return <Dashboard />;
@@ -47,6 +54,8 @@ function App() {
         return <Permits />;
       case 'projects':
         return <Projects />;
+      case 'clients':
+        return <Clients />;
       case 'documents':
         return <Documents />;
       case 'settings':
