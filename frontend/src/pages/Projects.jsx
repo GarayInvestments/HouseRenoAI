@@ -19,7 +19,8 @@ export default function Projects() {
       setLoading(true);
       setError(null);
       const data = await api.getProjects();
-      setProjects(data.projects || []);
+      // API returns array directly, not wrapped in 'projects' key
+      setProjects(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to fetch projects:', err);
       setError('Failed to load projects. Please try again.');
