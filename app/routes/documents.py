@@ -194,6 +194,8 @@ Return only valid JSON, no other text."""
 
 async def process_with_gpt4_vision(base64_image: str, mime_type: str, document_type: str) -> dict:
     """Process image with GPT-4 Vision to get structured data"""
+    import json
+    
     try:
         openai_service = get_openai_service()
         
@@ -220,12 +222,10 @@ Return only valid JSON, no other text."""
 
 Return only valid JSON, no other text."""
         
-        # Use OpenAI Vision API
+        # Use OpenAI Vision API with the configured client
         import json
-        from openai import OpenAI
-        client = OpenAI()
         
-        response = client.chat.completions.create(
+        response = openai_service.client.chat.completions.create(
             model="gpt-4o",
             messages=[
                 {
@@ -245,6 +245,10 @@ Return only valid JSON, no other text."""
         )
         
         result = response.choices[0].message.content
+        
+        if not result:
+            raise HTTPException(status_code=500, detail="No response from AI")
+        
         # Extract JSON from response (might have markdown code blocks)
         if "```json" in result:
             result = result.split("```json")[1].split("```")[0].strip()
@@ -254,6 +258,9 @@ Return only valid JSON, no other text."""
         extracted_data = json.loads(result)
         return extracted_data
         
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse JSON from AI response: {e}")
+        raise HTTPException(status_code=500, detail="AI returned invalid JSON format")
     except Exception as e:
         logger.error(f"GPT-4 Vision processing failed: {e}")
         raise HTTPException(status_code=500, detail=f"AI vision processing failed: {str(e)}")
