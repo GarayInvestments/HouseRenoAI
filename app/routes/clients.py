@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Dict, Any
 import logging
+import traceback
 from app.services.google_service import google_service
 
 logger = logging.getLogger(__name__)
@@ -56,9 +57,11 @@ async def get_clients():
         return clients
         
     except Exception as e:
-        error_msg = f"Failed to get clients: {str(e)}"
-        logger.error(error_msg)
-        logger.exception(e)  # This will log the full traceback
+        error_type = type(e).__name__
+        error_str = str(e) if str(e) else f"No error message - {error_type}"
+        error_trace = traceback.format_exc()
+        error_msg = f"Failed to get clients: {error_str}"
+        logger.error(f"{error_msg}\nTraceback:\n{error_trace}")
         raise HTTPException(status_code=500, detail=error_msg)
 
 @router.get("/{client_id}", response_model=Dict[str, Any])
