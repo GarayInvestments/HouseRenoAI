@@ -1,49 +1,37 @@
-import { FolderKanban, Plus, Search, MapPin, Users, Calendar } from 'lucide-react';
-import { useState } from 'react';
+import { FolderKanban, Plus, Search, MapPin, Users, Calendar, AlertCircle, Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import api from '../lib/api';
 
 export default function Projects() {
   const [searchTerm, setSearchTerm] = useState('');
   const [hoveredCard, setHoveredCard] = useState(null);
   const [hoveredButton, setHoveredButton] = useState(false);
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const projects = [
-    { 
-      id: 1, 
-      name: 'Downtown Office Renovation', 
-      location: '123 Main St',
-      progress: 75,
-      team: 8,
-      deadline: 'Dec 15, 2024',
-      status: 'active'
-    },
-    { 
-      id: 2, 
-      name: 'Residential Complex - Phase 2', 
-      location: '456 Oak Ave',
-      progress: 45,
-      team: 12,
-      deadline: 'Jan 30, 2025',
-      status: 'active'
-    },
-    { 
-      id: 3, 
-      name: 'Retail Store Build-out', 
-      location: '789 Pine Rd',
-      progress: 100,
-      team: 6,
-      deadline: 'Oct 31, 2024',
-      status: 'completed'
-    },
-    { 
-      id: 4, 
-      name: 'Medical Facility Expansion', 
-      location: '321 Elm St',
-      progress: 20,
-      team: 15,
-      deadline: 'Mar 20, 2025',
-      status: 'planning'
-    },
-  ];
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  const fetchProjects = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await api.getProjects();
+      setProjects(data.projects || []);
+    } catch (err) {
+      console.error('Failed to fetch projects:', err);
+      setError('Failed to load projects. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredProjects = projects.filter(project =>
+    project.Project_Name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    project.Address?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -59,6 +47,29 @@ export default function Projects() {
     if (progress >= 50) return '#2563EB';
     if (progress >= 25) return '#D97706';
     return '#DC2626';
+  };
+
+  const calculateProgress = (project) => {
+    // Calculate progress based on status or actual progress field
+    if (project.Progress !== undefined) return project.Progress;
+    
+    switch (project.Status?.toLowerCase()) {
+      case 'completed':
+        return 100;
+      case 'in progress':
+      case 'active':
+        return 60;
+      case 'planning':
+        return 20;
+      default:
+        return 0;
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'No deadline';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
   return (
@@ -170,158 +181,200 @@ export default function Projects() {
         overflowY: 'auto',
         padding: '32px'
       }}>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))',
-          gap: '24px',
-          maxWidth: '1400px',
-          margin: '0 auto'
-        }}>
-          {projects.map((project) => {
-            const statusStyle = getStatusColor(project.status);
-            const isHovered = hoveredCard === project.id;
-            const progressColor = getProgressColor(project.progress);
+        {loading ? (
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '400px',
+            gap: '16px'
+          }}>
+            <Loader2 className="animate-spin" size={40} style={{ color: '#2563EB' }} />
+            <p style={{ color: '#64748B', fontSize: '14px' }}>Loading projects...</p>
+          </div>
+        ) : error ? (
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '400px',
+            gap: '16px'
+          }}>
+            <AlertCircle size={40} style={{ color: '#DC2626' }} />
+            <p style={{ color: '#DC2626', fontSize: '14px' }}>{error}</p>
+            <button
+              onClick={fetchProjects}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#2563EB',
+                color: '#FFFFFF',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '14px',
+                cursor: 'pointer'
+              }}
+            >
+              Retry
+            </button>
+          </div>
+        ) : (
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))',
+            gap: '24px',
+            maxWidth: '1400px',
+            margin: '0 auto'
+          }}>
+            {filteredProjects.map((project) => {
+              const statusStyle = getStatusColor(project.Status || 'planning');
+              const isHovered = hoveredCard === project.Project_ID;
+              // Calculate progress based on available data (you can adjust this logic)
+              const progress = calculateProgress(project);
+              const progressColor = getProgressColor(progress);
 
-            return (
-              <div
-                key={project.id}
-                onMouseEnter={() => setHoveredCard(project.id)}
-                onMouseLeave={() => setHoveredCard(null)}
-                style={{
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: '12px',
-                  padding: '24px',
-                  border: '1px solid #E2E8F0',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  boxShadow: isHovered 
-                    ? '0 10px 20px -5px rgba(0, 0, 0, 0.1)'
-                    : '0 1px 3px 0 rgba(0, 0, 0, 0.05)',
-                  transform: isHovered ? 'translateY(-2px)' : 'translateY(0)'
-                }}
-              >
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  justifyContent: 'space-between',
-                  marginBottom: '16px'
-                }}>
-                  <div style={{
-                    width: '48px',
-                    height: '48px',
-                    borderRadius: '10px',
-                    background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                    boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.3)'
-                  }}>
-                    <FolderKanban size={24} style={{ color: '#FFFFFF' }} />
-                  </div>
-                  <span style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    padding: '6px 12px',
-                    borderRadius: '8px',
-                    backgroundColor: statusStyle.bg,
-                    color: statusStyle.text,
-                    fontSize: '12px',
-                    fontWeight: '500',
-                    border: `1px solid ${statusStyle.border}`,
-                    textTransform: 'capitalize'
-                  }}>
-                    {project.status}
-                  </span>
-                </div>
-
-                <h3 style={{
-                  fontSize: '17px',
-                  fontWeight: '600',
-                  color: '#1E293B',
-                  marginBottom: '12px'
-                }}>{project.name}</h3>
-
-                <div style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '10px',
-                  marginBottom: '16px'
-                }}>
+              return (
+                <div
+                  key={project.Project_ID}
+                  onMouseEnter={() => setHoveredCard(project.Project_ID)}
+                  onMouseLeave={() => setHoveredCard(null)}
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '12px',
+                    padding: '24px',
+                    border: '1px solid #E2E8F0',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    boxShadow: isHovered 
+                      ? '0 10px 20px -5px rgba(0, 0, 0, 0.1)'
+                      : '0 1px 3px 0 rgba(0, 0, 0, 0.05)',
+                    transform: isHovered ? 'translateY(-2px)' : 'translateY(0)'
+                  }}
+                >
                   <div style={{
                     display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    fontSize: '13px',
-                    color: '#64748B'
-                  }}>
-                    <MapPin size={16} style={{ color: '#2563EB' }} />
-                    {project.location}
-                  </div>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    fontSize: '13px',
-                    color: '#64748B'
-                  }}>
-                    <Users size={16} style={{ color: '#2563EB' }} />
-                    {project.team} team members
-                  </div>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    fontSize: '13px',
-                    color: '#64748B'
-                  }}>
-                    <Calendar size={16} style={{ color: '#2563EB' }} />
-                    Due: {project.deadline}
-                  </div>
-                </div>
-
-                {/* Progress Bar */}
-                <div style={{
-                  paddingTop: '16px',
-                  borderTop: '1px solid #F1F5F9'
-                }}>
-                  <div style={{
-                    display: 'flex',
+                    alignItems: 'flex-start',
                     justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '8px'
-                  }}>
-                    <span style={{
-                      fontSize: '13px',
-                      fontWeight: '500',
-                      color: '#64748B'
-                    }}>Progress</span>
-                    <span style={{
-                      fontSize: '13px',
-                      fontWeight: '600',
-                      color: progressColor
-                    }}>{project.progress}%</span>
-                  </div>
-                  <div style={{
-                    width: '100%',
-                    height: '8px',
-                    backgroundColor: '#F1F5F9',
-                    borderRadius: '4px',
-                    overflow: 'hidden'
+                    marginBottom: '16px'
                   }}>
                     <div style={{
-                      width: `${project.progress}%`,
-                      height: '100%',
-                      backgroundColor: progressColor,
+                      width: '48px',
+                      height: '48px',
+                      borderRadius: '10px',
+                      background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.3)'
+                    }}>
+                      <FolderKanban size={24} style={{ color: '#FFFFFF' }} />
+                    </div>
+                    <span style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      padding: '6px 12px',
+                      borderRadius: '8px',
+                      backgroundColor: statusStyle.bg,
+                      color: statusStyle.text,
+                      fontSize: '12px',
+                      fontWeight: '500',
+                      border: `1px solid ${statusStyle.border}`,
+                      textTransform: 'capitalize'
+                    }}>
+                      {project.Status || 'N/A'}
+                    </span>
+                  </div>
+
+                  <h3 style={{
+                    fontSize: '17px',
+                    fontWeight: '600',
+                    color: '#1E293B',
+                    marginBottom: '12px'
+                  }}>{project.Project_Name || 'Unnamed Project'}</h3>
+
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '10px',
+                    marginBottom: '16px'
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      fontSize: '13px',
+                      color: '#64748B'
+                    }}>
+                      <MapPin size={16} style={{ color: '#2563EB' }} />
+                      {project.Address || 'No address'}
+                    </div>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      fontSize: '13px',
+                      color: '#64748B'
+                    }}>
+                      <Users size={16} style={{ color: '#2563EB' }} />
+                      Client: {project.Client_Name || 'Unknown'}
+                    </div>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      fontSize: '13px',
+                      color: '#64748B'
+                    }}>
+                      <Calendar size={16} style={{ color: '#2563EB' }} />
+                      {project.Start_Date ? `Started: ${formatDate(project.Start_Date)}` : 'No start date'}
+                    </div>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div style={{
+                    paddingTop: '16px',
+                    borderTop: '1px solid #F1F5F9'
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '8px'
+                    }}>
+                      <span style={{
+                        fontSize: '13px',
+                        fontWeight: '500',
+                        color: '#64748B'
+                      }}>Progress</span>
+                      <span style={{
+                        fontSize: '13px',
+                        fontWeight: '600',
+                        color: progressColor
+                      }}>{progress}%</span>
+                    </div>
+                    <div style={{
+                      width: '100%',
+                      height: '8px',
+                      backgroundColor: '#F1F5F9',
                       borderRadius: '4px',
-                      transition: 'width 0.3s ease'
-                    }} />
+                      overflow: 'hidden'
+                    }}>
+                      <div style={{
+                        width: `${progress}%`,
+                        height: '100%',
+                        backgroundColor: progressColor,
+                        borderRadius: '4px',
+                        transition: 'width 0.3s ease'
+                      }} />
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
