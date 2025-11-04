@@ -29,8 +29,8 @@ export default function Projects() {
   };
 
   const filteredProjects = projects.filter(project =>
-    project.Project_Name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    project.Address?.toLowerCase().includes(searchTerm.toLowerCase())
+    project['Project Name']?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    project['Project Address']?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const getStatusColor = (status) => {
@@ -229,15 +229,15 @@ export default function Projects() {
           }}>
             {filteredProjects.map((project) => {
               const statusStyle = getStatusColor(project.Status || 'planning');
-              const isHovered = hoveredCard === project.Project_ID;
+              const isHovered = hoveredCard === project['Project ID'];
               // Calculate progress based on available data (you can adjust this logic)
               const progress = calculateProgress(project);
               const progressColor = getProgressColor(progress);
 
               return (
                 <div
-                  key={project.Project_ID}
-                  onMouseEnter={() => setHoveredCard(project.Project_ID)}
+                  key={project['Project ID']}
+                  onMouseEnter={() => setHoveredCard(project['Project ID'])}
                   onMouseLeave={() => setHoveredCard(null)}
                   style={{
                     backgroundColor: '#FFFFFF',
@@ -292,7 +292,7 @@ export default function Projects() {
                     fontWeight: '600',
                     color: '#1E293B',
                     marginBottom: '12px'
-                  }}>{project.Project_Name || 'Unnamed Project'}</h3>
+                  }}>{project['Project Name'] || 'Unnamed Project'}</h3>
 
                   <div style={{
                     display: 'flex',
@@ -308,7 +308,7 @@ export default function Projects() {
                       color: '#64748B'
                     }}>
                       <MapPin size={16} style={{ color: '#2563EB' }} />
-                      {project.Address || 'No address'}
+                      {project['Project Address'] || 'No address'}
                     </div>
                     <div style={{
                       display: 'flex',
@@ -318,7 +318,7 @@ export default function Projects() {
                       color: '#64748B'
                     }}>
                       <Users size={16} style={{ color: '#2563EB' }} />
-                      Client: {project.Client_Name || 'Unknown'}
+                      Client: {project['Owner Name (PM\'s Client)'] || project['Client ID'] || 'Unknown'}
                     </div>
                     <div style={{
                       display: 'flex',
@@ -328,7 +328,7 @@ export default function Projects() {
                       color: '#64748B'
                     }}>
                       <Calendar size={16} style={{ color: '#2563EB' }} />
-                      {project.Start_Date ? `Started: ${formatDate(project.Start_Date)}` : 'No start date'}
+                      {project['Start Date'] ? `Started: ${formatDate(project['Start Date'])}` : 'No start date'}
                     </div>
                   </div>
 
