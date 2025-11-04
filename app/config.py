@@ -33,12 +33,13 @@ class Settings:
             "http://localhost:3000",
             "http://localhost:5173",
             "https://house-renovators-pwa.pages.dev",
+            "https://house-renovators-ai-portal.pages.dev",  # Main Cloudflare Pages domain
         ]
         
         if origin in static_origins:
             return True
             
-        # Allow any Cloudflare Pages deployment of our project
+        # Allow any Cloudflare Pages deployment of our project (subdomains)
         if origin and origin.endswith(".house-renovators-ai-portal.pages.dev"):
             return True
             
