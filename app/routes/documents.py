@@ -113,13 +113,16 @@ async def extract_document_data(
         raise HTTPException(status_code=500, detail=f"Document extraction failed: {str(e)}")
 
 @router.post("/create-from-extract")
-async def create_record_from_extraction(
-    document_type: str = Form(...),
-    extracted_data: dict = Form(...)
-):
+async def create_record_from_extraction(request_data: dict):
     """
     Create a project or permit record from extracted data
+    Accepts JSON body with document_type and extracted_data
     """
+    document_type = request_data.get('document_type')
+    extracted_data = request_data.get('extracted_data')
+    
+    if not document_type or not extracted_data:
+        raise HTTPException(status_code=400, detail="Missing document_type or extracted_data")
     try:
         logger.info(f"Creating {document_type} from extracted data")
         logger.debug(f"Received extracted_data keys: {list(extracted_data.keys())}")
