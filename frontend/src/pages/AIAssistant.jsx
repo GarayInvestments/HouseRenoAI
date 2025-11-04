@@ -265,14 +265,55 @@ export default function AIAssistant() {
           
           {/* Loading indicator */}
           {isLoading && (
-            <div className="flex gap-3 justify-start">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-600/30">
-                <Bot size={20} className="text-white" />
+            <div style={{
+              display: 'flex',
+              gap: '12px',
+              justifyContent: 'flex-start'
+            }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '10px',
+                background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.3)'
+              }}>
+                <Bot size={20} style={{ color: '#FFFFFF' }} />
               </div>
-              <div className="max-w-xl px-4 py-3 rounded-xl bg-white border border-slate-200 shadow-sm flex gap-1">
-                <div className="w-2 h-2 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '0s' }} />
-                <div className="w-2 h-2 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '0.2s' }} />
-                <div className="w-2 h-2 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '0.4s' }} />
+              <div style={{
+                maxWidth: '600px',
+                padding: '14px 18px',
+                borderRadius: '12px',
+                backgroundColor: '#FFFFFF',
+                border: '1px solid #E2E8F0',
+                boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)',
+                display: 'flex',
+                gap: '4px'
+              }}>
+                <div style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  backgroundColor: '#94A3B8',
+                  animation: 'pulse 1.4s ease-in-out infinite'
+                }} />
+                <div style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  backgroundColor: '#94A3B8',
+                  animation: 'pulse 1.4s ease-in-out 0.2s infinite'
+                }} />
+                <div style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  backgroundColor: '#94A3B8',
+                  animation: 'pulse 1.4s ease-in-out 0.4s infinite'
+                }} />
               </div>
             </div>
           )}
