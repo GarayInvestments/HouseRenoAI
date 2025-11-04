@@ -4,6 +4,7 @@ import api from '../lib/api';
 import useAppStore from '../stores/appStore';
 
 export default function Clients() {
+  // Clients page with card layout
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -22,22 +23,7 @@ export default function Clients() {
       setClients(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Error fetching clients:', err);
-      // Temporary: Show mock data if API fails
-      const mockClients = [
-        {
-          'Client ID': 'temp-001',
-          'Client Name': 'Clients endpoint is being configured',
-          'Email': 'contact@houserenovators.com',
-          'Phone': '(555) 123-4567',
-          'Address': '123 Main St',
-          'City': 'Charlotte',
-          'State': 'NC',
-          'Active Projects': '0',
-          'Notes': 'The Clients feature is currently being set up. Please check back soon.'
-        }
-      ];
-      setClients(mockClients);
-      setError(null); // Don't show error, show mock data instead
+      setError('Failed to load clients. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -88,101 +74,245 @@ export default function Clients() {
   }
 
   return (
-    <div className="p-4 md:p-6 max-w-7xl mx-auto pb-20 md:pb-6">
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100%',
+      backgroundColor: '#F8FAFC'
+    }}>
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Clients</h1>
-        <p className="text-gray-600">
-          {filteredClients.length} {filteredClients.length === 1 ? 'client' : 'clients'}
-        </p>
-      </div>
+      <div style={{
+        backgroundColor: '#FFFFFF',
+        borderBottom: '1px solid #E2E8F0',
+        padding: '24px 32px',
+        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)'
+      }}>
+        <div style={{
+          marginBottom: '16px'
+        }}>
+          <h1 style={{
+            fontSize: '24px',
+            fontWeight: '600',
+            color: '#1E293B',
+            marginBottom: '4px'
+          }}>Clients</h1>
+          <p style={{
+            color: '#64748B',
+            fontSize: '14px'
+          }}>
+            {filteredClients.length} {filteredClients.length === 1 ? 'client' : 'clients'}
+          </p>
+        </div>
 
-      {/* Search Bar */}
-      <div className="mb-6">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+        {/* Search Bar */}
+        <div style={{ position: 'relative' }}>
+          <Search style={{
+            position: 'absolute',
+            left: '12px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            color: '#94A3B8',
+            width: '20px',
+            height: '20px'
+          }} />
           <input
             type="text"
             placeholder="Search by name, email, phone, or address..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            style={{
+              width: '100%',
+              paddingLeft: '44px',
+              paddingRight: '16px',
+              paddingTop: '10px',
+              paddingBottom: '10px',
+              border: '1px solid #E2E8F0',
+              borderRadius: '10px',
+              fontSize: '14px',
+              outline: 'none',
+              transition: 'all 0.2s ease'
+            }}
+            onFocus={(e) => {
+              e.target.style.borderColor = '#2563EB';
+              e.target.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.1)';
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = '#E2E8F0';
+              e.target.style.boxShadow = 'none';
+            }}
           />
         </div>
       </div>
 
-      {/* Clients Grid */}
-      {filteredClients.length === 0 ? (
-        <div className="text-center py-12">
-          <User className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500 text-lg">
-            {searchQuery ? 'No clients match your search.' : 'No clients found.'}
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-          {filteredClients.map((client, index) => {
-            const clientId = client['Client ID'] || client['ID'] || index;
-            const clientName = client['Client Name'] || 'Unnamed Client';
-            const email = client['Email'] || '';
-            const phone = client['Phone'] || '';
-            const address = client['Address'] || '';
-            const city = client['City'] || '';
-            const state = client['State'] || '';
-            const projectCount = client['Active Projects'] || client['Projects'] || '0';
+      {/* Content */}
+      <div style={{
+        flex: 1,
+        overflowY: 'auto',
+        padding: '32px'
+      }}>
+        {filteredClients.length === 0 ? (
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '400px',
+            gap: '16px'
+          }}>
+            <User size={64} style={{ color: '#CBD5E1' }} />
+            <p style={{ color: '#64748B', fontSize: '16px' }}>
+              {searchQuery ? 'No clients match your search.' : 'No clients found.'}
+            </p>
+          </div>
+        ) : (
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))',
+            gap: '24px',
+            maxWidth: '1400px',
+            margin: '0 auto',
+            paddingBottom: '80px'
+          }}>
+            {filteredClients.map((client, index) => {
+              const clientId = client['Client ID'] || client['ID'] || index;
+              const clientName = client['Client Name'] || 'Unnamed Client';
+              const email = client['Email'] || '';
+              const phone = client['Phone'] || '';
+              const address = client['Address'] || '';
+              const city = client['City'] || '';
+              const state = client['State'] || '';
+              const projectCount = client['Active Projects'] || client['Projects'] || '0';
 
-            return (
-              <div
-                key={clientId}
-                onClick={() => navigateToClient(clientId)}
-                className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow cursor-pointer"
-              >
-                {/* Client Name */}
-                <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">{clientName}</h3>
-                  <p className="text-sm text-gray-500">ID: {clientId}</p>
-                </div>
+              return (
+                <div
+                  key={clientId}
+                  onClick={() => navigateToClient(clientId)}
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '12px',
+                    padding: '24px',
+                    border: '1px solid #E2E8F0',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.boxShadow = '0 10px 20px -5px rgba(0, 0, 0, 0.1)';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.05)';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
+                >
+                  {/* Client Header */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    justifyContent: 'space-between',
+                    marginBottom: '16px'
+                  }}>
+                    <div style={{
+                      width: '48px',
+                      height: '48px',
+                      borderRadius: '10px',
+                      background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.3)'
+                    }}>
+                      <User size={24} style={{ color: '#FFFFFF' }} />
+                    </div>
+                  </div>
 
-                {/* Contact Info */}
-                <div className="space-y-2 mb-4">
-                  {email && (
-                    <div className="flex items-start text-sm text-gray-600">
-                      <Mail className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0 text-gray-400" />
-                      <span className="break-all">{email}</span>
-                    </div>
-                  )}
-                  {phone && (
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Phone className="h-4 w-4 mr-2 flex-shrink-0 text-gray-400" />
-                      <span>{phone}</span>
-                    </div>
-                  )}
-                  {(address || city || state) && (
-                    <div className="flex items-start text-sm text-gray-600">
-                      <MapPin className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0 text-gray-400" />
-                      <span>
-                        {address && `${address}`}
-                        {(city || state) && (
-                          <span className="block text-xs text-gray-500">
-                            {city}{city && state && ', '}{state}
-                          </span>
-                        )}
-                      </span>
-                    </div>
-                  )}
-                </div>
+                  {/* Client Name */}
+                  <h3 style={{
+                    fontSize: '17px',
+                    fontWeight: '600',
+                    color: '#1E293B',
+                    marginBottom: '4px',
+                    lineHeight: '1.4'
+                  }}>{clientName}</h3>
+                  <p style={{
+                    fontSize: '12px',
+                    color: '#94A3B8',
+                    marginBottom: '16px'
+                  }}>ID: {clientId}</p>
 
-                {/* Projects Count */}
-                <div className="pt-4 border-t border-gray-100">
-                  <span className="text-sm font-medium text-gray-700">
-                    {projectCount} Active {projectCount === '1' ? 'Project' : 'Projects'}
-                  </span>
+                  {/* Contact Info */}
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px',
+                    marginBottom: '16px'
+                  }}>
+                    {email && (
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '8px'
+                      }}>
+                        <Mail size={16} style={{ color: '#94A3B8', flexShrink: 0, marginTop: '2px' }} />
+                        <span style={{
+                          fontSize: '13px',
+                          color: '#475569',
+                          wordBreak: 'break-all'
+                        }}>{email}</span>
+                      </div>
+                    )}
+                    {phone && (
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}>
+                        <Phone size={16} style={{ color: '#94A3B8', flexShrink: 0 }} />
+                        <span style={{
+                          fontSize: '13px',
+                          color: '#475569'
+                        }}>{phone}</span>
+                      </div>
+                    )}
+                    {(address || city || state) && (
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '8px'
+                      }}>
+                        <MapPin size={16} style={{ color: '#94A3B8', flexShrink: 0, marginTop: '2px' }} />
+                        <div style={{ fontSize: '13px', color: '#475569' }}>
+                          {address && <div>{address}</div>}
+                          {(city || state) && (
+                            <div style={{ fontSize: '12px', color: '#94A3B8' }}>
+                              {city}{city && state && ', '}{state}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Projects Count */}
+                  <div style={{
+                    paddingTop: '16px',
+                    borderTop: '1px solid #F1F5F9'
+                  }}>
+                    <span style={{
+                      fontSize: '13px',
+                      fontWeight: '500',
+                      color: '#475569'
+                    }}>
+                      {projectCount} Active {projectCount === '1' ? 'Project' : 'Projects'}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
