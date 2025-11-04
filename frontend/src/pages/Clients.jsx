@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Phone, Mail, MapPin, User, Loader2 } from 'lucide-react';
+import { Search, Phone, Mail, MapPin, User, Loader2, AlertCircle } from 'lucide-react';
 import api from '../lib/api';
 import useAppStore from '../stores/appStore';
 
@@ -86,10 +86,43 @@ export default function Clients() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-blue-500 mx-auto mb-4" />
-          <p className="text-gray-600">Loading clients...</p>
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        backgroundColor: '#F8FAFC'
+      }}>
+        {/* Header */}
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          borderBottom: '1px solid #E2E8F0',
+          padding: '24px 32px',
+          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)'
+        }}>
+          <h1 style={{
+            fontSize: '24px',
+            fontWeight: '600',
+            color: '#1E293B',
+            marginBottom: '4px'
+          }}>Clients</h1>
+          <p style={{
+            color: '#64748B',
+            fontSize: '14px'
+          }}>Loading...</p>
+        </div>
+
+        {/* Loading State */}
+        <div style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '400px',
+          gap: '16px'
+        }}>
+          <Loader2 className="animate-spin" size={40} style={{ color: '#2563EB' }} />
+          <p style={{ color: '#64748B', fontSize: '14px' }}>Loading clients...</p>
         </div>
       </div>
     );
@@ -97,12 +130,54 @@ export default function Clients() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <p className="text-red-600 mb-4">{error}</p>
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        backgroundColor: '#F8FAFC'
+      }}>
+        {/* Header */}
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          borderBottom: '1px solid #E2E8F0',
+          padding: '24px 32px',
+          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)'
+        }}>
+          <h1 style={{
+            fontSize: '24px',
+            fontWeight: '600',
+            color: '#1E293B',
+            marginBottom: '4px'
+          }}>Clients</h1>
+          <p style={{
+            color: '#64748B',
+            fontSize: '14px'
+          }}>Error loading clients</p>
+        </div>
+
+        {/* Error State */}
+        <div style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '400px',
+          gap: '16px'
+        }}>
+          <AlertCircle size={40} style={{ color: '#DC2626' }} />
+          <p style={{ color: '#DC2626', fontSize: '14px' }}>{error}</p>
           <button
             onClick={fetchClients}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            style={{
+              padding: '8px 16px',
+              backgroundColor: '#2563EB',
+              color: '#FFFFFF',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '14px',
+              cursor: 'pointer'
+            }}
           >
             Retry
           </button>
