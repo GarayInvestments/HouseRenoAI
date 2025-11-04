@@ -151,6 +151,7 @@ export default function AIAssistant() {
       setUploadProgress({ status: 'extracting', message: 'AI is extracting data...' });
       
       // Auto-lookup Client ID using applicant_info (not shown to user)
+      // Applicant fields are extracted but sent separately for lookup only
       let clientLookupData = null;
       const extractedData = response.extracted_data;
       

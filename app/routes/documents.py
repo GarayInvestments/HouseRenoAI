@@ -121,6 +121,10 @@ async def create_record_from_extraction(
     Create a project or permit record from extracted data
     """
     try:
+        logger.info(f"Creating {document_type} from extracted data")
+        logger.debug(f"Received extracted_data keys: {list(extracted_data.keys())}")
+        logger.debug(f"Extracted data: {extracted_data}")
+        
         google_service = get_google_service()
         
         if document_type == 'project':
@@ -131,6 +135,7 @@ async def create_record_from_extraction(
             if 'Project ID' not in extracted_data:
                 projects = await google_service.get_projects_data()
                 extracted_data['Project ID'] = f"P-{len(projects) + 1:03d}"
+                logger.info(f"Generated Project ID: {extracted_data['Project ID']}")
         elif document_type == 'permit':
             sheet_name = 'Permits'
             id_field = 'Permit ID'
@@ -138,8 +143,12 @@ async def create_record_from_extraction(
             if 'Permit ID' not in extracted_data:
                 permits = await google_service.get_permits_data()
                 extracted_data['Permit ID'] = f"PER-{len(permits) + 1:03d}"
+                logger.info(f"Generated Permit ID: {extracted_data['Permit ID']}")
         else:
             raise HTTPException(status_code=400, detail="Invalid document_type")
+        
+        logger.info(f"Attempting to append record to {sheet_name}")
+        logger.debug(f"Final data being sent to sheet: {extracted_data}")
         
         # Add the record to Google Sheets
         success = await google_service.append_record(sheet_name, extracted_data)

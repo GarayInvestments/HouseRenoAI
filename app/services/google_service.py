@@ -314,6 +314,67 @@ class GoogleService:
             index = index // 26 - 1
         return result
     
+    async def append_record(self, sheet_name: str, record_data: Dict[str, Any]) -> bool:
+        """
+        Append a new record to a sheet with proper field mapping
+        
+        Args:
+            sheet_name: Name of the sheet (e.g., 'Projects', 'Permits')
+            record_data: Dictionary of field names and values to add
+            
+        Returns:
+            True if append succeeded, False otherwise
+        """
+        try:
+            logger.info(f"Appending record to {sheet_name}")
+            logger.debug(f"Record data keys: {list(record_data.keys())}")
+            
+            # Read the sheet to get headers
+            data = await self.read_sheet_data(f'{sheet_name}!A1:Z1')
+            
+            if not data or len(data) == 0:
+                logger.error(f"Could not read headers from {sheet_name}")
+                return False
+            
+            headers = data[0]
+            logger.info(f"{sheet_name} headers: {headers}")
+            
+            # Build row matching header order
+            row_values = []
+            unmatched_fields = []
+            
+            for header in headers:
+                if header in record_data:
+                    row_values.append(str(record_data[header]))
+                else:
+                    row_values.append("")  # Empty string for missing fields
+            
+            # Check for fields in record_data that don't match any header
+            for field in record_data.keys():
+                if field not in headers:
+                    unmatched_fields.append(field)
+            
+            if unmatched_fields:
+                logger.warning(f"Fields not found in {sheet_name} headers: {unmatched_fields}")
+                logger.warning(f"These fields will be ignored: {[f'{k}={record_data[k]}' for k in unmatched_fields]}")
+            
+            logger.info(f"Appending row with {len(row_values)} values to {sheet_name}")
+            logger.debug(f"Row values: {row_values}")
+            
+            # Append the row
+            success = await self.append_sheet_data(f'{sheet_name}!A:Z', [row_values])
+            
+            if success:
+                logger.info(f"Successfully appended record to {sheet_name}")
+            else:
+                logger.error(f"Failed to append record to {sheet_name}")
+            
+            return success
+            
+        except Exception as e:
+            logger.error(f"Failed to append record to {sheet_name}: {e}", exc_info=True)
+            return False
+    
     async def get_comprehensive_data(self) -> Dict[str, Any]:
         """Get data from all sheets for comprehensive AI context"""
         try:

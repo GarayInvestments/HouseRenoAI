@@ -90,6 +90,68 @@ DEBUG=false
 PORT=10000
 ```
 
+### 6. **422 Unprocessable Entity - Document Upload**
+
+**Error**: `POST /v1/documents/create-from-extract 422 (Unprocessable Content)`
+
+**Cause**: Extracted fields don't match Google Sheets column headers exactly
+
+**Debugging Steps**:
+
+1. **Check Render Logs** for detailed field information:
+   ```
+   [INFO] Creating project from extracted data
+   [DEBUG] Received extracted_data keys: ['Project ID', 'Client ID', ...]
+   [INFO] Projects headers: ['Project ID', 'Client ID', 'Project Name', ...]
+   [WARNING] Fields not found in Projects headers: ['Square Footage', 'Parcel Number']
+   ```
+
+2. **Verify Google Sheets columns** match extracted fields:
+   - **Projects sheet has 17 columns**:
+     - Project ID, Client ID, Project Name, Address, City, State, Zip Code
+     - Property Type, Square Footage (if added), Estimated Start Date, Estimated End Date
+     - Actual Start Date, Actual End Date, Budget, Status, Notes, Last Updated
+   
+3. **Check field extraction** in backend logs:
+   ```
+   [DEBUG] Extracted data: {'Project ID': 'P-001', 'Client ID': 'C-123', ...}
+   [INFO] Appending row with 17 values to Projects
+   [DEBUG] Row values: ['P-001', 'C-123', 'Main St Renovation', ...]
+   ```
+
+4. **Common Issues**:
+   - **Extra fields extracted** that don't exist in sheet (e.g., Parcel Number, Permit Record Number)
+   - **Field name mismatches** (e.g., 'Full Name' vs 'Client Name')
+   - **Missing required fields** (e.g., Project ID not generated)
+
+**Solutions**:
+
+- **Backend filters unwanted fields** before sending to Google Sheets
+- **Extra fields are combined into Notes** field (Square Footage, Parcel Number, Permit Record Number)
+- **Applicant fields** (Name, Company, Phone, Email) are used for Client ID lookup only, not saved to sheet
+
+**Verify Fix**:
+```bash
+# Check logs show field filtering
+curl https://houserenoai.onrender.com/v1/documents/create-from-extract \
+  -F "document_type=project" \
+  -F "extracted_data={...}" \
+  | grep "WARNING.*Fields not found"
+
+# Should show NO warnings about unmatched fields
+```
+
+**Enable Debug Logging** (if needed):
+```bash
+# In Render dashboard, set environment variable:
+LOG_LEVEL=DEBUG
+
+# Then check logs for detailed field mapping:
+[DEBUG] Received extracted_data keys: [...]
+[DEBUG] Projects headers: [...]
+[DEBUG] Row values: [...]
+```
+
 ## 🔧 Debugging Tools
 
 ### 1. **Health Check Endpoints**
