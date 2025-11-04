@@ -155,23 +155,27 @@ async def process_with_gpt4_text(text: str, document_type: str) -> dict:
             prompt = f"""Extract project information from this document and return it as a JSON object with these fields:
 - Project Name: The project identifier or name
 - Project Address: Full street address
-- City: City name
-- County: County name (if available)
-- Jurisdiction: The permitting jurisdiction (e.g., "Concord", "Kannapolis")
+- City: City name from the address (e.g., "Concord")
+- County: County name (e.g., "Cabarrus" - infer from address/location if needed)
+- Jurisdiction: The permitting portal/jurisdiction (e.g., "Concord", "Cabarrus County" - look for jurisdiction/portal information)
 - Project Type: Type of project (e.g., "Residential", "Commercial", "Remodel")
 - Status: Current status (default: "Planning" if not specified)
-- Start Date: Start date in YYYY-MM-DD format (if available)
+- Start Date: Application/submission date in YYYY-MM-DD format (if available)
 - Project Cost: Total project cost/budget (extract the number only, no currency symbols)
 - Scope of Work: Description of the project scope
-- Client Name: The name of the PRIMARY CLIENT (look for "Applicant:", "Owner:", or "Client:" sections - extract the PERSON'S NAME, e.g., "Ajay R Nair", NOT the company name like "2States Carolinas LLC")
-- Client Company: Company/business name if mentioned (optional)
-- Client Phone: Client contact phone number (if available)
-- Client Email: Client email address (if available)
+- Owner Name (PM's Client): The PROPERTY OWNER's name (look for "Owner:" section, e.g., "Menon Prashanth" - normalize ALL CAPS names to Title Case)
+- Applicant Name: The person submitting/managing the project (look for "Applicant:" section, e.g., "Ajay R Nair", NOT the company name like "2States Carolinas LLC")
+- Applicant Company: Applicant's company/business name if mentioned (optional)
+- Applicant Phone: Applicant's contact phone number (if available)
+- Applicant Email: Applicant's email address (if available)
 - Square Footage: Total square footage (Heated + Unheated if mentioned, number only)
 - Parcel Number: Property parcel/tax ID number (if available)
 - Permit Record Number: Any permit/record number (e.g., "PRB2025-02843") if visible
 
-IMPORTANT: For "Client Name", look for sections labeled "Applicant:", "Owner:", or "Client:". Extract the INDIVIDUAL'S FULL NAME (person), NOT the company/business name. The client is the person managing or requesting the project.
+IMPORTANT: 
+1. "Owner Name (PM's Client)" is the PROPERTY OWNER from the "Owner:" section
+2. "Applicant Name" is the person/contractor managing the project from the "Applicant:" section - use this to match against the Client ID
+3. Normalize ALL CAPS names to proper Title Case (e.g., "MENON PRASHANTH" → "Menon Prashanth")
 
 Document text:
 {text}
@@ -236,23 +240,27 @@ async def process_with_gpt4_vision(base64_image: str, mime_type: str, document_t
             prompt = """Analyze this image/document and extract project information. Return a JSON object with these fields:
 - Project Name: The project identifier or name
 - Project Address: Full street address
-- City: City name
-- County: County name (if visible)
-- Jurisdiction: The permitting jurisdiction
+- City: City name from address (e.g., "Concord")
+- County: County name (e.g., "Cabarrus" - infer if needed)
+- Jurisdiction: Permitting portal/jurisdiction (e.g., "Concord", "Cabarrus County")
 - Project Type: Type (e.g., Residential, Commercial, Remodel)
 - Status: Current status (default: "Planning")
-- Start Date: YYYY-MM-DD format (if visible)
+- Start Date: Application/submission date YYYY-MM-DD format (if visible)
 - Project Cost: Total project cost/budget (number only, no $ signs)
 - Scope of Work: Project description/scope
-- Client Name: PRIMARY CLIENT name (look for "Applicant" or "Owner" - extract PERSON'S NAME like "Ajay R Nair", NOT company name)
-- Client Company: Company name (if different from person's name)
-- Client Phone: Contact phone
-- Client Email: Email address
+- Owner Name (PM's Client): PROPERTY OWNER's name (from "Owner:" section, e.g., "Menon Prashanth" - normalize ALL CAPS to Title Case)
+- Applicant Name: Person submitting/managing project (from "Applicant:" section, e.g., "Ajay R Nair", NOT company name)
+- Applicant Company: Applicant's company name (optional)
+- Applicant Phone: Applicant's contact phone
+- Applicant Email: Applicant's email address
 - Square Footage: Total sq ft (number only)
 - Parcel Number: Property parcel/tax ID
-- Permit Record Number: Any permit/record number visible
+- Permit Record Number: Permit/record number visible
 
-IMPORTANT: "Client Name" should be the INDIVIDUAL'S NAME from Applicant/Owner section, not the business name.
+IMPORTANT: 
+1. "Owner Name (PM's Client)" is the PROPERTY OWNER
+2. "Applicant Name" is the contractor/person managing the project - use this to match the Client ID
+3. Normalize ALL CAPS names to proper Title Case (e.g., "MENON PRASHANTH" → "Menon Prashanth")
 
 Return only valid JSON, no other text."""
         else:  # permit
