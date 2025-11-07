@@ -108,6 +108,23 @@ async def startup_event():
                     logger.info("Users sheet ready")
                 except Exception as auth_init_error:
                     logger.error(f"Failed to initialize auth service: {auth_init_error}")
+                
+                # Proactively refresh QuickBooks token if needed
+                try:
+                    from app.services.quickbooks_service import quickbooks_service
+                    if quickbooks_service.is_authenticated():
+                        from datetime import datetime, timedelta
+                        # Check if token expires soon (within 10 minutes)
+                        if quickbooks_service.token_expires_at and datetime.now() >= quickbooks_service.token_expires_at - timedelta(minutes=10):
+                            logger.info("QuickBooks token expiring soon, refreshing on startup...")
+                            await quickbooks_service.refresh_access_token()
+                            logger.info("QuickBooks token refreshed successfully")
+                        else:
+                            logger.info(f"QuickBooks token valid until {quickbooks_service.token_expires_at}")
+                    else:
+                        logger.info("QuickBooks not authenticated, skipping token refresh")
+                except Exception as qb_error:
+                    logger.warning(f"QuickBooks token refresh on startup failed: {qb_error}")
                     
             except Exception as init_error:
                 import traceback
