@@ -15,6 +15,8 @@ import Clients from './pages/Clients';
 import ClientDetails from './pages/ClientDetails';
 import Documents from './pages/Documents';
 import Settings from './pages/Settings';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -60,6 +62,10 @@ function App() {
         return <Documents />;
       case 'settings':
         return <Settings />;
+      case 'privacy':
+        return <PrivacyPolicy />;
+      case 'terms':
+        return <TermsOfService />;
       default:
         return <Dashboard />;
     }
