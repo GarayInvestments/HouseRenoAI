@@ -112,6 +112,11 @@ async def startup_event():
                 # Proactively refresh QuickBooks token if needed
                 try:
                     from app.services.quickbooks_service import quickbooks_service
+                    
+                    # Reload tokens now that Google Sheets is initialized
+                    logger.info("Reloading QuickBooks tokens from Google Sheets...")
+                    quickbooks_service._load_tokens_from_sheets()
+                    
                     if quickbooks_service.is_authenticated():
                         from datetime import datetime, timedelta
                         # Check if token expires soon (within 10 minutes)
