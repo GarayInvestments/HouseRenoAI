@@ -487,6 +487,17 @@ class GoogleService:
             try:
                 # Try to read the sheet to check if it exists
                 sessions = await self.get_all_sheet_data(sheet_name)
+                
+                # Check if sheet is truly empty (no headers) vs just no data
+                # If we get empty list, sheet might not exist OR might just be empty
+                # Try to read just the first row to check for headers
+                if not sessions:
+                    test_read = await self.read_sheet_data(f"{sheet_name}!A1:A1")
+                    if not test_read:
+                        # Sheet doesn't exist - create it
+                        raise Exception("Sheet does not exist")
+                    # Sheet exists but is empty, continue
+                    
             except Exception as sheet_error:
                 # Sheet doesn't exist - create it with headers
                 logger.info(f"Chat_Sessions sheet doesn't exist, creating it...")
