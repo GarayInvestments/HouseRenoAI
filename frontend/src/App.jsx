@@ -20,12 +20,33 @@ import TermsOfService from './pages/TermsOfService';
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
-  const { currentView, currentProjectId, currentPermitId, currentClientId } = useAppStore();
+  const { currentView, currentProjectId, currentPermitId, currentClientId, setCurrentView } = useAppStore();
 
   useEffect(() => {
+    // Check URL path on initial load
+    const path = window.location.pathname;
+    
+    if (path === '/privacy') {
+      setCurrentView('privacy');
+    } else if (path === '/terms') {
+      setCurrentView('terms');
+    }
+    
     // Simulate initial load
     setTimeout(() => setIsLoading(false), 1500);
-  }, []);
+  }, [setCurrentView]);
+
+  useEffect(() => {
+    // Update URL when view changes (for privacy/terms pages)
+    if (currentView === 'privacy') {
+      window.history.pushState({}, '', '/privacy');
+    } else if (currentView === 'terms') {
+      window.history.pushState({}, '', '/terms');
+    } else if (window.location.pathname !== '/') {
+      // Return to home for other views
+      window.history.pushState({}, '', '/');
+    }
+  }, [currentView]);
 
   if (isLoading) {
     return <LoadingScreen />;
