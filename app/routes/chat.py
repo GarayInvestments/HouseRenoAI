@@ -4,6 +4,7 @@ import logging
 
 from app.services.openai_service import openai_service
 import app.services.google_service as google_service_module
+from app.memory.memory_manager import memory_manager
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -28,12 +29,22 @@ def get_google_service():
 async def process_chat_message(chat_data: Dict[str, Any]):
     """
     Process a chat message using OpenAI and perform any necessary actions
+    Includes short-term memory for conversational context
     """
     try:
         message = chat_data.get("message", "")
         context = chat_data.get("context", {})
+        session_id = chat_data.get("session_id", "default")  # Get session ID from frontend
         
-        logger.info(f"Processing chat message: {message[:100]}...")
+        logger.info(f"Processing chat message for session {session_id}: {message[:100]}...")
+        
+        # Load session memory and add to context
+        session_memory = memory_manager.get_all(session_id)
+        if session_memory:
+            context["session_memory"] = session_memory
+            logger.debug(f"Loaded session memory: {session_memory}")
+        else:
+            context["session_memory"] = {}
         
         # Always fetch comprehensive data for AI context
         try:
@@ -124,6 +135,7 @@ async def process_chat_message(chat_data: Dict[str, Any]):
         action_taken = None
         data_updated = False
         function_results = []
+        memory_updates = {}  # Track what to remember
         
         if function_calls:
             google_service = get_google_service()
@@ -153,6 +165,9 @@ async def process_chat_message(chat_data: Dict[str, Any]):
                                 "status": "success",
                                 "details": f"Project {project_id} status updated to {new_status}"
                             })
+                            # Remember this in session memory
+                            memory_updates["last_project_id"] = project_id
+                            memory_updates["last_action"] = f"updated_project_status_{new_status}"
                             logger.info(f"AI executed: {action_taken}")
                         else:
                             function_results.append({
@@ -181,6 +196,9 @@ async def process_chat_message(chat_data: Dict[str, Any]):
                                 "status": "success",
                                 "details": f"Permit {permit_id} status updated to {new_status}"
                             })
+                            # Remember this in session memory
+                            memory_updates["last_permit_id"] = permit_id
+                            memory_updates["last_action"] = f"updated_permit_status_{new_status}"
                             logger.info(f"AI executed: {action_taken}")
                         else:
                             function_results.append({
@@ -197,11 +215,48 @@ async def process_chat_message(chat_data: Dict[str, Any]):
                         "error": str(e)
                     })
         
+        # Update session memory with any new context
+        if memory_updates:
+            for key, value in memory_updates.items():
+                memory_manager.set(session_id, key, value)
+            logger.debug(f"Updated session memory: {memory_updates}")
+        
+        # Auto-detect and store entities mentioned in the message
+        # This helps with follow-up questions like "update its status"
+        if "project" in message.lower() and not memory_updates.get("last_project_id"):
+            # Try to extract project ID from message
+            for project in context.get('all_projects', []):
+                project_id = project.get('Project ID', '')
+                if project_id and project_id.lower() in message.lower():
+                    memory_manager.set(session_id, "last_project_id", project_id)
+                    memory_manager.set(session_id, "last_mentioned_entity", "project")
+                    break
+        
+        if "permit" in message.lower() and not memory_updates.get("last_permit_id"):
+            # Try to extract permit ID from message
+            for permit in context.get('all_permits', []):
+                permit_id = permit.get('Permit ID', '')
+                if permit_id and permit_id.lower() in message.lower():
+                    memory_manager.set(session_id, "last_permit_id", permit_id)
+                    memory_manager.set(session_id, "last_mentioned_entity", "permit")
+                    break
+        
+        if "client" in message.lower() and not memory_updates.get("last_client_id"):
+            # Try to extract client ID from message
+            for client in context.get('all_clients', []):
+                client_id = client.get('Client ID', '')
+                if client_id and client_id.lower() in message.lower():
+                    memory_manager.set(session_id, "last_client_id", client_id)
+                    memory_manager.set(session_id, "last_mentioned_entity", "client")
+                    break
+        
         return {
             "response": ai_response,
             "action_taken": action_taken,
             "data_updated": data_updated,
-            "function_results": function_results if function_results else None
+            "function_results": function_results if function_results else None,
+            "session_id": session_id,
+            "memory_active": len(memory_manager.get_all(session_id)) > 0
         }
         
     except Exception as e:
@@ -249,6 +304,50 @@ async def advanced_query(query_data: Dict[str, Any]):
         logger.error(f"Query error: {e}")
         raise HTTPException(status_code=500, detail=f"Query failed: {str(e)}")
 
+@router.get("/memory/{session_id}")
+async def get_session_memory(session_id: str):
+    """
+    Get current memory for a session
+    """
+    try:
+        memory = memory_manager.get_all(session_id)
+        return {
+            "session_id": session_id,
+            "memory": memory,
+            "active": len(memory) > 0
+        }
+    except Exception as e:
+        logger.error(f"Memory retrieval error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve memory")
+
+@router.post("/memory/{session_id}/clear")
+async def clear_session_memory(session_id: str):
+    """
+    Clear memory for a specific session
+    """
+    try:
+        memory_manager.clear(session_id)
+        logger.info(f"Cleared memory for session: {session_id}")
+        return {
+            "session_id": session_id,
+            "status": "cleared"
+        }
+    except Exception as e:
+        logger.error(f"Memory clear error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to clear memory")
+
+@router.get("/memory/stats")
+async def get_memory_stats():
+    """
+    Get statistics about memory usage
+    """
+    try:
+        stats = memory_manager.get_stats()
+        return stats
+    except Exception as e:
+        logger.error(f"Memory stats error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get memory stats")
+
 @router.get("/status")
 async def get_chat_status():
     """
@@ -270,12 +369,17 @@ async def get_chat_status():
         except:
             sheets_status = "error"
         
+        # Get memory stats
+        memory_stats = memory_manager.get_stats()
+        
         return {
             "status": "operational",
             "openai_status": openai_status,
             "sheets_status": sheets_status,
+            "memory_stats": memory_stats,
             "features": [
                 "Natural language queries with full data access",
+                "Session memory for context retention",
                 "Permit data access (all fields)",
                 "Project tracking (complete)",
                 "Client management (all details)",
