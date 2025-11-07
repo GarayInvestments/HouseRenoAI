@@ -135,6 +135,41 @@ async def get_status():
         raise HTTPException(status_code=500, detail=f"Status check failed: {str(e)}")
 
 
+@router.post("/refresh")
+async def manual_refresh():
+    """
+    Manually refresh QuickBooks access token using refresh token.
+    Use this after deployments if tokens are expired.
+    
+    Returns:
+        Success status and new token expiration
+    """
+    try:
+        if not quickbooks_service.refresh_token:
+            raise HTTPException(
+                status_code=400, 
+                detail="No refresh token available. Please authenticate first at /v1/quickbooks/auth"
+            )
+        
+        # Attempt to refresh
+        result = await quickbooks_service.refresh_access_token()
+        
+        return {
+            "success": True,
+            "message": "Token refreshed successfully",
+            "token_expires_in": result.get("expires_in"),
+            "token_expires_at": quickbooks_service.token_expires_at.isoformat() if quickbooks_service.token_expires_at else None
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to refresh token: {e}")
+        # If refresh fails, tokens are likely expired - need to re-auth
+        raise HTTPException(
+            status_code=401, 
+            detail=f"Token refresh failed: {str(e)}. Refresh token may be expired. Please re-authenticate at /v1/quickbooks/auth"
+        )
+
+
 @router.get("/company")
 async def get_company_info():
     """
