@@ -577,10 +577,18 @@ async def create_session(session_data: Optional[dict] = None):
     try:
         import uuid
         from datetime import datetime
+        import pytz
         
         session_id = f"session_{uuid.uuid4().hex[:16]}"
         session_data = session_data or {}
-        timestamp = datetime.utcnow().isoformat()
+        
+        # Get current time in EST
+        est = pytz.timezone('America/New_York')
+        now_est = datetime.now(est)
+        timestamp = now_est.isoformat()
+        
+        # Format title as EST timestamp: "Nov 7, 2025 3:45 PM"
+        default_title = now_est.strftime("%b %d, %Y %I:%M %p EST")
         
         # Initialize session with metadata
         metadata = {
@@ -588,7 +596,7 @@ async def create_session(session_data: Optional[dict] = None):
             "user_email": session_data.get("user_email", ""),
             "created_at": timestamp,
             "last_activity": timestamp,
-            "title": session_data.get("title", "New Chat"),
+            "title": session_data.get("title", default_title),
             "message_count": 0
         }
         
