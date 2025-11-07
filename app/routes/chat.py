@@ -128,12 +128,13 @@ async def process_chat_message(chat_data: Dict[str, Any]):
                     qb_customers = await quickbooks_service.get_customers()
                     qb_invoices = await quickbooks_service.get_invoices()
                     
+                    # Only send summaries to reduce token usage
+                    # Full data is too large (56k tokens, limit is 30k)
                     context.update({
                         'quickbooks_connected': True,
                         'qb_customers_count': len(qb_customers),
                         'qb_invoices_count': len(qb_invoices),
-                        'qb_customers': qb_customers,
-                        'qb_invoices': qb_invoices,
+                        # Send compact customer summaries only
                         'qb_customers_summary': [
                             {
                                 'id': c.get('Id'),
@@ -142,9 +143,21 @@ async def process_chat_message(chat_data: Dict[str, Any]):
                                 'phone': c.get('PrimaryPhone', {}).get('FreeFormNumber') if c.get('PrimaryPhone') else None,
                                 'balance': c.get('Balance', 0)
                             } for c in qb_customers
+                        ],
+                        # Send compact invoice summaries only (not full objects)
+                        'qb_invoices_summary': [
+                            {
+                                'id': inv.get('Id'),
+                                'doc_number': inv.get('DocNumber'),
+                                'customer_name': inv.get('CustomerRef', {}).get('name'),
+                                'txn_date': inv.get('TxnDate'),
+                                'total': inv.get('TotalAmt', 0),
+                                'balance': inv.get('Balance', 0),
+                                'status': 'Paid' if inv.get('Balance', 0) == 0 else 'Unpaid'
+                            } for inv in qb_invoices
                         ]
                     })
-                    logger.info(f"Added QuickBooks context: {len(qb_customers)} customers, {len(qb_invoices)} invoices")
+                    logger.info(f"Added QuickBooks context: {len(qb_customers)} customers, {len(qb_invoices)} invoices (summaries only)")
                 else:
                     context['quickbooks_connected'] = False
             except Exception as qb_err:

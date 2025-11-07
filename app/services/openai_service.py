@@ -116,10 +116,18 @@ class OpenAIService:
                                 f"\n  Balance: ${customer.get('balance', 0)}"
                             )
                     
-                    # Add full QB invoices
-                    if 'qb_invoices' in context:
-                        context_parts.append(f"\n\n=== QUICKBOOKS INVOICES ({len(context['qb_invoices'])} total) ===")
-                        context_parts.append(str(context['qb_invoices']))
+                    # Add QB invoice summaries (NOT full objects - too large!)
+                    if 'qb_invoices_summary' in context and context['qb_invoices_summary']:
+                        context_parts.append(f"\n\n=== QUICKBOOKS INVOICES ({len(context['qb_invoices_summary'])} total) ===")
+                        for invoice in context['qb_invoices_summary'][:30]:  # Limit to 30 most recent
+                            context_parts.append(
+                                f"\nInvoice #{invoice.get('doc_number')} (ID: {invoice.get('id')})"
+                                f"\n  Customer: {invoice.get('customer_name')}"
+                                f"\n  Date: {invoice.get('txn_date')}"
+                                f"\n  Total: ${invoice.get('total', 0)}"
+                                f"\n  Balance: ${invoice.get('balance', 0)}"
+                                f"\n  Status: {invoice.get('status')}"
+                            )
                 else:
                     context_parts.append(f"\n⚠️ QuickBooks: Not connected")
                 
