@@ -283,6 +283,26 @@ async def process_chat_message(chat_data: Dict[str, Any]):
                 memory_manager.set(session_id, key, value)
             logger.debug(f"Updated session memory: {memory_updates}")
         
+        # Sync session activity to Google Sheets (async, non-blocking)
+        try:
+            from datetime import datetime
+            
+            # Get current metadata
+            metadata = memory_manager.get(session_id, "metadata")
+            if metadata:
+                metadata['last_activity'] = datetime.utcnow().isoformat()
+                metadata['message_count'] = metadata.get('message_count', 0) + 1
+                
+                # Update in memory
+                memory_manager.set(session_id, "metadata", metadata)
+                
+                # Save to Sheets (don't wait for it to avoid blocking response)
+                google_service = get_google_service()
+                import asyncio
+                asyncio.create_task(google_service.save_session(metadata))
+        except Exception as sync_err:
+            logger.warning(f"Failed to sync session to Sheets: {sync_err}")
+        
         # Auto-detect and store entities mentioned in the message
         # This helps with follow-up questions like "update its status"
         if "project" in message.lower() and not memory_updates.get("last_project_id"):
@@ -411,15 +431,34 @@ async def get_memory_stats():
         raise HTTPException(status_code=500, detail="Failed to get memory stats")
 
 @router.get("/sessions")
-async def list_sessions():
+async def list_sessions(user_email: Optional[str] = None):
     """
-    List all active chat sessions with metadata
+    List all chat sessions from Google Sheets (persistent) and memory (active)
+    Combines both sources for complete session list
     """
     try:
-        sessions = memory_manager.list_sessions()
+        google_service = get_google_service()
+        
+        # Load sessions from Google Sheets (persistent storage)
+        sheet_sessions = await google_service.load_all_sessions(user_email)
+        
+        # Also get active sessions from memory
+        memory_sessions = memory_manager.list_sessions()
+        
+        # Merge: prioritize Sheets data, add memory-only sessions
+        session_map = {s['session_id']: s for s in sheet_sessions}
+        
+        for mem_session in memory_sessions:
+            if mem_session['session_id'] not in session_map:
+                session_map[mem_session['session_id']] = mem_session
+        
+        sessions = list(session_map.values())
+        
         return {
             "sessions": sessions,
-            "total": len(sessions)
+            "total": len(sessions),
+            "from_sheets": len(sheet_sessions),
+            "from_memory": len(memory_sessions)
         }
     except Exception as e:
         logger.error(f"Failed to list sessions: {e}")
@@ -429,6 +468,7 @@ async def list_sessions():
 async def create_session(session_data: Optional[dict] = None):
     """
     Create a new chat session with optional metadata
+    Saves to both memory (fast) and Google Sheets (persistent)
     """
     try:
         import uuid
@@ -436,19 +476,32 @@ async def create_session(session_data: Optional[dict] = None):
         
         session_id = f"session_{uuid.uuid4().hex[:16]}"
         session_data = session_data or {}
+        timestamp = datetime.utcnow().isoformat()
         
         # Initialize session with metadata
         metadata = {
-            "created_at": datetime.utcnow().isoformat(),
+            "session_id": session_id,
+            "user_email": session_data.get("user_email", ""),
+            "created_at": timestamp,
+            "last_activity": timestamp,
             "title": session_data.get("title", "New Chat"),
             "message_count": 0
         }
         
+        # Save to memory (fast access)
         memory_manager.set(session_id, "metadata", metadata)
+        
+        # Save to Google Sheets (persistent storage)
+        google_service = get_google_service()
+        saved_to_sheets = await google_service.save_session(metadata)
+        
+        if not saved_to_sheets:
+            logger.warning(f"Session {session_id} saved to memory but failed to save to Sheets")
         
         return {
             "session_id": session_id,
-            "metadata": metadata
+            "metadata": metadata,
+            "persisted": saved_to_sheets
         }
     except Exception as e:
         logger.error(f"Failed to create session: {e}")
@@ -457,14 +510,22 @@ async def create_session(session_data: Optional[dict] = None):
 @router.delete("/sessions/{session_id}")
 async def delete_session(session_id: str):
     """
-    Delete a specific chat session and all its data
+    Delete a specific chat session from both memory and Google Sheets
     """
     try:
+        # Delete from memory
         memory_manager.clear(session_id)
-        logger.info(f"Deleted session: {session_id}")
+        
+        # Delete from Google Sheets
+        google_service = get_google_service()
+        deleted_from_sheets = await google_service.delete_session(session_id)
+        
+        logger.info(f"Deleted session: {session_id} (memory: yes, sheets: {deleted_from_sheets})")
+        
         return {
             "session_id": session_id,
-            "status": "deleted"
+            "status": "deleted",
+            "deleted_from_sheets": deleted_from_sheets
         }
     except Exception as e:
         logger.error(f"Failed to delete session: {e}")
@@ -474,10 +535,24 @@ async def delete_session(session_id: str):
 async def get_session_details(session_id: str):
     """
     Get full details and history for a specific session
+    Loads from Google Sheets if not in memory (for resumed sessions)
     """
     try:
+        # Try to get from memory first (active sessions)
         memory = memory_manager.get_all(session_id)
-        metadata = memory_manager.get(session_id, "metadata") or {}
+        metadata = memory_manager.get(session_id, "metadata")
+        
+        # If not in memory, try to load from Google Sheets
+        if not metadata:
+            google_service = get_google_service()
+            sheet_metadata = await google_service.load_session(session_id)
+            
+            if sheet_metadata:
+                metadata = sheet_metadata
+                # Restore to memory for faster subsequent access
+                memory_manager.set(session_id, "metadata", metadata)
+            else:
+                metadata = {}
         
         return {
             "session_id": session_id,
@@ -493,15 +568,33 @@ async def get_session_details(session_id: str):
 async def update_session_metadata(session_id: str, metadata: dict):
     """
     Update session metadata (e.g., rename chat)
+    Updates both memory and Google Sheets
     """
     try:
-        current_metadata = memory_manager.get(session_id, "metadata") or {}
+        from datetime import datetime
+        
+        # Get current metadata from memory or Sheets
+        current_metadata = memory_manager.get(session_id, "metadata")
+        
+        if not current_metadata:
+            google_service = get_google_service()
+            current_metadata = await google_service.load_session(session_id) or {}
+        
+        # Update with new values
         current_metadata.update(metadata)
+        current_metadata['last_activity'] = datetime.utcnow().isoformat()
+        
+        # Save to memory
         memory_manager.set(session_id, "metadata", current_metadata)
+        
+        # Save to Google Sheets
+        google_service = get_google_service()
+        saved_to_sheets = await google_service.save_session(current_metadata)
         
         return {
             "session_id": session_id,
-            "metadata": current_metadata
+            "metadata": current_metadata,
+            "persisted": saved_to_sheets
         }
     except Exception as e:
         logger.error(f"Failed to update session metadata: {e}")

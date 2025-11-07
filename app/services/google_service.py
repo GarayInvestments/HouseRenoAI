@@ -421,6 +421,206 @@ class GoogleService:
         except Exception as e:
             logger.error(f"Failed to send chat notification: {e}")
             return False
+    
+    # ============== CHAT SESSION MANAGEMENT ==============
+    
+    async def save_session(self, session_data: Dict[str, Any]) -> bool:
+        """
+        Save or update a chat session to Google Sheets
+        
+        Args:
+            session_data: Dictionary with session info
+                - session_id (required)
+                - user_email (optional)
+                - title (optional)
+                - created_at (optional)
+                - last_activity (optional)
+                - message_count (optional)
+        
+        Returns:
+            True if saved successfully, False otherwise
+        """
+        try:
+            sheet_name = 'Chat_Sessions'
+            session_id = session_data.get('session_id')
+            
+            if not session_id:
+                logger.error("session_id is required to save session")
+                return False
+            
+            # Check if session already exists
+            try:
+                sessions = await self.get_all_sheet_data(sheet_name)
+                existing_row = None
+                
+                for i, session in enumerate(sessions):
+                    if session.get('Session ID') == session_id:
+                        existing_row = i + 2  # +2 for header row and 1-indexed
+                        break
+                
+                if existing_row:
+                    # Update existing session
+                    updates = {
+                        'Title': session_data.get('title', ''),
+                        'Last Activity': session_data.get('last_activity', ''),
+                        'Message Count': str(session_data.get('message_count', 0))
+                    }
+                    
+                    # Update specific fields
+                    headers = sessions[0] if sessions else []
+                    for field, value in updates.items():
+                        try:
+                            col_index = list(headers.keys()).index(field)
+                            col_letter = chr(65 + col_index)  # A=65
+                            range_name = f"{sheet_name}!{col_letter}{existing_row}"
+                            
+                            await self.write_sheet_data(range_name, [[value]])
+                        except (ValueError, IndexError):
+                            logger.warning(f"Field {field} not found in {sheet_name}")
+                    
+                    logger.info(f"Updated session {session_id} in row {existing_row}")
+                    return True
+                    
+            except Exception as check_error:
+                logger.warning(f"Could not check for existing session: {check_error}")
+            
+            # Insert new session
+            row_data = [
+                session_data.get('session_id', ''),
+                session_data.get('user_email', ''),
+                session_data.get('title', 'New Chat'),
+                session_data.get('created_at', ''),
+                session_data.get('last_activity', ''),
+                str(session_data.get('message_count', 0))
+            ]
+            
+            range_name = f"{sheet_name}!A:F"
+            success = await self.append_sheet_data(range_name, [row_data])
+            
+            if success:
+                logger.info(f"Saved new session {session_id} to Google Sheets")
+            else:
+                logger.error(f"Failed to save session {session_id}")
+            
+            return success
+            
+        except Exception as e:
+            logger.error(f"Failed to save session: {e}", exc_info=True)
+            return False
+    
+    async def load_session(self, session_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Load a specific chat session from Google Sheets
+        
+        Args:
+            session_id: The session ID to load
+        
+        Returns:
+            Session data dict or None if not found
+        """
+        try:
+            sessions = await self.get_all_sheet_data('Chat_Sessions')
+            
+            for session in sessions:
+                if session.get('Session ID') == session_id:
+                    return {
+                        'session_id': session.get('Session ID'),
+                        'user_email': session.get('User Email'),
+                        'title': session.get('Title'),
+                        'created_at': session.get('Created At'),
+                        'last_activity': session.get('Last Activity'),
+                        'message_count': int(session.get('Message Count', 0) or 0)
+                    }
+            
+            logger.warning(f"Session {session_id} not found in Google Sheets")
+            return None
+            
+        except Exception as e:
+            logger.error(f"Failed to load session {session_id}: {e}")
+            return None
+    
+    async def load_all_sessions(self, user_email: Optional[str] = None) -> List[Dict[str, Any]]:
+        """
+        Load all chat sessions from Google Sheets, optionally filtered by user
+        
+        Args:
+            user_email: Optional email to filter sessions by user
+        
+        Returns:
+            List of session data dicts
+        """
+        try:
+            sessions = await self.get_all_sheet_data('Chat_Sessions')
+            
+            result = []
+            for session in sessions:
+                session_data = {
+                    'session_id': session.get('Session ID'),
+                    'user_email': session.get('User Email'),
+                    'title': session.get('Title'),
+                    'created_at': session.get('Created At'),
+                    'last_activity': session.get('Last Activity'),
+                    'message_count': int(session.get('Message Count', 0) or 0)
+                }
+                
+                # Filter by user if specified
+                if user_email is None or session_data['user_email'] == user_email:
+                    result.append(session_data)
+            
+            logger.info(f"Loaded {len(result)} sessions from Google Sheets")
+            return result
+            
+        except Exception as e:
+            logger.error(f"Failed to load sessions: {e}")
+            return []
+    
+    async def delete_session(self, session_id: str) -> bool:
+        """
+        Delete a chat session from Google Sheets
+        
+        Args:
+            session_id: The session ID to delete
+        
+        Returns:
+            True if deleted successfully, False otherwise
+        """
+        try:
+            sheet_name = 'Chat_Sessions'
+            sessions = await self.get_all_sheet_data(sheet_name)
+            
+            row_to_delete = None
+            for i, session in enumerate(sessions):
+                if session.get('Session ID') == session_id:
+                    row_to_delete = i + 2  # +2 for header row and 1-indexed
+                    break
+            
+            if row_to_delete is None:
+                logger.warning(f"Session {session_id} not found for deletion")
+                return False
+            
+            # Delete the row using Google Sheets API
+            request = {
+                "deleteDimension": {
+                    "range": {
+                        "sheetId": 0,  # Assumes first sheet, adjust if needed
+                        "dimension": "ROWS",
+                        "startIndex": row_to_delete - 1,  # 0-indexed for API
+                        "endIndex": row_to_delete
+                    }
+                }
+            }
+            
+            self.sheets_service.spreadsheets().batchUpdate(
+                spreadsheetId=settings.SHEET_ID,
+                body={"requests": [request]}
+            ).execute()
+            
+            logger.info(f"Deleted session {session_id} from Google Sheets")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to delete session {session_id}: {e}", exc_info=True)
+            return False
 
 # Service instance will be initialized during startup
 google_service: Optional[GoogleService] = None
