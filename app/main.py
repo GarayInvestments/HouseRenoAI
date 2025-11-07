@@ -13,6 +13,8 @@ from app.routes.projects import router as projects_router
 from app.routes.clients import router as clients_router
 from app.routes.documents import router as documents_router
 from app.routes.quickbooks import router as quickbooks_router
+from app.routes.auth import router as auth_router
+from app.middleware.auth_middleware import JWTAuthMiddleware
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -97,6 +99,16 @@ async def startup_event():
                 gs.google_service = gs.GoogleService()
                 gs.google_service.initialize()
                 logger.info("Google services initialized successfully")
+                
+                # Initialize auth service and ensure Users sheet exists
+                try:
+                    from app.services.auth_service import auth_service
+                    logger.info("Ensuring Users sheet exists...")
+                    auth_service.ensure_users_sheet_exists()
+                    logger.info("Users sheet ready")
+                except Exception as auth_init_error:
+                    logger.error(f"Failed to initialize auth service: {auth_init_error}")
+                    
             except Exception as init_error:
                 import traceback
                 logger.error(f"Failed to initialize Google services: {init_error}")
@@ -117,7 +129,8 @@ app.add_middleware(
     allow_origins=[
         "https://portal.houserenovatorsllc.com",  # Production frontend
         "http://localhost:3000",  # Local dev
-        "http://localhost:5173",  # Vite dev server
+        "http://localhost:5173",  # Vite dev server (primary)
+        "http://localhost:5174",  # Vite dev server (alternate port)
         "https://house-renovators-pwa.pages.dev",  # Cloudflare preview
         "https://house-renovators-ai-portal.pages.dev",  # Cloudflare Pages domain
     ],
@@ -126,7 +139,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add JWT authentication middleware (protects all routes except public ones)
+app.add_middleware(JWTAuthMiddleware)
+
 # Include routers
+app.include_router(auth_router, prefix=f"/{settings.API_VERSION}/auth", tags=["auth"])  # Auth routes - public
 app.include_router(chat_router, prefix=f"/{settings.API_VERSION}/chat", tags=["chat"])
 app.include_router(permits_router, prefix=f"/{settings.API_VERSION}/permits", tags=["permits"])
 app.include_router(projects_router, prefix=f"/{settings.API_VERSION}/projects", tags=["projects"])

@@ -17,24 +17,40 @@ import Documents from './pages/Documents';
 import Settings from './pages/Settings';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
+import Login from './pages/Login';
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
-  const { currentView, currentProjectId, currentPermitId, currentClientId, setCurrentView } = useAppStore();
+  const { currentView, currentProjectId, currentPermitId, currentClientId, setCurrentView, checkAuth } = useAppStore();
 
   useEffect(() => {
-    // Check URL path on initial load
-    const path = window.location.pathname;
+    // Check authentication and URL path on initial load
+    const initializeApp = async () => {
+      const path = window.location.pathname;
+      
+      // Allow public pages without auth
+      if (path === '/privacy') {
+        setCurrentView('privacy');
+        setIsLoading(false);
+        return;
+      } else if (path === '/terms') {
+        setCurrentView('terms');
+        setIsLoading(false);
+        return;
+      }
+      
+      // Check if user is authenticated
+      const authenticated = await checkAuth();
+      
+      if (!authenticated) {
+        setCurrentView('login');
+      }
+      
+      setIsLoading(false);
+    };
     
-    if (path === '/privacy') {
-      setCurrentView('privacy');
-    } else if (path === '/terms') {
-      setCurrentView('terms');
-    }
-    
-    // Simulate initial load
-    setTimeout(() => setIsLoading(false), 1500);
-  }, [setCurrentView]);
+    initializeApp();
+  }, [setCurrentView, checkAuth]);
 
   useEffect(() => {
     // Update URL when view changes (for privacy/terms pages)
@@ -69,6 +85,8 @@ function App() {
     }
 
     switch (currentView) {
+      case 'login':
+        return <Login />;
       case 'dashboard':
         return <Dashboard />;
       case 'ai-assistant':
@@ -91,6 +109,13 @@ function App() {
         return <Dashboard />;
     }
   };
+
+  // Public pages (no sidebar/topbar)
+  const isPublicPage = ['login', 'privacy', 'terms'].includes(currentView);
+
+  if (isPublicPage) {
+    return renderContent();
+  }
 
   return (
     <div className="flex h-screen overflow-hidden">

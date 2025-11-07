@@ -1,6 +1,107 @@
 import { create } from 'zustand'
 
-export const useAppStore = create((set) => ({
+const API_URL = import.meta.env.VITE_API_URL || 'https://api.houserenovatorsllc.com'
+
+export const useAppStore = create((set, get) => ({
+  // Authentication state
+  isAuthenticated: false,
+  currentUser: null,
+  token: null,
+  
+  // Auth actions
+  login: async (email, password) => {
+    try {
+      const response = await fetch(`${API_URL}/v1/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      })
+      
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.detail || 'Login failed')
+      }
+      
+      const data = await response.json()
+      
+      // Store token and user
+      localStorage.setItem('token', data.access_token)
+      localStorage.setItem('user', JSON.stringify(data.user))
+      
+      set({
+        isAuthenticated: true,
+        currentUser: data.user,
+        token: data.access_token,
+        user: {
+          name: data.user.name,
+          initials: data.user.name.split(' ').map(n => n[0]).join(''),
+          email: data.user.email,
+          role: data.user.role
+        },
+        currentView: 'dashboard'
+      })
+    } catch (error) {
+      console.error('Login error:', error)
+      throw error
+    }
+  },
+  
+  logout: () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    set({
+      isAuthenticated: false,
+      currentUser: null,
+      token: null,
+      currentView: 'login',
+      user: null
+    })
+  },
+  
+  checkAuth: async () => {
+    const token = localStorage.getItem('token')
+    const userStr = localStorage.getItem('user')
+    
+    if (!token || !userStr) {
+      set({ currentView: 'login', isAuthenticated: false })
+      return false
+    }
+    
+    try {
+      // Verify token with /me endpoint
+      const response = await fetch(`${API_URL}/v1/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      if (!response.ok) {
+        // Token invalid, logout
+        get().logout()
+        return false
+      }
+      
+      const userData = JSON.parse(userStr)
+      set({
+        isAuthenticated: true,
+        currentUser: userData,
+        token: token,
+        user: {
+          name: userData.name,
+          initials: userData.name.split(' ').map(n => n[0]).join(''),
+          email: userData.email,
+          role: userData.role
+        }
+      })
+      return true
+    } catch (error) {
+      console.error('Auth check error:', error)
+      get().logout()
+      return false
+    }
+  },
+  
+  // View state
   currentView: 'dashboard',
   setCurrentView: (view) => set({ currentView: view }),
   currentProjectId: null,

@@ -229,7 +229,12 @@ export default function TopBar() {
                     <span style={{ fontWeight: '500', fontSize: '14px', color: '#1E293B' }}>Settings</span>
                   </button>
                   <div style={{ borderTop: '1px solid #F1F5F9', margin: '8px 0' }} />
-                  <button style={{
+                  <button 
+                    onClick={() => {
+                      useAppStore.getState().logout();
+                      setDropdownOpen(false);
+                    }}
+                    style={{
                     width: '100%',
                     display: 'flex',
                     alignItems: 'center',

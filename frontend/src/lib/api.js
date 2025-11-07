@@ -10,9 +10,13 @@ class ApiService {
   async request(endpoint, options = {}) {
     const url = `${this.baseUrl}${endpoint}`;
     
+    // Get token from localStorage
+    const token = localStorage.getItem('token');
+    
     const config = {
       headers: {
         'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
         ...options.headers,
       },
       ...options,
@@ -20,6 +24,14 @@ class ApiService {
 
     try {
       const response = await fetch(url, config);
+      
+      // Handle 401 Unauthorized - redirect to login
+      if (response.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/';
+        throw new Error('Session expired. Please login again.');
+      }
       
       if (!response.ok) {
         throw new Error(`API error: ${response.status} ${response.statusText}`);
