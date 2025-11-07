@@ -124,9 +124,16 @@ async def process_chat_message(chat_data: Dict[str, Any]):
             
             # Add QuickBooks data if available
             try:
+                logger.info(f"QuickBooks service exists: {quickbooks_service is not None}")
+                if quickbooks_service:
+                    is_auth = quickbooks_service.is_authenticated()
+                    logger.info(f"QuickBooks is_authenticated: {is_auth}")
+                
                 if quickbooks_service and quickbooks_service.is_authenticated():
                     qb_customers = await quickbooks_service.get_customers()
                     qb_invoices = await quickbooks_service.get_invoices()
+                    
+                    logger.info(f"Successfully fetched QB data: {len(qb_customers)} customers, {len(qb_invoices)} invoices")
                     
                     # Only send summaries to reduce token usage
                     # Full data is too large (56k tokens, limit is 30k)
