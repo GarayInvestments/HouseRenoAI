@@ -8,7 +8,7 @@
 ## ✅ Backend Status
 
 ### API Endpoints
-- **Base URL:** `https://houserenoai.onrender.com`
+- **Base URL:** `https://api.houserenovatorsllc.com`
 - **API Version:** `v1`
 - **Health:** ✅ Operational
 - **OpenAI:** ✅ Connected
@@ -26,7 +26,7 @@
 
 ### Current Configuration
 ```env
-VITE_API_URL=https://houserenoai.onrender.com
+VITE_API_URL=https://api.houserenovatorsllc.com
 VITE_ENV=production
 VITE_ENABLE_DEBUG=false
 ```
@@ -71,7 +71,7 @@ Created `frontend/src/lib/api.js` with methods:
 
 ### Method 1: Check Chat Status
 ```bash
-curl https://houserenoai.onrender.com/v1/chat/status
+curl https://api.houserenovatorsllc.com/v1/chat/status
 ```
 
 **Expected Response:**
@@ -86,7 +86,7 @@ curl https://houserenoai.onrender.com/v1/chat/status
 
 ### Method 2: Send Test Message
 ```bash
-curl -X POST https://houserenoai.onrender.com/v1/chat \
+curl -X POST https://api.houserenovatorsllc.com/v1/chat \
   -H "Content-Type: application/json" \
   -d '{"message": "What permits are active?"}'
 ```
@@ -107,7 +107,7 @@ User Input (Frontend)
     ↓
 API Service (frontend/src/lib/api.js)
     ↓
-Backend API (https://houserenoai.onrender.com/v1/chat)
+Backend API (https://api.houserenovatorsllc.com/v1/chat)
     ↓
 OpenAI Service (processes message with context)
     ↓
@@ -148,7 +148,7 @@ Frontend Display (AI Assistant page)
 - ✅ **Build Size:** 257KB → 73KB gzipped
 
 ### Backend
-- ✅ **Deployed:** https://houserenoai.onrender.com
+- ✅ **Deployed:** https://api.houserenovatorsllc.com
 - ✅ **Google Sheets:** Connected with read/write access
 - ✅ **OpenAI:** Connected and operational
 - ✅ **CORS:** Configured for Cloudflare Pages domains

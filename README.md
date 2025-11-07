@@ -9,7 +9,7 @@
 > **Complete AI-powered permit management and project tracking solution for construction professionals.**
 
 ## ✅ **STATUS: PRODUCTION READY & RESTRUCTURED**
-- 🚀 **Live Backend**: https://houserenoai.onrender.com *(Healthy - All systems operational)*
+- 🚀 **Live Backend**: https://api.houserenovatorsllc.com *(Healthy - All systems operational)*
 - 📱 **Frontend PWA**: https://portal.houserenovatorsllc.com *(Accessible and responsive)*
 - 🤖 **AI Integration**: OpenAI GPT-4o with permit data context *(Connected and responding)*
 - 📊 **Data Source**: Google Sheets real-time integration *(6 permits loaded)*
@@ -243,7 +243,7 @@ GOOGLE_APPLICATION_CREDENTIALS=path/to/credentials.json
 SHEET_ID=your_google_sheet_id
 
 # Frontend (.env.local)
-VITE_API_URL=https://houserenoai.onrender.com
+VITE_API_URL=https://api.houserenovatorsllc.com
 ```
 
 ---
@@ -315,9 +315,9 @@ VITE_API_URL=https://houserenoai.onrender.com
 ## 📊 Monitoring & Health
 
 ### **Health Endpoints**
-- **Backend Health**: https://houserenoai.onrender.com/health
-- **Debug Info**: https://houserenoai.onrender.com/debug/
-- **API Docs**: https://houserenoai.onrender.com/docs
+- **Backend Health**: https://api.houserenovatorsllc.com/health
+- **Debug Info**: https://api.houserenovatorsllc.com/debug/
+- **API Docs**: https://api.houserenovatorsllc.com/docs
 
 ### **Monitoring Features**
 - Real-time health checks across all services
@@ -369,7 +369,7 @@ This project is proprietary software developed for House Renovators AI Portal.
 
 | Component | Status | URL | Last Tested |
 |-----------|--------|-----|-------------|
-| **Backend API** | ✅ Production | https://houserenoai.onrender.com | Nov 3, 2025 *(Healthy - 360ms response)*|
+| **Backend API** | ✅ Production | https://api.houserenovatorsllc.com | Nov 3, 2025 *(Healthy - 360ms response)*|
 | **Frontend PWA** | ✅ Production | https://portal.houserenovatorsllc.com | Nov 3, 2025 *(200 OK response)* |
 | **Google Sheets** | ✅ Integrated | Connected | Nov 3, 2025 *(6 permits loaded - 1251ms)* |
 | **AI Chat** | ✅ Working | GPT-4o | Nov 3, 2025 *(Responding - 2560ms)* |
@@ -394,6 +394,6 @@ This project is proprietary software developed for House Renovators AI Portal.
 
 **Built with ❤️ for construction professionals**
 
-[🚀 Live Demo](https://houserenoai.onrender.com) • [📖 Documentation](docs/) • [🤖 AI Chat](https://houserenoai.onrender.com/docs)
+[🚀 Live Demo](https://api.houserenovatorsllc.com) • [📖 Documentation](docs/) • [🤖 AI Chat](https://api.houserenovatorsllc.com/docs)
 
 </div>

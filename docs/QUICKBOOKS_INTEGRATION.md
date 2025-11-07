@@ -42,7 +42,7 @@ The House Renovators API now integrates with QuickBooks Online for financial man
 1. In **Keys & credentials** tab, scroll to **Redirect URIs**
 2. Add these URIs:
    - **Development**: `http://localhost:8000/v1/quickbooks/callback`
-   - **Production**: `https://houserenoai.onrender.com/v1/quickbooks/callback`
+   - **Production**: `https://api.houserenovatorsllc.com/v1/quickbooks/callback`
 3. Save changes
 
 ### Step 4: Environment Configuration
@@ -233,7 +233,7 @@ Get company information from QuickBooks
 4. Once working, switch to production:
    ```bash
    QB_ENVIRONMENT=production
-   QB_REDIRECT_URI=https://houserenoai.onrender.com/v1/quickbooks/callback
+   QB_REDIRECT_URI=https://api.houserenovatorsllc.com/v1/quickbooks/callback
    ```
 
 ## 🚀 Production Deployment
@@ -257,10 +257,10 @@ Get company information from QuickBooks
 Update frontend to call QuickBooks endpoints:
 ```javascript
 // Example: Initiate OAuth
-window.location.href = 'https://houserenoai.onrender.com/v1/quickbooks/auth';
+window.location.href = 'https://api.houserenovatorsllc.com/v1/quickbooks/auth';
 
 // Example: Check status
-const response = await fetch('https://houserenoai.onrender.com/v1/quickbooks/status');
+const response = await fetch('https://api.houserenovatorsllc.com/v1/quickbooks/status');
 const status = await response.json();
 ```
 

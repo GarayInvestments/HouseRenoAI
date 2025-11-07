@@ -2,13 +2,13 @@
 
 ## 🌐 **Base URL**
 ```
-Production: https://houserenoai.onrender.com
+Production: https://api.houserenovatorsllc.com
 Local Dev:  http://localhost:8000
 ```
 
 ## 📖 **Interactive Documentation**
-- **Swagger UI**: https://houserenoai.onrender.com/docs
-- **ReDoc**: https://houserenoai.onrender.com/redoc
+- **Swagger UI**: https://api.houserenovatorsllc.com/docs
+- **ReDoc**: https://api.houserenovatorsllc.com/redoc
 
 ---
 
@@ -35,7 +35,7 @@ Get all permits from Google Sheets
 
 **Example**:
 ```bash
-curl https://houserenoai.onrender.com/v1/permits/
+curl https://api.houserenovatorsllc.com/v1/permits/
 ```
 
 ---
@@ -66,7 +66,7 @@ Get specific permit by ID
 
 **Example**:
 ```bash
-curl https://houserenoai.onrender.com/v1/permits/3adc25e3
+curl https://api.houserenovatorsllc.com/v1/permits/3adc25e3
 ```
 
 ---
@@ -98,7 +98,7 @@ Update a specific permit
 
 **Example**:
 ```bash
-curl -X PUT https://houserenoai.onrender.com/v1/permits/3adc25e3 \
+curl -X PUT https://api.houserenovatorsllc.com/v1/permits/3adc25e3 \
      -H "Content-Type: application/json" \
      -d '{"updates": {"Permit Status": "Approved"}, "notify_team": true}'
 ```
@@ -118,13 +118,13 @@ Search permits with filters
 **Examples**:
 ```bash
 # Search approved permits
-curl "https://houserenoai.onrender.com/v1/permits/search/?query=approved&status=approved"
+curl "https://api.houserenovatorsllc.com/v1/permits/search/?query=approved&status=approved"
 
 # Search by project
-curl "https://houserenoai.onrender.com/v1/permits/search/?query=all&project_id=86d7ce24"
+curl "https://api.houserenovatorsllc.com/v1/permits/search/?query=all&project_id=86d7ce24"
 
 # Natural language search
-curl "https://houserenoai.onrender.com/v1/permits/search/?query=permits submitted this month"
+curl "https://api.houserenovatorsllc.com/v1/permits/search/?query=permits submitted this month"
 ```
 
 ---
@@ -175,7 +175,7 @@ AI analysis of all permits
 
 **Example**:
 ```bash
-curl -X POST https://houserenoai.onrender.com/v1/permits/analyze
+curl -X POST https://api.houserenovatorsllc.com/v1/permits/analyze
 ```
 
 ---
@@ -208,22 +208,22 @@ Process chat message with AI and permit data access
 **Example Questions**:
 ```bash
 # Count permits by status
-curl -X POST https://houserenoai.onrender.com/v1/chat/ \
+curl -X POST https://api.houserenovatorsllc.com/v1/chat/ \
      -H "Content-Type: application/json" \
      -d '{"message": "How many permits are approved?"}'
 
 # Find specific permits
-curl -X POST https://houserenoai.onrender.com/v1/chat/ \
+curl -X POST https://api.houserenovatorsllc.com/v1/chat/ \
      -H "Content-Type: application/json" \
      -d '{"message": "Show me permits that need file uploads"}'
 
 # Timeline questions
-curl -X POST https://houserenoai.onrender.com/v1/chat/ \
+curl -X POST https://api.houserenovatorsllc.com/v1/chat/ \
      -H "Content-Type: application/json" \
      -d '{"message": "What permits were submitted this month?"}'
 
 # Analysis requests
-curl -X POST https://houserenoai.onrender.com/v1/chat/ \
+curl -X POST https://api.houserenovatorsllc.com/v1/chat/ \
      -H "Content-Type: application/json" \
      -d '{"message": "Analyze permit approval times"}'
 ```
@@ -250,7 +250,7 @@ Get chat system status
 
 **Example**:
 ```bash
-curl https://houserenoai.onrender.com/v1/chat/status
+curl https://api.houserenovatorsllc.com/v1/chat/status
 ```
 
 ---
@@ -395,14 +395,14 @@ Import this collection for testing:
       "name": "Get All Permits",
       "request": {
         "method": "GET",
-        "url": "https://houserenoai.onrender.com/v1/permits/"
+        "url": "https://api.houserenovatorsllc.com/v1/permits/"
       }
     },
     {
       "name": "Chat Query",
       "request": {
         "method": "POST",
-        "url": "https://houserenoai.onrender.com/v1/chat/",
+        "url": "https://api.houserenovatorsllc.com/v1/chat/",
         "header": [{"key": "Content-Type", "value": "application/json"}],
         "body": {
           "raw": "{\"message\": \"How many permits are approved?\"}"
@@ -416,7 +416,7 @@ Import this collection for testing:
 ### **cURL Test Suite**
 ```bash
 #!/bin/bash
-BASE_URL="https://houserenoai.onrender.com"
+BASE_URL="https://api.houserenovatorsllc.com"
 
 echo "Testing Health Endpoints..."
 curl -s "$BASE_URL/" | jq .
@@ -505,7 +505,7 @@ Extract structured data from uploaded documents (PDFs or images) using AI.
 
 **Example (cURL):**
 ```bash
-curl -X POST "https://houserenoai.onrender.com/v1/documents/extract" \
+curl -X POST "https://api.houserenovatorsllc.com/v1/documents/extract" \
   -F "file=@kitchen_plans.pdf" \
   -F "document_type=project" \
   -F "client_id=CLI-001"
@@ -518,7 +518,7 @@ formData.append('file', fileInput.files[0]);
 formData.append('document_type', 'project');
 formData.append('client_id', 'CLI-001');
 
-const response = await fetch('https://houserenoai.onrender.com/v1/documents/extract', {
+const response = await fetch('https://api.houserenovatorsllc.com/v1/documents/extract', {
   method: 'POST',
   body: formData
 });
@@ -580,7 +580,7 @@ Create a project or permit record from AI-extracted document data.
 
 **Example (cURL):**
 ```bash
-curl -X POST "https://houserenoai.onrender.com/v1/documents/create-from-extract" \
+curl -X POST "https://api.houserenovatorsllc.com/v1/documents/create-from-extract" \
   -H "Content-Type: application/json" \
   -d '{
     "document_type": "project",
@@ -596,7 +596,7 @@ curl -X POST "https://houserenoai.onrender.com/v1/documents/create-from-extract"
 
 **Example (JavaScript):**
 ```javascript
-const response = await fetch('https://houserenoai.onrender.com/v1/documents/create-from-extract', {
+const response = await fetch('https://api.houserenovatorsllc.com/v1/documents/create-from-extract', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({

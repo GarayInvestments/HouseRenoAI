@@ -115,11 +115,11 @@ app.add_middleware(
     CORSMiddleware,
     allow_origin_regex=r"https://.*\.house-renovators-ai-portal\.pages\.dev",
     allow_origins=[
-        "https://portal.houserenovatorsllc.com",
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "https://house-renovators-pwa.pages.dev",
-        "https://house-renovators-ai-portal.pages.dev",  # Main Cloudflare Pages domain
+        "https://portal.houserenovatorsllc.com",  # Production frontend
+        "http://localhost:3000",  # Local dev
+        "http://localhost:5173",  # Vite dev server
+        "https://house-renovators-pwa.pages.dev",  # Cloudflare preview
+        "https://house-renovators-ai-portal.pages.dev",  # Cloudflare Pages domain
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],

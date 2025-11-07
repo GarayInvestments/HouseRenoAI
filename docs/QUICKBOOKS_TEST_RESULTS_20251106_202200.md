@@ -349,7 +349,7 @@
 - ⏳ Need to set environment variables on Render:
   - `QB_CLIENT_ID`
   - `QB_CLIENT_SECRET`
-  - `QB_REDIRECT_URI=https://houserenoai.onrender.com/v1/quickbooks/callback`
+  - `QB_REDIRECT_URI=https://api.houserenovatorsllc.com/v1/quickbooks/callback`
   - `QB_ENVIRONMENT=production`
 - ⏳ Switch to production keys in Intuit Developer Dashboard
 - ⏳ Update redirect URI for production

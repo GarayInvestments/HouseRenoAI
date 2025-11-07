@@ -46,7 +46,7 @@ To enable automatic deployments, you need to add the following secrets to your G
 1. Go to https://github.com/GarayInvestments/HouseRenoAI/settings/secrets/actions
 2. Click "New repository secret"
 3. Name: `VITE_API_URL`
-4. Value: `https://houserenoai.onrender.com`
+4. Value: `https://api.houserenovatorsllc.com`
 5. Click "Add secret"
 
 ## How It Works

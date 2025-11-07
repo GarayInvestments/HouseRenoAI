@@ -2,7 +2,7 @@
 
 ## 🚀 **PRODUCTION DEPLOYMENT - COMPLETE ✅**
 
-**Live URL**: https://houserenoai.onrender.com  
+**Live URL**: https://api.houserenovatorsllc.com  
 **Status**: ✅ FULLY OPERATIONAL  
 **Last Updated**: November 3, 2025
 
@@ -91,19 +91,19 @@ Health Check Path: /health
 
 ```bash
 # Health Check
-curl https://houserenoai.onrender.com/health
+curl https://api.houserenovatorsllc.com/health
 # Response: {"status": "healthy", "services": {...}}
 
 # Google Service Status
-curl https://houserenoai.onrender.com/debug/
+curl https://api.houserenovatorsllc.com/debug/
 # Response: {"google_service_initialized": {"credentials": true, "sheets_service": true, "drive_service": true}}
 
 # API Functionality  
-curl https://houserenoai.onrender.com/v1/permits/
+curl https://api.houserenovatorsllc.com/v1/permits/
 # Response: [{"Permit ID": "3adc25e3", ...}] (6+ permits)
 
 # AI Chat Integration
-curl -X POST https://houserenoai.onrender.com/v1/chat/ \
+curl -X POST https://api.houserenovatorsllc.com/v1/chat/ \
      -H "Content-Type: application/json" \
      -d '{"message": "How many permits are approved?"}'
 # Response: {"response": "Out of the recent permits, four are currently approved..."}
@@ -154,10 +154,10 @@ git push origin main
 
 # 3. Monitor deployment in Render dashboard
 # 4. Verify with health checks
-curl https://houserenoai.onrender.com/health
+curl https://api.houserenovatorsllc.com/health
 
 # 5. Test key functionality
-curl https://houserenoai.onrender.com/v1/permits/
+curl https://api.houserenovatorsllc.com/v1/permits/
 ```
 
 ### **Emergency Deployment** ✅
@@ -214,7 +214,7 @@ git push --force origin main
 ```bash
 #!/bin/bash
 # health-check.sh
-BASE_URL="https://houserenoai.onrender.com"
+BASE_URL="https://api.houserenovatorsllc.com"
 
 # Check main health
 curl -f "$BASE_URL/health" || exit 1
@@ -342,7 +342,7 @@ timeout = httpx.Timeout(10.0, connect=5.0)
 # 2. Check logs for startup errors
 # 3. Verify environment variables
 # 4. Test health endpoints
-curl https://houserenoai.onrender.com/health
+curl https://api.houserenovatorsllc.com/health
 ```
 
 **Data Recovery**:

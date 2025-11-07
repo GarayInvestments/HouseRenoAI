@@ -331,7 +331,7 @@ All documentation files cross-checked for:
 **Remote**: `origin` (GarayInvestments/HouseRenoAI)
 
 ### Backend Deployment (Render)
-**URL**: https://houserenoai.onrender.com  
+**URL**: https://api.houserenovatorsllc.com  
 **Status**: ✅ Auto-deploying from main branch  
 **Environment**:
 - Docker container

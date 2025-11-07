@@ -11,7 +11,7 @@
 **Solutions**:
 ```bash
 # Check debug endpoint
-curl https://houserenoai.onrender.com/debug/
+curl https://api.houserenovatorsllc.com/debug/
 
 # Should return:
 {
@@ -150,16 +150,16 @@ async def create_record_from_extraction(
 **Debugging Commands**:
 ```bash
 # 1. Check if endpoint exists
-curl -X OPTIONS https://houserenoai.onrender.com/v1/documents/create-from-extract
+curl -X OPTIONS https://api.houserenovatorsllc.com/v1/documents/create-from-extract
 
 # 2. Check Render logs (Render Dashboard → Logs tab)
 # Look for: [INFO], [DEBUG], [WARNING], [ERROR] messages
 
 # 3. Check deployed version (if /version endpoint exists)
-curl https://houserenoai.onrender.com/version
+curl https://api.houserenovatorsllc.com/version
 
 # 4. Test with minimal payload
-curl -X POST https://houserenoai.onrender.com/v1/documents/create-from-extract \
+curl -X POST https://api.houserenovatorsllc.com/v1/documents/create-from-extract \
   -H "Content-Type: application/json" \
   -d '{"document_type":"project","extracted_data":{"Project ID":"TEST-001"}}'
 ```
@@ -181,31 +181,31 @@ LOG_LEVEL=DEBUG
 
 ```bash
 # Basic health
-curl https://houserenoai.onrender.com/
+curl https://api.houserenovatorsllc.com/
 
 # Detailed status  
-curl https://houserenoai.onrender.com/health
+curl https://api.houserenovatorsllc.com/health
 
 # Google service status
-curl https://houserenoai.onrender.com/debug/
+curl https://api.houserenovatorsllc.com/debug/
 
 # Chat system status
-curl https://houserenoai.onrender.com/v1/chat/status
+curl https://api.houserenovatorsllc.com/v1/chat/status
 ```
 
 ### 2. **Test Individual Services**
 
 ```bash
 # Test permit data access
-curl https://houserenoai.onrender.com/v1/permits/
+curl https://api.houserenovatorsllc.com/v1/permits/
 
 # Test AI chat
-curl -X POST https://houserenoai.onrender.com/v1/chat/ \
+curl -X POST https://api.houserenovatorsllc.com/v1/chat/ \
      -H "Content-Type: application/json" \
      --data-binary '{"message": "test"}'
 
 # Test specific permit
-curl https://houserenoai.onrender.com/v1/permits/3adc25e3
+curl https://api.houserenovatorsllc.com/v1/permits/3adc25e3
 ```
 
 ### 3. **Log Analysis**
@@ -294,13 +294,13 @@ pip freeze > requirements.txt
 
 ```bash
 # Regular health checks
-curl https://houserenoai.onrender.com/health
+curl https://api.houserenovatorsllc.com/health
 
 # Monitor response times
-curl -w "@curl-format.txt" https://houserenoai.onrender.com/v1/permits/
+curl -w "@curl-format.txt" https://api.houserenovatorsllc.com/v1/permits/
 
 # Check Google Sheets connectivity
-curl https://houserenoai.onrender.com/debug/
+curl https://api.houserenovatorsllc.com/debug/
 ```
 
 ### 2. **Key Metrics to Monitor**

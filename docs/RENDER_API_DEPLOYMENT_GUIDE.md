@@ -117,7 +117,7 @@ foreach ($var in $currentVars) {
 # Add new variables (QuickBooks example)
 $allVars += @{ key = "QB_CLIENT_ID"; value = "ABqSaOOjjMosXSBWJCrvrLWgpH1KjiIDjzOMerAOw4yZp7Gcmm" }
 $allVars += @{ key = "QB_CLIENT_SECRET"; value = "idSQXTLLqCpg91iw69FkWlSssVgILNBSToTuJaEX" }
-$allVars += @{ key = "QB_REDIRECT_URI"; value = "https://houserenoai.onrender.com/v1/quickbooks/callback" }
+$allVars += @{ key = "QB_REDIRECT_URI"; value = "https://api.houserenovatorsllc.com/v1/quickbooks/callback" }
 $allVars += @{ key = "QB_ENVIRONMENT"; value = "sandbox" }
 
 Write-Host "Total variables: $($allVars.Count) ($(($currentVars.Count)) existing + $(($allVars.Count - $currentVars.Count)) new)"
@@ -414,7 +414,7 @@ foreach ($var in $currentVars) {
 }
 $allVars += @{ key = "QB_CLIENT_ID"; value = "ABqSaOOjjMosXSBWJCrvrLWgpH1KjiIDjzOMerAOw4yZp7Gcmm" }
 $allVars += @{ key = "QB_CLIENT_SECRET"; value = "idSQXTLLqCpg91iw69FkWlSssVgILNBSToTuJaEX" }
-$allVars += @{ key = "QB_REDIRECT_URI"; value = "https://houserenoai.onrender.com/v1/quickbooks/callback" }
+$allVars += @{ key = "QB_REDIRECT_URI"; value = "https://api.houserenovatorsllc.com/v1/quickbooks/callback" }
 $allVars += @{ key = "QB_ENVIRONMENT"; value = "sandbox" }
 
 # 4. Update vars
@@ -492,7 +492,7 @@ After running the deployment:
 curl https://your-app.onrender.com/health
 
 # Test new feature (QuickBooks example)
-curl https://houserenoai.onrender.com/v1/quickbooks/status
+curl https://api.houserenovatorsllc.com/v1/quickbooks/status
 ```
 
 ---

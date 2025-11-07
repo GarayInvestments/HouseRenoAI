@@ -49,10 +49,10 @@
 ## 🔧 **Backend API Status** (Render)
 
 ### **Endpoints**
-- **Main URL**: https://houserenoai.onrender.com
-- **Health Check**: https://houserenoai.onrender.com/health
-- **Debug Info**: https://houserenoai.onrender.com/debug/
-- **API Docs**: https://houserenoai.onrender.com/docs
+- **Main URL**: https://api.houserenovatorsllc.com
+- **Health Check**: https://api.houserenovatorsllc.com/health
+- **Debug Info**: https://api.houserenovatorsllc.com/debug/
+- **API Docs**: https://api.houserenovatorsllc.com/docs
 
 ### **Recent Changes** ✅
 - **Commit**: 4cac8f0 - "Massive expansion: AI now has full access to all 12 Google Sheets"
@@ -173,7 +173,7 @@ npx wrangler pages deploy dist --project-name=house-renovators-ai-portal --commi
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/3d1f227f6cbdb1108d2abd277f1726c0
 - **Render Dashboard**: https://dashboard.render.com
 - **GitHub Repository**: https://github.com/GarayInvestments/HouseRenoAI
-- **API Documentation**: https://houserenoai.onrender.com/docs
+- **API Documentation**: https://api.houserenovatorsllc.com/docs
 - **Frontend (Preview)**: https://26a6cac5.house-renovators-ai-portal.pages.dev
 - **Frontend (Production)**: https://10ba8f6d.house-renovators-ai-portal.pages.dev
 

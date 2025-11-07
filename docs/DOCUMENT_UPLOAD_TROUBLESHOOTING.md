@@ -17,7 +17,7 @@ at async P (index-DqkRHb6U.js:16:13138021)
 
 ### Backend Response
 ```
-POST https://houserenoai.onrender.com/v1/documents/extract - 500 (Internal Server Error)
+POST https://api.houserenovatorsllc.com/v1/documents/extract - 500 (Internal Server Error)
 ```
 
 ## Timeline of Events
@@ -25,7 +25,7 @@ POST https://houserenoai.onrender.com/v1/documents/extract - 500 (Internal Serve
 1. **Initial Connection Issue** ✅ RESOLVED
    - Frontend was using `localhost:8000` instead of production backend
    - Fixed by adding `VITE_API_URL` to GitHub Actions build step
-   - Frontend now successfully connects to `https://houserenoai.onrender.com`
+   - Frontend now successfully connects to `https://api.houserenovatorsllc.com`
 
 2. **Current Upload Issue** 🔴 ACTIVE
    - File upload now reaches the backend (progress!)
@@ -169,7 +169,7 @@ Document types being tested:
 - `frontend/src/pages/AIAssistant.jsx` - Upload UI component
 
 ## Environment
-- **Backend**: Render.com (https://houserenoai.onrender.com)
+- **Backend**: Render.com (https://api.houserenovatorsllc.com)
 - **Frontend**: Cloudflare Pages (https://house-renovators-ai-portal.pages.dev)
 - **OpenAI Model**: GPT-4 Vision/Text
 - **Python Version**: 3.13

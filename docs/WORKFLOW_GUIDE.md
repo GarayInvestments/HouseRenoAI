@@ -36,8 +36,8 @@ git pull origin main
 cd ..
 
 # 4. Check system health
-curl https://houserenoai.onrender.com/health
-curl https://houserenoai.onrender.com/debug/
+curl https://api.houserenovatorsllc.com/health
+curl https://api.houserenovatorsllc.com/debug/
 
 # 5. Start local development (if needed)
 # Terminal 1: Backend
@@ -274,7 +274,7 @@ Create `.env.local` file in `frontend/` directory:
 ```env
 VITE_API_URL=http://localhost:8000
 # OR for production testing:
-# VITE_API_URL=https://houserenoai.onrender.com
+# VITE_API_URL=https://api.houserenovatorsllc.com
 
 VITE_ENV=development
 VITE_ENABLE_DEBUG=true
@@ -349,16 +349,16 @@ git push origin main
 #### **Verify Backend Deployment**
 ```powershell
 # Check health immediately after deploy
-curl https://houserenoai.onrender.com/health
+curl https://api.houserenovatorsllc.com/health
 
 # Verify Google service
-curl https://houserenoai.onrender.com/debug/
+curl https://api.houserenovatorsllc.com/debug/
 
 # Test permit endpoint
-curl https://houserenoai.onrender.com/v1/permits/
+curl https://api.houserenovatorsllc.com/v1/permits/
 
 # Test AI chat
-curl -X POST https://houserenoai.onrender.com/v1/chat/ `
+curl -X POST https://api.houserenovatorsllc.com/v1/chat/ `
   -H "Content-Type: application/json" `
   -d '{"message": "System check"}'
 ```
@@ -455,9 +455,9 @@ npm run preview
 
 ```powershell
 # Backend validation
-curl https://houserenoai.onrender.com/health | jq
-curl https://houserenoai.onrender.com/debug/ | jq
-curl https://houserenoai.onrender.com/v1/permits/ | jq '. | length'
+curl https://api.houserenovatorsllc.com/health | jq
+curl https://api.houserenovatorsllc.com/debug/ | jq
+curl https://api.houserenovatorsllc.com/v1/permits/ | jq '. | length'
 
 # Frontend validation
 curl -I https://house-renovators-ai-portal.pages.dev
@@ -473,12 +473,12 @@ curl -I https://house-renovators-ai-portal.pages.dev
 
 ```powershell
 # Create health-check.ps1
-$backend = Invoke-RestMethod -Uri "https://houserenoai.onrender.com/health"
-$debug = Invoke-RestMethod -Uri "https://houserenoai.onrender.com/debug/"
+$backend = Invoke-RestMethod -Uri "https://api.houserenovatorsllc.com/health"
+$debug = Invoke-RestMethod -Uri "https://api.houserenovatorsllc.com/debug/"
 
 Write-Host "Backend Status: $($backend.status)"
 Write-Host "Google Service: $($debug.google_service_initialized.sheets_service)"
-Write-Host "Permits Available: $((Invoke-RestMethod -Uri "https://houserenoai.onrender.com/v1/permits/").Count)"
+Write-Host "Permits Available: $((Invoke-RestMethod -Uri "https://api.houserenovatorsllc.com/v1/permits/").Count)"
 
 if ($backend.status -eq "healthy") {
     Write-Host "✅ All systems operational"
@@ -569,13 +569,13 @@ npm run preview
 ### **Health Checks**
 ```powershell
 # Backend health
-curl https://houserenoai.onrender.com/health
+curl https://api.houserenovatorsllc.com/health
 
 # Google service status
-curl https://houserenoai.onrender.com/debug/
+curl https://api.houserenovatorsllc.com/debug/
 
 # Get permits
-curl https://houserenoai.onrender.com/v1/permits/
+curl https://api.houserenovatorsllc.com/v1/permits/
 
 # Frontend status
 curl -I https://house-renovators-ai-portal.pages.dev
@@ -589,7 +589,7 @@ curl -I https://house-renovators-ai-portal.pages.dev
 
 ```powershell
 # 1. Identify issue in production
-curl https://houserenoai.onrender.com/debug/
+curl https://api.houserenovatorsllc.com/debug/
 
 # 2. Reproduce locally
 cd backend
@@ -610,7 +610,7 @@ git push origin main
 # Watch Render dashboard for ~4 minutes
 
 # 7. Verify fix
-curl https://houserenoai.onrender.com/debug/
+curl https://api.houserenovatorsllc.com/debug/
 ```
 
 ### **Scenario 2: Add New Frontend Feature**
@@ -661,7 +661,7 @@ git push origin main
 # 4. Wait for deployment (~4 min)
 
 # 5. Test production
-curl -X POST https://houserenoai.onrender.com/v1/chat/ `
+curl -X POST https://api.houserenovatorsllc.com/v1/chat/ `
   -H "Content-Type: application/json" `
   -d '{"message": "test query"}'
 ```
@@ -821,11 +821,11 @@ npx wrangler pages deploy dist --project-name=house-renovators-ai-portal --branc
 **Check system prompt:**
 ```powershell
 # 1. Verify latest code is deployed
-curl https://houserenoai.onrender.com/debug/
+curl https://api.houserenovatorsllc.com/debug/
 # Check timestamp
 
 # 2. Test specific query
-curl -X POST https://houserenoai.onrender.com/v1/chat/ `
+curl -X POST https://api.houserenovatorsllc.com/v1/chat/ `
   -H "Content-Type: application/json" `
   -d '{"message": "list all clients grouped by Status"}' | jq
 
@@ -840,7 +840,7 @@ curl -X POST https://houserenoai.onrender.com/v1/chat/ `
 **Debug steps:**
 ```powershell
 # 1. Check debug endpoint
-curl https://houserenoai.onrender.com/debug/
+curl https://api.houserenovatorsllc.com/debug/
 
 # 2. If credentials=false:
 # - Verify GOOGLE_SERVICE_ACCOUNT_BASE64 is set in Render
@@ -862,16 +862,16 @@ curl https://houserenoai.onrender.com/debug/
 **Solution**:
 ```powershell
 # 1. Check recent backend deployment
-curl https://houserenoai.onrender.com/debug/
+curl https://api.houserenovatorsllc.com/debug/
 
 # 2. Verify data is loading
-curl https://houserenoai.onrender.com/v1/permits/ | jq '. | length'
+curl https://api.houserenovatorsllc.com/v1/permits/ | jq '. | length'
 
 # 3. Test with explicit ID from permit data
-curl https://houserenoai.onrender.com/v1/permits/ | jq '.[0]["Client ID"]'
+curl https://api.houserenovatorsllc.com/v1/permits/ | jq '.[0]["Client ID"]'
 
 # 4. Use that ID in chat query
-curl -X POST https://houserenoai.onrender.com/v1/chat/ `
+curl -X POST https://api.houserenovatorsllc.com/v1/chat/ `
   -H "Content-Type: application/json" `
   -d '{"message": "details of client <ID>"}'
 ```
@@ -886,9 +886,9 @@ curl -X POST https://houserenoai.onrender.com/v1/chat/ `
 .\automation\api-scripts\health-check.ps1 -All
 
 # OR manual checks:
-curl https://houserenoai.onrender.com/health | jq
-curl https://houserenoai.onrender.com/debug/ | jq
-curl https://houserenoai.onrender.com/v1/permits/ | jq '. | length'
+curl https://api.houserenovatorsllc.com/health | jq
+curl https://api.houserenovatorsllc.com/debug/ | jq
+curl https://api.houserenovatorsllc.com/v1/permits/ | jq '. | length'
 ```
 
 ### **Weekly Tasks**

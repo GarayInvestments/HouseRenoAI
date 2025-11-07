@@ -15,15 +15,15 @@ The House Renovators AI Portal documentation has been **comprehensively updated*
 
 ## 🚀 **Quick Start**
 
-**Live Production URL**: https://houserenoai.onrender.com
+**Live Production URL**: https://api.houserenovatorsllc.com
 
 ```bash
 # Test the live API
-curl https://houserenoai.onrender.com/health
-curl https://houserenoai.onrender.com/v1/permits/
+curl https://api.houserenovatorsllc.com/health
+curl https://api.houserenovatorsllc.com/v1/permits/
 
 # AI Chat Example
-curl -X POST https://houserenoai.onrender.com/v1/chat/ \
+curl -X POST https://api.houserenovatorsllc.com/v1/chat/ \
      -H "Content-Type: application/json" \
      -d '{"message": "How many permits are approved?"}'
 ```
@@ -131,7 +131,7 @@ The project is **production-ready** with comprehensive documentation. The docume
 3. **For Support**: TROUBLESHOOTING.md with debugging procedures
 4. **For DevOps**: DEPLOYMENT.md with production deployment guides
 
-All documentation reflects the **current working state** of the production system at https://houserenoai.onrender.com.
+All documentation reflects the **current working state** of the production system at https://api.houserenovatorsllc.com.
 
 ---
 
