@@ -7,6 +7,7 @@ Supports customer, vendor, invoice, estimate, and bill management.
 import logging
 import httpx
 import base64
+import json
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 from urllib.parse import urlencode
@@ -14,6 +15,9 @@ from urllib.parse import urlencode
 from app.config import settings
 
 logger = logging.getLogger(__name__)
+
+# Token storage sheet name
+QB_TOKENS_SHEET = "QB_Tokens"
 
 
 class QuickBooksService:
@@ -46,13 +50,134 @@ class QuickBooksService:
             self.auth_url = "https://appcenter.intuit.com/connect/oauth2"
             self.token_url = "https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer"
         
-        # Token storage (in-memory for now)
+        # Token storage (persisted in Google Sheets)
         self.realm_id: Optional[str] = None  # Company ID
         self.access_token: Optional[str] = None
         self.refresh_token: Optional[str] = None
         self.token_expires_at: Optional[datetime] = None
         
         logger.info(f"QuickBooksService initialized ({self.environment} environment)")
+        
+        # Load tokens from Google Sheets on startup
+        self._load_tokens_from_sheets()
+    
+    def _load_tokens_from_sheets(self) -> None:
+        """Load QuickBooks tokens from Google Sheets."""
+        try:
+            from app.services.google_service import google_service
+            
+            if not google_service or not google_service.sheets_service:
+                logger.warning("Google Sheets service not available for token loading")
+                return
+            
+            # Try to read from QB_Tokens sheet
+            result = google_service.sheets_service.spreadsheets().values().get(
+                spreadsheetId=settings.SHEET_ID,
+                range=f"{QB_TOKENS_SHEET}!A2:E2"
+            ).execute()
+            
+            values = result.get('values', [])
+            if values and len(values[0]) >= 4:
+                row = values[0]
+                self.realm_id = row[0] if len(row) > 0 else None
+                self.access_token = row[1] if len(row) > 1 else None
+                self.refresh_token = row[2] if len(row) > 2 else None
+                expires_str = row[3] if len(row) > 3 else None
+                
+                if expires_str:
+                    self.token_expires_at = datetime.fromisoformat(expires_str)
+                
+                logger.info(f"Loaded tokens from Google Sheets for realm: {self.realm_id}")
+            else:
+                logger.info("No tokens found in Google Sheets")
+                
+        except Exception as e:
+            logger.warning(f"Could not load tokens from sheets (sheet may not exist yet): {e}")
+    
+    def _save_tokens_to_sheets(self) -> None:
+        """Save QuickBooks tokens to Google Sheets."""
+        try:
+            from app.services.google_service import google_service
+            
+            if not google_service or not google_service.sheets_service:
+                logger.warning("Google Sheets service not available for token saving")
+                return
+            
+            # Prepare data
+            expires_str = self.token_expires_at.isoformat() if self.token_expires_at else ""
+            updated_at = datetime.now().isoformat()
+            
+            values = [[
+                self.realm_id or "",
+                self.access_token or "",
+                self.refresh_token or "",
+                expires_str,
+                updated_at
+            ]]
+            
+            # Try to update existing row, or create sheet if it doesn't exist
+            try:
+                google_service.sheets_service.spreadsheets().values().update(
+                    spreadsheetId=settings.SHEET_ID,
+                    range=f"{QB_TOKENS_SHEET}!A2:E2",
+                    valueInputOption="RAW",
+                    body={"values": values}
+                ).execute()
+                logger.info("Saved tokens to Google Sheets")
+            except Exception as update_error:
+                # Sheet might not exist, try to create it
+                logger.info(f"Creating {QB_TOKENS_SHEET} sheet...")
+                self._create_tokens_sheet()
+                # Retry update
+                google_service.sheets_service.spreadsheets().values().update(
+                    spreadsheetId=settings.SHEET_ID,
+                    range=f"{QB_TOKENS_SHEET}!A2:E2",
+                    valueInputOption="RAW",
+                    body={"values": values}
+                ).execute()
+                logger.info("Created sheet and saved tokens")
+                
+        except Exception as e:
+            logger.error(f"Failed to save tokens to sheets: {e}")
+    
+    def _create_tokens_sheet(self) -> None:
+        """Create the QB_Tokens sheet with headers."""
+        try:
+            from app.services.google_service import google_service
+            
+            # Add new sheet
+            request_body = {
+                "requests": [{
+                    "addSheet": {
+                        "properties": {
+                            "title": QB_TOKENS_SHEET,
+                            "gridProperties": {
+                                "rowCount": 10,
+                                "columnCount": 5
+                            }
+                        }
+                    }
+                }]
+            }
+            
+            google_service.sheets_service.spreadsheets().batchUpdate(
+                spreadsheetId=settings.SHEET_ID,
+                body=request_body
+            ).execute()
+            
+            # Add headers
+            headers = [["Realm ID", "Access Token", "Refresh Token", "Expires At", "Updated At"]]
+            google_service.sheets_service.spreadsheets().values().update(
+                spreadsheetId=settings.SHEET_ID,
+                range=f"{QB_TOKENS_SHEET}!A1:E1",
+                valueInputOption="RAW",
+                body={"values": headers}
+            ).execute()
+            
+            logger.info(f"Created {QB_TOKENS_SHEET} sheet with headers")
+            
+        except Exception as e:
+            logger.error(f"Failed to create tokens sheet: {e}")
     
     def get_auth_url(self, state: str = "randomstate") -> str:
         """
@@ -70,7 +195,7 @@ class QuickBooksService:
         """
         params = {
             "client_id": self.client_id,
-            "scope": "com.intuit.quickbooks.accounting",
+            "scope": "com.intuit.quickbooks.accounting openid profile email phone address",
             "redirect_uri": self.redirect_uri,
             "response_type": "code",
             "state": state
@@ -124,6 +249,9 @@ class QuickBooksService:
             self.refresh_token = token_data["refresh_token"]
             self.realm_id = realm_id
             self.token_expires_at = datetime.now() + timedelta(seconds=token_data["expires_in"])
+            
+            # Save tokens to Google Sheets for persistence
+            self._save_tokens_to_sheets()
             
             logger.info(f"Successfully exchanged code for tokens. Realm ID: {realm_id}")
             
@@ -179,6 +307,9 @@ class QuickBooksService:
             self.access_token = token_data["access_token"]
             self.refresh_token = token_data["refresh_token"]
             self.token_expires_at = datetime.now() + timedelta(seconds=token_data["expires_in"])
+            
+            # Save refreshed tokens to Google Sheets
+            self._save_tokens_to_sheets()
             
             logger.info("Successfully refreshed access token")
             
