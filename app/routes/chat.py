@@ -4,6 +4,7 @@ import logging
 
 from app.services.openai_service import openai_service
 import app.services.google_service as google_service_module
+from app.services.quickbooks_service import quickbooks_service
 from app.memory.memory_manager import memory_manager
 
 logger = logging.getLogger(__name__)
@@ -120,6 +121,35 @@ async def process_chat_message(chat_data: Dict[str, Any]):
             })
             
             logger.info(f"Loaded full context: {len(permits)} permits, {len(projects)} projects, {len(clients)} clients")
+            
+            # Add QuickBooks data if available
+            try:
+                if quickbooks_service and quickbooks_service.is_authenticated():
+                    qb_customers = await quickbooks_service.get_customers()
+                    qb_invoices = await quickbooks_service.get_invoices()
+                    
+                    context.update({
+                        'quickbooks_connected': True,
+                        'qb_customers_count': len(qb_customers),
+                        'qb_invoices_count': len(qb_invoices),
+                        'qb_customers': qb_customers,
+                        'qb_invoices': qb_invoices,
+                        'qb_customers_summary': [
+                            {
+                                'id': c.get('Id'),
+                                'name': c.get('DisplayName') or c.get('CompanyName') or c.get('FullyQualifiedName'),
+                                'email': c.get('PrimaryEmailAddr', {}).get('Address') if c.get('PrimaryEmailAddr') else None,
+                                'phone': c.get('PrimaryPhone', {}).get('FreeFormNumber') if c.get('PrimaryPhone') else None,
+                                'balance': c.get('Balance', 0)
+                            } for c in qb_customers
+                        ]
+                    })
+                    logger.info(f"Added QuickBooks context: {len(qb_customers)} customers, {len(qb_invoices)} invoices")
+                else:
+                    context['quickbooks_connected'] = False
+            except Exception as qb_err:
+                logger.warning(f"Could not fetch QuickBooks data: {qb_err}")
+                context['quickbooks_connected'] = False
             
         except Exception as e:
             logger.warning(f"Could not fetch data context: {e}")
