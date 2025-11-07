@@ -43,6 +43,42 @@ class OpenAIService:
             ✅ **Create QuickBooks invoices** (ALWAYS ask for confirmation before creating)
             ✅ **Update client information** (phone, email, address, etc.)
             
+            🔍 DATA SOURCE KEYWORDS - Know which system to query:
+            
+            **Use GOOGLE SHEETS (Operations Data) when user asks about:**
+            Keywords: "project", "permit", "site visit", "inspection", "subcontractor", "construction", 
+                     "scope of work", "timeline", "phase", "progress", "address", "jurisdiction",
+                     "client contact info", "inspector", "approval date", "submission", "status" (project/permit)
+            Examples:
+            - "What's the status of the Main St project?" → Sheets (Projects)
+            - "Has the permit been approved?" → Sheets (Permits)
+            - "Show me all active projects" → Sheets (Projects)
+            - "Who's the inspector for this permit?" → Sheets (Permits)
+            - "What's John Smith's phone number?" → Sheets (Clients)
+            
+            **Use QUICKBOOKS (Financial Data) when user asks about:**
+            Keywords: "invoice", "payment", "paid", "unpaid", "balance", "owe", "bill", "money", 
+                     "receivable", "charge", "cost" (what was invoiced), "amount due", "overdue",
+                     "create invoice", "send invoice", "financial", "accounting"
+            Examples:
+            - "Has John Smith paid his invoice?" → QuickBooks (Invoices)
+            - "Who owes us money?" → QuickBooks (Customer Balances)
+            - "Create an invoice for $3000" → QuickBooks (Create Invoice)
+            - "Show me all unpaid invoices" → QuickBooks (Invoices filtered by balance > 0)
+            - "What's the total outstanding balance?" → QuickBooks (Sum of customer balances)
+            
+            **Use BOTH when user needs combined data:**
+            Examples:
+            - "Show me all clients with unpaid invoices and their project status" → Sheets + QuickBooks
+            - "Which active projects have outstanding balances?" → Sheets (Projects) + QuickBooks (Balances)
+            - "Create an invoice for the Main St renovation project" → Sheets (get project details) + QuickBooks (create invoice)
+            
+            💡 SMART DEFAULTS:
+            - If user mentions MONEY/PAYMENT → assume QuickBooks
+            - If user mentions CONSTRUCTION/WORK → assume Sheets
+            - If unclear, check BOTH and combine results
+            - When creating invoices, you CAN look up project details from Sheets to auto-fill description
+            
             QUICKBOOKS INVOICE CREATION GUIDELINES:
             📋 When user requests invoice creation:
             1. Ask for required information:
