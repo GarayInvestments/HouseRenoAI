@@ -16,6 +16,7 @@ export default function AIAssistant() {
   const [isHovered, setIsHovered] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+  const [qbConnected, setQbConnected] = useState(false);
   const [error, setError] = useState(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
   
@@ -170,17 +171,32 @@ export default function AIAssistant() {
 
   const renameSession = async (sessionId, newTitle) => {
     try {
-      await api.updateSessionMetadata(sessionId, { title: newTitle });
-      setEditingSessionId(null);
-      await loadSessions();
+      // Optimistically update UI immediately
+      setSessions(prevSessions => 
+        prevSessions.map(session => 
+          session.session_id === sessionId 
+            ? { ...session, title: newTitle }
+            : session
+        )
+      );
       
       // Update local metadata if it's current session
       if (sessionId === currentSessionId) {
         setSessionMetadata(prev => ({ ...prev, title: newTitle }));
       }
+      
+      setEditingSessionId(null);
+      
+      // Then update backend
+      await api.updateSessionMetadata(sessionId, { title: newTitle });
+      
+      // Reload to ensure sync with backend
+      await loadSessions();
     } catch (err) {
       console.error('Failed to rename session:', err);
       setError('Failed to rename chat');
+      // Reload to revert optimistic update if backend failed
+      await loadSessions();
     }
   };
 
@@ -198,6 +214,22 @@ export default function AIAssistant() {
       setError('Backend connection failed. Using demo mode.');
     }
   };
+
+  const checkQBStatus = async () => {
+    try {
+      const response = await api.getQuickBooksStatus();
+      setQbConnected(response.authenticated || false);
+    } catch {
+      setQbConnected(false);
+    }
+  };
+
+  // Check QB status periodically
+  useEffect(() => {
+    checkQBStatus();
+    const interval = setInterval(checkQBStatus, 60000); // Check every 60 seconds
+    return () => clearInterval(interval);
+  }, []);
 
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0];
@@ -498,14 +530,14 @@ export default function AIAssistant() {
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap'
                         }}>
-                          {session.metadata?.title || 'Untitled Chat'}
+                          {session.title || 'Untitled Chat'}
                         </div>
                         <div style={{
                           fontSize: '11px',
                           color: '#94A3B8',
                           marginTop: '2px'
                         }}>
-                          {session.metadata?.message_count || 0} messages
+                          {session.message_count || 0} messages
                         </div>
                       </>
                     )}
@@ -516,7 +548,7 @@ export default function AIAssistant() {
                       onClick={(e) => {
                         e.stopPropagation();
                         setEditingSessionId(session.session_id);
-                        setEditingTitle(session.metadata?.title || 'Untitled Chat');
+                        setEditingTitle(session.title || 'Untitled Chat');
                       }}
                       style={{
                         padding: '4px',
@@ -605,26 +637,57 @@ export default function AIAssistant() {
             {/* Connection Status */}
             <div style={{
               display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '8px 12px',
-              borderRadius: '8px',
-              backgroundColor: isConnected ? '#F0FDF4' : '#FEF2F2',
-              border: `1px solid ${isConnected ? '#BBF7D0' : '#FECACA'}`
+              gap: '8px'
             }}>
+              {/* Backend Status */}
               <div style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                backgroundColor: isConnected ? '#22C55E' : '#EF4444'
-              }} />
-              <span style={{
-                fontSize: '12px',
-                fontWeight: '500',
-                color: isConnected ? '#15803D' : '#DC2626'
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                backgroundColor: isConnected ? '#F0FDF4' : '#FEF2F2',
+                border: `1px solid ${isConnected ? '#BBF7D0' : '#FECACA'}`
               }}>
-                {isConnected ? 'Connected' : 'Demo Mode'}
-              </span>
+                <div style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  backgroundColor: isConnected ? '#22C55E' : '#EF4444'
+                }} />
+                <span style={{
+                  fontSize: '12px',
+                  fontWeight: '500',
+                  color: isConnected ? '#15803D' : '#DC2626'
+                }}>
+                  Backend
+                </span>
+              </div>
+
+              {/* QuickBooks Status */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                backgroundColor: qbConnected ? '#F0F9FF' : '#FEF2F2',
+                border: `1px solid ${qbConnected ? '#BFDBFE' : '#FECACA'}`
+              }}>
+                <div style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  backgroundColor: qbConnected ? '#3B82F6' : '#EF4444'
+                }} />
+                <span style={{
+                  fontSize: '12px',
+                  fontWeight: '500',
+                  color: qbConnected ? '#1E40AF' : '#DC2626'
+                }}>
+                  {qbConnected ? 'QuickBooks' : 'QB Offline'}
+                </span>
+              </div>
             </div>
           </div>
           

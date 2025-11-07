@@ -64,8 +64,9 @@ class ApiService {
 
   // Session management endpoints
   async listSessions() {
-    return this.request('/chat/sessions', {
+    return this.request(`/chat/sessions?t=${Date.now()}`, {
       method: 'GET',
+      cache: 'no-cache',
     });
   }
 
@@ -212,6 +213,13 @@ class ApiService {
     const url = `${API_URL}/health`;
     const response = await fetch(url);
     return await response.json();
+  }
+
+  // QuickBooks endpoints
+  async getQuickBooksStatus() {
+    return this.request('/quickbooks/status', {
+      method: 'GET',
+    });
   }
 }
 
