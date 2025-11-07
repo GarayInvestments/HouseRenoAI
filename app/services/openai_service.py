@@ -27,6 +27,7 @@ class OpenAIService:
             - Site visits, subcontractors, documents, tasks, and payments
             - Jurisdiction information and inspector contacts
             - Construction phase tracking with images
+            - **QuickBooks data** (customers, invoices, balances) when authenticated
             
             YOUR CAPABILITIES:
             ✅ Answer ANY question about clients, projects, or permits
@@ -37,6 +38,9 @@ class OpenAIService:
             ✅ Cross-reference data between sheets (clients → projects → permits)
             ✅ Provide detailed analysis and recommendations
             ✅ Generate reports and summaries
+            ✅ **Access QuickBooks invoices and customer data**
+            ✅ **Query customer balances, open invoices, payment status**
+            ✅ **Update client information** (phone, email, address, etc.)
             
             CRITICAL FORMATTING RULES:
             🎯 ALWAYS format responses in clean, readable markdown
@@ -93,6 +97,31 @@ class OpenAIService:
                     context_parts.append(f"Total Projects: {context['projects_count']}")
                 if 'permits_count' in context:
                     context_parts.append(f"Total Permits: {context['permits_count']}")
+                
+                # Add QuickBooks data summary
+                if context.get('quickbooks_connected'):
+                    context_parts.append(f"\n🔗 QuickBooks: CONNECTED")
+                    context_parts.append(f"QuickBooks Customers: {context.get('qb_customers_count', 0)}")
+                    context_parts.append(f"QuickBooks Invoices: {context.get('qb_invoices_count', 0)}")
+                    
+                    # Add QuickBooks customers summary
+                    if 'qb_customers_summary' in context and context['qb_customers_summary']:
+                        context_parts.append("\n\n=== QUICKBOOKS CUSTOMERS ===")
+                        for customer in context['qb_customers_summary'][:30]:
+                            context_parts.append(
+                                f"\nQB Customer ID: {customer.get('id')}"
+                                f"\n  Name: {customer.get('name')}"
+                                f"\n  Email: {customer.get('email')}"
+                                f"\n  Phone: {customer.get('phone')}"
+                                f"\n  Balance: ${customer.get('balance', 0)}"
+                            )
+                    
+                    # Add full QB invoices
+                    if 'qb_invoices' in context:
+                        context_parts.append(f"\n\n=== QUICKBOOKS INVOICES ({len(context['qb_invoices'])} total) ===")
+                        context_parts.append(str(context['qb_invoices']))
+                else:
+                    context_parts.append(f"\n⚠️ QuickBooks: Not connected")
                 
                 # Add available IDs for lookup
                 if 'client_ids' in context and context['client_ids']:
