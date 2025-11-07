@@ -204,3 +204,54 @@ async def get_client(client_id: str):
     except Exception as e:
         logger.error(f"Failed to get client {client_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to retrieve client: {str(e)}")
+
+@router.put("/{client_id}")
+async def update_client(client_id: str, updates: Dict[str, Any]):
+    """
+    Update a specific client by ID
+    """
+    try:
+        google_service = get_google_service()
+        
+        # Verify client exists first
+        clients = await google_service.get_clients_data()
+        client = None
+        for c in clients:
+            if c.get('Client ID') == client_id or c.get('ID') == client_id:
+                client = c
+                break
+        
+        if not client:
+            raise HTTPException(status_code=404, detail=f"Client {client_id} not found")
+        
+        # Update the client in Google Sheets
+        success = await google_service.update_record_by_id(
+            sheet_name='Clients',
+            id_field='Client ID',
+            record_id=client_id,
+            updates=updates
+        )
+        
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to update client in Google Sheets")
+        
+        # Return updated client data
+        updated_clients = await google_service.get_clients_data()
+        for c in updated_clients:
+            if c.get('Client ID') == client_id or c.get('ID') == client_id:
+                return {
+                    'success': True,
+                    'message': f'Client {client_id} updated successfully',
+                    'client': c
+                }
+        
+        return {
+            'success': True,
+            'message': f'Client {client_id} updated successfully'
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to update client {client_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to update client: {str(e)}")

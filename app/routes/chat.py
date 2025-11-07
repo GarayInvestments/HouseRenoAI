@@ -237,6 +237,38 @@ async def process_chat_message(chat_data: Dict[str, Any]):
                                 "error": "Update operation failed"
                             })
                     
+                    elif func_name == "update_client_data":
+                        client_id = func_args["client_id"]
+                        updates = func_args["updates"]
+                        
+                        # Execute the update
+                        success = await google_service.update_record_by_id(
+                            sheet_name='Clients',
+                            id_field='Client ID',
+                            record_id=client_id,
+                            updates=updates
+                        )
+                        
+                        if success:
+                            fields_updated = ", ".join(updates.keys())
+                            action_taken = f"Updated client {client_id}: {fields_updated}"
+                            data_updated = True
+                            function_results.append({
+                                "function": func_name,
+                                "status": "success",
+                                "details": f"Client {client_id} updated: {fields_updated}"
+                            })
+                            # Remember this in session memory
+                            memory_updates["last_client_id"] = client_id
+                            memory_updates["last_action"] = "updated_client_data"
+                            logger.info(f"AI executed: {action_taken}")
+                        else:
+                            function_results.append({
+                                "function": func_name,
+                                "status": "failed",
+                                "error": "Update operation failed"
+                            })
+                    
                 except Exception as e:
                     logger.error(f"Function call execution error: {e}")
                     function_results.append({
@@ -378,6 +410,103 @@ async def get_memory_stats():
         logger.error(f"Memory stats error: {e}")
         raise HTTPException(status_code=500, detail="Failed to get memory stats")
 
+@router.get("/sessions")
+async def list_sessions():
+    """
+    List all active chat sessions with metadata
+    """
+    try:
+        sessions = memory_manager.list_sessions()
+        return {
+            "sessions": sessions,
+            "total": len(sessions)
+        }
+    except Exception as e:
+        logger.error(f"Failed to list sessions: {e}")
+        raise HTTPException(status_code=500, detail="Failed to list sessions")
+
+@router.post("/sessions")
+async def create_session(session_data: Optional[dict] = None):
+    """
+    Create a new chat session with optional metadata
+    """
+    try:
+        import uuid
+        from datetime import datetime
+        
+        session_id = f"session_{uuid.uuid4().hex[:16]}"
+        session_data = session_data or {}
+        
+        # Initialize session with metadata
+        metadata = {
+            "created_at": datetime.utcnow().isoformat(),
+            "title": session_data.get("title", "New Chat"),
+            "message_count": 0
+        }
+        
+        memory_manager.set(session_id, "metadata", metadata)
+        
+        return {
+            "session_id": session_id,
+            "metadata": metadata
+        }
+    except Exception as e:
+        logger.error(f"Failed to create session: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create session")
+
+@router.delete("/sessions/{session_id}")
+async def delete_session(session_id: str):
+    """
+    Delete a specific chat session and all its data
+    """
+    try:
+        memory_manager.clear(session_id)
+        logger.info(f"Deleted session: {session_id}")
+        return {
+            "session_id": session_id,
+            "status": "deleted"
+        }
+    except Exception as e:
+        logger.error(f"Failed to delete session: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete session")
+
+@router.get("/sessions/{session_id}")
+async def get_session_details(session_id: str):
+    """
+    Get full details and history for a specific session
+    """
+    try:
+        memory = memory_manager.get_all(session_id)
+        metadata = memory_manager.get(session_id, "metadata") or {}
+        
+        return {
+            "session_id": session_id,
+            "metadata": metadata,
+            "memory": memory,
+            "active": len(memory) > 0
+        }
+    except Exception as e:
+        logger.error(f"Failed to get session details: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get session details")
+
+@router.put("/sessions/{session_id}/metadata")
+async def update_session_metadata(session_id: str, metadata: dict):
+    """
+    Update session metadata (e.g., rename chat)
+    """
+    try:
+        current_metadata = memory_manager.get(session_id, "metadata") or {}
+        current_metadata.update(metadata)
+        memory_manager.set(session_id, "metadata", current_metadata)
+        
+        return {
+            "session_id": session_id,
+            "metadata": current_metadata
+        }
+    except Exception as e:
+        logger.error(f"Failed to update session metadata: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update session metadata")
+
 @router.get("/status")
 async def get_chat_status():
     """
@@ -418,7 +547,8 @@ async def get_chat_status():
                 "Construction phase tracking",
                 "Advanced filtering and search",
                 "Cross-sheet data analysis",
-                "Automated notifications"
+                "Automated notifications",
+                "Client data updates (CRUD)"
             ]
         }
         

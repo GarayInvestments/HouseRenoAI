@@ -45,11 +45,12 @@ class ApiService {
   }
 
   // Chat endpoints
-  async sendChatMessage(message, context = {}) {
+  async sendChatMessage(message, sessionId = null, context = {}) {
     return this.request('/chat', {
       method: 'POST',
       body: JSON.stringify({
         message,
+        session_id: sessionId,
         context,
       }),
     });
@@ -58,6 +59,39 @@ class ApiService {
   async getChatStatus() {
     return this.request('/chat/status', {
       method: 'GET',
+    });
+  }
+
+  // Session management endpoints
+  async listSessions() {
+    return this.request('/chat/sessions', {
+      method: 'GET',
+    });
+  }
+
+  async createSession(title = 'New Chat') {
+    return this.request('/chat/sessions', {
+      method: 'POST',
+      body: JSON.stringify({ title }),
+    });
+  }
+
+  async getSession(sessionId) {
+    return this.request(`/chat/sessions/${sessionId}`, {
+      method: 'GET',
+    });
+  }
+
+  async deleteSession(sessionId) {
+    return this.request(`/chat/sessions/${sessionId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async updateSessionMetadata(sessionId, metadata) {
+    return this.request(`/chat/sessions/${sessionId}/metadata`, {
+      method: 'PUT',
+      body: JSON.stringify(metadata),
     });
   }
 
@@ -131,6 +165,13 @@ class ApiService {
     
     return this.request(`/clients/lookup?${params.toString()}`, {
       method: 'GET',
+    });
+  }
+
+  async updateClient(clientId, updates) {
+    return this.request(`/clients/${clientId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
     });
   }
 

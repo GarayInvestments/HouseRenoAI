@@ -238,6 +238,42 @@ class MemoryManager:
             "default_ttl_minutes": self.default_ttl.total_seconds() / 60
         }
     
+    def list_sessions(self) -> list[Dict[str, Any]]:
+        """
+        List all active sessions with their metadata.
+        
+        Returns:
+            List of session information dictionaries
+        
+        Example:
+            sessions = memory.list_sessions()
+            # Returns: [{"session_id": "user-123", "keys": ["last_client_id"], "expires_in": 480}]
+        """
+        self._cleanup_expired()
+        
+        sessions = []
+        current_time = time.time()
+        
+        for session_id in self._storage.keys():
+            expiry_time = self._timestamps.get(session_id, current_time)
+            expires_in = max(0, int(expiry_time - current_time))
+            
+            session_data = self._storage[session_id]
+            metadata = session_data.get("metadata", {})
+            
+            sessions.append({
+                "session_id": session_id,
+                "metadata": metadata,
+                "expires_in_seconds": expires_in,
+                "key_count": len(session_data),
+                "created_at": metadata.get("created_at", "unknown")
+            })
+        
+        # Sort by created_at descending (newest first)
+        sessions.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+        
+        return sessions
+    
     def _cleanup_expired(self) -> None:
         """Remove expired sessions from storage."""
         current_time = time.time()
