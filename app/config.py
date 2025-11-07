@@ -9,6 +9,12 @@ class Settings:
     GOOGLE_SERVICE_ACCOUNT_FILE: str = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", "service-account.json")
     CHAT_WEBHOOK_URL: str = os.getenv("CHAT_WEBHOOK_URL", "")
     
+    # QuickBooks Configuration
+    QB_CLIENT_ID: str = os.getenv("QB_CLIENT_ID", "")
+    QB_CLIENT_SECRET: str = os.getenv("QB_CLIENT_SECRET", "")
+    QB_REDIRECT_URI: str = os.getenv("QB_REDIRECT_URI", "http://localhost:8000/v1/quickbooks/callback")
+    QB_ENVIRONMENT: str = os.getenv("QB_ENVIRONMENT", "sandbox")  # "sandbox" or "production"
+    
     # API Configuration
     API_VERSION: str = "v1"
     DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"

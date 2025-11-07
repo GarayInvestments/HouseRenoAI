@@ -12,6 +12,7 @@ from app.routes.permits import router as permits_router
 from app.routes.projects import router as projects_router
 from app.routes.clients import router as clients_router
 from app.routes.documents import router as documents_router
+from app.routes.quickbooks import router as quickbooks_router
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -131,6 +132,7 @@ app.include_router(permits_router, prefix=f"/{settings.API_VERSION}/permits", ta
 app.include_router(projects_router, prefix=f"/{settings.API_VERSION}/projects", tags=["projects"])
 app.include_router(clients_router, prefix=f"/{settings.API_VERSION}/clients", tags=["clients"])
 app.include_router(documents_router, prefix=f"/{settings.API_VERSION}/documents", tags=["documents"])
+app.include_router(quickbooks_router, prefix=f"/{settings.API_VERSION}/quickbooks", tags=["quickbooks"])
 
 @app.get("/")
 async def root():
