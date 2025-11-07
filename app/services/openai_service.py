@@ -40,7 +40,21 @@ class OpenAIService:
             ✅ Generate reports and summaries
             ✅ **Access QuickBooks invoices and customer data**
             ✅ **Query customer balances, open invoices, payment status**
+            ✅ **Create QuickBooks invoices** (ALWAYS ask for confirmation before creating)
             ✅ **Update client information** (phone, email, address, etc.)
+            
+            QUICKBOOKS INVOICE CREATION GUIDELINES:
+            📋 When user requests invoice creation:
+            1. Ask for required information:
+               - Customer/client name (match to QuickBooks customer)
+               - Amount/line items
+               - Description of services
+               - Invoice date (default: today)
+               - Due date (default: 30 days from invoice date)
+            2. Present a clear summary of the invoice details
+            3. ALWAYS ask "Would you like me to create this invoice in QuickBooks?" before proceeding
+            4. Only proceed with creation after explicit confirmation (yes/confirm/create/ok)
+            5. Provide clear feedback on success or failure
             
             CRITICAL FORMATTING RULES:
             🎯 ALWAYS format responses in clean, readable markdown
@@ -202,6 +216,40 @@ class OpenAIService:
                             }
                         },
                         "required": ["permit_id", "new_status"]
+                    }
+                },
+                {
+                    "name": "create_quickbooks_invoice",
+                    "description": "Create a new invoice in QuickBooks Online. ONLY call this after user confirms they want to create the invoice.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "customer_id": {
+                                "type": "string",
+                                "description": "The QuickBooks customer ID (from qb_customers_summary)"
+                            },
+                            "customer_name": {
+                                "type": "string",
+                                "description": "The customer display name for confirmation"
+                            },
+                            "amount": {
+                                "type": "number",
+                                "description": "The total invoice amount in USD"
+                            },
+                            "description": {
+                                "type": "string",
+                                "description": "Description of services/work performed"
+                            },
+                            "invoice_date": {
+                                "type": "string",
+                                "description": "Invoice date in YYYY-MM-DD format (default: today)"
+                            },
+                            "due_date": {
+                                "type": "string",
+                                "description": "Due date in YYYY-MM-DD format (default: 30 days from invoice date)"
+                            }
+                        },
+                        "required": ["customer_id", "customer_name", "amount", "description"]
                     }
                 }
             ]

@@ -263,6 +263,97 @@ async def process_chat_message(chat_data: Dict[str, Any]):
                         )
                         
                         if success:
+                            action_taken = f"Updated client {client_id} data"
+                            data_updated = True
+                            function_results.append({
+                                "function": func_name,
+                                "status": "success",
+                                "details": f"Client {client_id} updated: {', '.join(updates.keys())}"
+                            })
+                            logger.info(f"AI executed: {action_taken}")
+                        else:
+                            function_results.append({
+                                "function": func_name,
+                                "status": "failed",
+                                "error": "Update operation failed"
+                            })
+                    
+                    elif func_name == "create_quickbooks_invoice":
+                        from app.services.quickbooks_service import quickbooks_service
+                        from datetime import datetime, timedelta
+                        
+                        # Extract parameters
+                        customer_id = func_args["customer_id"]
+                        customer_name = func_args["customer_name"]
+                        amount = func_args["amount"]
+                        description = func_args["description"]
+                        invoice_date = func_args.get("invoice_date", datetime.now().strftime("%Y-%m-%d"))
+                        due_date = func_args.get("due_date", (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d"))
+                        
+                        # Check QB authentication
+                        if not quickbooks_service or not quickbooks_service.is_authenticated():
+                            function_results.append({
+                                "function": func_name,
+                                "status": "failed",
+                                "error": "QuickBooks is not authenticated. Please connect to QuickBooks first."
+                            })
+                            continue
+                        
+                        try:
+                            # Get QB items to use for the line item (you may need to adjust this)
+                            # For now, we'll use a generic service item or the first available item
+                            items = await quickbooks_service.get_items()
+                            if not items:
+                                function_results.append({
+                                    "function": func_name,
+                                    "status": "failed",
+                                    "error": "No QuickBooks items/services found. Please create at least one service item in QuickBooks."
+                                })
+                                continue
+                            
+                            # Use first service/non-inventory item
+                            service_item = next((item for item in items if item.get('Type') in ['Service', 'NonInventory']), items[0])
+                            
+                            # Build invoice data
+                            invoice_data = {
+                                "CustomerRef": {"value": customer_id},
+                                "TxnDate": invoice_date,
+                                "DueDate": due_date,
+                                "Line": [{
+                                    "Amount": amount,
+                                    "DetailType": "SalesItemLineDetail",
+                                    "Description": description,
+                                    "SalesItemLineDetail": {
+                                        "ItemRef": {"value": service_item.get('Id')},
+                                        "Qty": 1,
+                                        "UnitPrice": amount
+                                    }
+                                }]
+                            }
+                            
+                            # Create the invoice
+                            invoice = await quickbooks_service.create_invoice(invoice_data)
+                            
+                            action_taken = f"Created QuickBooks invoice for {customer_name} - ${amount}"
+                            data_updated = True
+                            function_results.append({
+                                "function": func_name,
+                                "status": "success",
+                                "details": f"Invoice #{invoice.get('DocNumber')} created for {customer_name} - ${amount}",
+                                "invoice_number": invoice.get('DocNumber'),
+                                "invoice_id": invoice.get('Id')
+                            })
+                            logger.info(f"AI executed: {action_taken}")
+                            
+                        except Exception as invoice_error:
+                            logger.error(f"Failed to create invoice: {invoice_error}")
+                            function_results.append({
+                                "function": func_name,
+                                "status": "failed",
+                                "error": f"Failed to create invoice: {str(invoice_error)}"
+                            })
+                        
+                        if success:
                             fields_updated = ", ".join(updates.keys())
                             action_taken = f"Updated client {client_id}: {fields_updated}"
                             data_updated = True
