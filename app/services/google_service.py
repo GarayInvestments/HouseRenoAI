@@ -526,24 +526,18 @@ class GoogleService:
                     break
             
             if existing_row:
-                # Update existing session
-                updates = {
-                    'Title': session_data.get('title', ''),
-                    'Last Activity': session_data.get('last_activity', ''),
-                    'Message Count': str(session_data.get('message_count', 0))
-                }
+                # Update existing session - update the entire row
+                row_data = [
+                    session_data.get('session_id', ''),
+                    session_data.get('user_email', ''),
+                    session_data.get('title', ''),
+                    session_data.get('created_at', ''),
+                    session_data.get('last_activity', ''),
+                    str(session_data.get('message_count', 0))
+                ]
                 
-                # Update specific fields
-                headers = sessions[0] if sessions else {}
-                for field, value in updates.items():
-                    try:
-                        col_index = list(headers.keys()).index(field)
-                        col_letter = chr(65 + col_index)  # A=65
-                        range_name = f"{sheet_name}!{col_letter}{existing_row}"
-                        
-                        await self.write_sheet_data(range_name, [[value]])
-                    except (ValueError, IndexError):
-                        logger.warning(f"Field {field} not found in {sheet_name}")
+                range_name = f"{sheet_name}!A{existing_row}:F{existing_row}"
+                await self.write_sheet_data(range_name, [row_data])
                 
                 logger.info(f"Updated session {session_id} in row {existing_row}")
                 return True
@@ -662,11 +656,26 @@ class GoogleService:
                 logger.warning(f"Session {session_id} not found for deletion")
                 return False
             
+            # Get the actual sheetId for Chat_Sessions
+            spreadsheet = self.sheets_service.spreadsheets().get(
+                spreadsheetId=settings.SHEET_ID
+            ).execute()
+            
+            sheet_id = None
+            for sheet in spreadsheet.get('sheets', []):
+                if sheet['properties']['title'] == sheet_name:
+                    sheet_id = sheet['properties']['sheetId']
+                    break
+            
+            if sheet_id is None:
+                logger.error(f"{sheet_name} sheet not found in spreadsheet")
+                return False
+            
             # Delete the row using Google Sheets API
             request = {
                 "deleteDimension": {
                     "range": {
-                        "sheetId": 0,  # Assumes first sheet, adjust if needed
+                        "sheetId": sheet_id,  # Use actual sheetId instead of hardcoded 0
                         "dimension": "ROWS",
                         "startIndex": row_to_delete - 1,  # 0-indexed for API
                         "endIndex": row_to_delete
@@ -679,7 +688,7 @@ class GoogleService:
                 body={"requests": [request]}
             ).execute()
             
-            logger.info(f"Deleted session {session_id} from Google Sheets")
+            logger.info(f"Deleted session {session_id} from Google Sheets (row {row_to_delete})")
             return True
             
         except Exception as e:
