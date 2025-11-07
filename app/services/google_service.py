@@ -135,6 +135,41 @@ class GoogleService:
             logger.error(f"Failed to append sheet data: {e}")
             raise
     
+    async def create_sheet_tab(self, sheet_name: str) -> bool:
+        """
+        Create a new sheet tab in the spreadsheet
+        
+        Args:
+            sheet_name: Name of the sheet tab to create
+            
+        Returns:
+            True if created successfully, False otherwise
+        """
+        try:
+            request = {
+                "addSheet": {
+                    "properties": {
+                        "title": sheet_name
+                    }
+                }
+            }
+            
+            self.sheets_service.spreadsheets().batchUpdate(
+                spreadsheetId=settings.SHEET_ID,
+                body={"requests": [request]}
+            ).execute()
+            
+            logger.info(f"✅ Created new sheet tab: {sheet_name}")
+            return True
+            
+        except Exception as e:
+            # Check if sheet already exists
+            if "already exists" in str(e).lower():
+                logger.info(f"Sheet {sheet_name} already exists")
+                return True
+            logger.error(f"Failed to create sheet tab {sheet_name}: {e}")
+            return False
+    
     async def get_permits_data(self) -> List[Dict[str, Any]]:
         """Get all permits data from the sheet"""
         try:
@@ -448,41 +483,59 @@ class GoogleService:
                 logger.error("session_id is required to save session")
                 return False
             
-            # Check if session already exists
+            # Ensure Chat_Sessions sheet exists with headers
             try:
+                # Try to read the sheet to check if it exists
                 sessions = await self.get_all_sheet_data(sheet_name)
-                existing_row = None
+            except Exception as sheet_error:
+                # Sheet doesn't exist - create it with headers
+                logger.info(f"Chat_Sessions sheet doesn't exist, creating it...")
                 
-                for i, session in enumerate(sessions):
-                    if session.get('Session ID') == session_id:
-                        existing_row = i + 2  # +2 for header row and 1-indexed
-                        break
+                # First, create the sheet tab
+                tab_created = await self.create_sheet_tab(sheet_name)
+                if not tab_created:
+                    logger.error(f"Failed to create {sheet_name} tab")
+                    return False
                 
-                if existing_row:
-                    # Update existing session
-                    updates = {
-                        'Title': session_data.get('title', ''),
-                        'Last Activity': session_data.get('last_activity', ''),
-                        'Message Count': str(session_data.get('message_count', 0))
-                    }
-                    
-                    # Update specific fields
-                    headers = sessions[0] if sessions else []
-                    for field, value in updates.items():
-                        try:
-                            col_index = list(headers.keys()).index(field)
-                            col_letter = chr(65 + col_index)  # A=65
-                            range_name = f"{sheet_name}!{col_letter}{existing_row}"
-                            
-                            await self.write_sheet_data(range_name, [[value]])
-                        except (ValueError, IndexError):
-                            logger.warning(f"Field {field} not found in {sheet_name}")
-                    
-                    logger.info(f"Updated session {session_id} in row {existing_row}")
-                    return True
-                    
-            except Exception as check_error:
-                logger.warning(f"Could not check for existing session: {check_error}")
+                # Then add headers
+                try:
+                    headers = [['Session ID', 'User Email', 'Title', 'Created At', 'Last Activity', 'Message Count']]
+                    await self.write_sheet_data(f"{sheet_name}!A1:F1", headers)
+                    logger.info(f"✅ Created {sheet_name} sheet with headers")
+                    sessions = []  # Empty list since sheet is new
+                except Exception as create_error:
+                    logger.error(f"Failed to write headers to {sheet_name}: {create_error}")
+                    return False
+            
+            # Check if session already exists
+            existing_row = None
+            for i, session in enumerate(sessions):
+                if session.get('Session ID') == session_id:
+                    existing_row = i + 2  # +2 for header row and 1-indexed
+                    break
+            
+            if existing_row:
+                # Update existing session
+                updates = {
+                    'Title': session_data.get('title', ''),
+                    'Last Activity': session_data.get('last_activity', ''),
+                    'Message Count': str(session_data.get('message_count', 0))
+                }
+                
+                # Update specific fields
+                headers = sessions[0] if sessions else {}
+                for field, value in updates.items():
+                    try:
+                        col_index = list(headers.keys()).index(field)
+                        col_letter = chr(65 + col_index)  # A=65
+                        range_name = f"{sheet_name}!{col_letter}{existing_row}"
+                        
+                        await self.write_sheet_data(range_name, [[value]])
+                    except (ValueError, IndexError):
+                        logger.warning(f"Field {field} not found in {sheet_name}")
+                
+                logger.info(f"Updated session {session_id} in row {existing_row}")
+                return True
             
             # Insert new session
             row_data = [

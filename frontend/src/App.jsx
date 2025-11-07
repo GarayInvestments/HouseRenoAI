@@ -6,7 +6,7 @@ import TopBar from './components/TopBar';
 import MobileDrawer from './components/MobileDrawer';
 import BottomNav from './components/BottomNav';
 import Dashboard from './pages/Dashboard';
-import AIAssistant from './pages/AIAssistant';
+import AIAssistant from './pages/AIAssistantNew';
 import Permits from './pages/Permits';
 import PermitDetails from './pages/PermitDetails';
 import Projects from './pages/Projects';
