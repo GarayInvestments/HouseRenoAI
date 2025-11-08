@@ -32,6 +32,9 @@ async def process_chat_message(chat_data: Dict[str, Any]):
     Process a chat message using OpenAI and perform any necessary actions
     Includes short-term memory for conversational context
     """
+    # Reference quickbooks_service at function level to avoid scope issues
+    qb_service = quickbooks_service
+    
     try:
         message = chat_data.get("message", "")
         context = chat_data.get("context", {})
@@ -123,28 +126,29 @@ async def process_chat_message(chat_data: Dict[str, Any]):
             logger.info(f"Loaded full context: {len(permits)} permits, {len(projects)} projects, {len(clients)} clients")
             
             # Add QuickBooks data if available
+            is_auth = False  # Initialize outside try block to avoid scope error
             try:
-                logger.info(f"QuickBooks service exists: {quickbooks_service is not None}")
-                if quickbooks_service:
+                logger.info(f"QuickBooks service exists: {qb_service is not None}")
+                if qb_service:
                     # Use get_status() which reloads tokens if needed (more reliable than is_authenticated)
-                    qb_status = quickbooks_service.get_status()
+                    qb_status = qb_service.get_status()
                     is_auth = qb_status.get("authenticated", False)
                     logger.info(f"QuickBooks status: {qb_status}")
                     
                     # If not authenticated but we have a refresh token, try to refresh
-                    if not is_auth and quickbooks_service.refresh_token:
+                    if not is_auth and qb_service.refresh_token:
                         logger.info("QB not authenticated but refresh token exists, attempting refresh...")
                         try:
-                            await quickbooks_service.refresh_access_token()
+                            await qb_service.refresh_access_token()
                             logger.info("Successfully refreshed QB token")
                             is_auth = True
                         except Exception as refresh_err:
                             logger.warning(f"QB token refresh failed: {refresh_err}")
                             is_auth = False
                 
-                if quickbooks_service and is_auth:
-                    qb_customers = await quickbooks_service.get_customers()
-                    qb_invoices = await quickbooks_service.get_invoices()
+                if qb_service and is_auth:
+                    qb_customers = await qb_service.get_customers()
+                    qb_invoices = await qb_service.get_invoices()
                     
                     logger.info(f"Successfully fetched QB data: {len(qb_customers)} customers, {len(qb_invoices)} invoices")
                     
@@ -299,7 +303,6 @@ async def process_chat_message(chat_data: Dict[str, Any]):
                             })
                     
                     elif func_name == "create_quickbooks_invoice":
-                        from app.services.quickbooks_service import quickbooks_service
                         from datetime import datetime, timedelta
                         
                         # Extract parameters
@@ -311,7 +314,7 @@ async def process_chat_message(chat_data: Dict[str, Any]):
                         due_date = func_args.get("due_date", (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d"))
                         
                         # Check QB authentication
-                        if not quickbooks_service or not quickbooks_service.is_authenticated():
+                        if not qb_service or not qb_service.is_authenticated():
                             function_results.append({
                                 "function": func_name,
                                 "status": "failed",
@@ -322,7 +325,7 @@ async def process_chat_message(chat_data: Dict[str, Any]):
                         try:
                             # Get QB items to use for the line item (you may need to adjust this)
                             # For now, we'll use a generic service item or the first available item
-                            items = await quickbooks_service.get_items()
+                            items = await qb_service.get_items()
                             if not items:
                                 function_results.append({
                                     "function": func_name,
@@ -352,7 +355,7 @@ async def process_chat_message(chat_data: Dict[str, Any]):
                             }
                             
                             # Create the invoice
-                            invoice = await quickbooks_service.create_invoice(invoice_data)
+                            invoice = await qb_service.create_invoice(invoice_data)
                             
                             action_taken = f"Created QuickBooks invoice for {customer_name} - ${amount}"
                             data_updated = True
