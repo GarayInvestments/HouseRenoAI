@@ -28,12 +28,28 @@ export default function AIAssistant() {
   
   // UI state
   const [showSidebar, setShowSidebar] = useState(true);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [editingSessionId, setEditingSessionId] = useState(null);
   const [editingTitle, setEditingTitle] = useState('');
   
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const fileInputRef = useRef(null);
+
+  // Detect mobile viewport
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth <= 768;
+      setIsMobile(mobile);
+      if (!mobile) {
+        setIsMobileSidebarOpen(false); // Close mobile sidebar on desktop
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Initialize: Load or create session
   useEffect(() => {
@@ -91,7 +107,8 @@ export default function AIAssistant() {
 
   const createNewSession = async () => {
     try {
-      const response = await api.createSession('New Chat');
+      // Don't pass title - let backend auto-generate with EST timestamp
+      const response = await api.createSession();
       const sessionId = response.session_id;
       
       setCurrentSessionId(sessionId);
@@ -412,22 +429,50 @@ export default function AIAssistant() {
     <div style={{
       display: 'flex',
       height: '100%',
-      backgroundColor: '#F8FAFC'
+      backgroundColor: '#F8FAFC',
+      position: 'relative'
     }}>
+      {/* Mobile Sidebar Overlay */}
+      {isMobile && isMobileSidebarOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 999
+          }}
+          onClick={() => setIsMobileSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      {showSidebar && (
+      {(showSidebar && !isMobile) || (isMobile && isMobileSidebarOpen) ? (
         <div style={{
           width: '280px',
           borderRight: '1px solid #E2E8F0',
           backgroundColor: '#FFFFFF',
           display: 'flex',
           flexDirection: 'column',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          ...(isMobile && {
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            bottom: 0,
+            zIndex: 1000,
+            boxShadow: '2px 0 8px rgba(0,0,0,0.1)'
+          })
         }}>
           {/* Sidebar Header */}
           <div style={{
-            padding: '16px',
-            borderBottom: '1px solid #E2E8F0'
+            padding: isMobile ? '12px' : '16px',
+            borderBottom: '1px solid #E2E8F0',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between'
           }}>
             <button
               onClick={createNewSession}
@@ -599,94 +644,146 @@ export default function AIAssistant() {
               ))
             )}
           </div>
+
+          {/* Mobile Close Button */}
+          {isMobile && (
+            <button
+              onClick={() => setIsMobileSidebarOpen(false)}
+              style={{
+                position: 'absolute',
+                top: '12px',
+                right: '12px',
+                padding: '8px',
+                backgroundColor: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                color: '#64748B'
+              }}
+            >
+              <X size={20} />
+            </button>
+          )}
         </div>
-      )}
+      ) : null}
       
       {/* Main Chat Area */}
       <div style={{
         flex: 1,
         display: 'flex',
         flexDirection: 'column',
-        height: '100%'
+        height: '100%',
+        position: 'relative'
       }}>
-        {/* Page Header */}
+        {/* Mobile History Button */}
+        {isMobile && (
+          <button
+            onClick={() => setIsMobileSidebarOpen(true)}
+            style={{
+              position: 'fixed',
+              top: '70px',
+              right: '16px',
+              zIndex: 998,
+              padding: '12px',
+              backgroundColor: '#2563EB',
+              border: 'none',
+              borderRadius: '50%',
+              cursor: 'pointer',
+              boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#FFFFFF'
+            }}
+          >
+            <MessageSquarePlus size={20} />
+          </button>
+        )}
+
+        {/* Page Header - Compact on mobile */}
         <div style={{
           backgroundColor: '#FFFFFF',
           borderBottom: '1px solid #E2E8F0',
-          padding: '24px 32px',
+          padding: isMobile ? '12px 16px' : '24px 32px',
           boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <h1 style={{
-                fontSize: '24px',
-                fontWeight: '600',
-                color: '#1E293B',
-                marginBottom: '4px'
-              }}>
-                {sessionMetadata?.title || 'AI Assistant'}
-              </h1>
-              <p style={{
-                color: '#64748B',
-                fontSize: '14px'
-              }}>
-                Session-based chat with memory • {messages.length} messages
-              </p>
-            </div>
+            {!isMobile && (
+              <div>
+                <h1 style={{
+                  fontSize: '24px',
+                  fontWeight: '600',
+                  color: '#1E293B',
+                  marginBottom: '4px'
+                }}>
+                  {sessionMetadata?.title || 'AI Assistant'}
+                </h1>
+                <p style={{
+                  color: '#64748B',
+                  fontSize: '14px'
+                }}>
+                  Session-based chat with memory • {messages.length} messages
+                </p>
+              </div>
+            )}
             
             {/* Connection Status */}
             <div style={{
               display: 'flex',
-              gap: '8px'
+              gap: isMobile ? '4px' : '8px',
+              flexWrap: 'wrap'
             }}>
               {/* Backend Status */}
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
-                padding: '8px 12px',
+                gap: isMobile ? '4px' : '8px',
+                padding: isMobile ? '6px 8px' : '8px 12px',
                 borderRadius: '8px',
                 backgroundColor: isConnected ? '#F0FDF4' : '#FEF2F2',
                 border: `1px solid ${isConnected ? '#BBF7D0' : '#FECACA'}`
               }}>
                 <div style={{
-                  width: '8px',
-                  height: '8px',
+                  width: isMobile ? '6px' : '8px',
+                  height: isMobile ? '6px' : '8px',
                   borderRadius: '50%',
                   backgroundColor: isConnected ? '#22C55E' : '#EF4444'
                 }} />
-                <span style={{
-                  fontSize: '12px',
-                  fontWeight: '500',
-                  color: isConnected ? '#15803D' : '#DC2626'
-                }}>
-                  Backend
-                </span>
+                {!isMobile && (
+                  <span style={{
+                    fontSize: '12px',
+                    fontWeight: '500',
+                    color: isConnected ? '#15803D' : '#DC2626'
+                  }}>
+                    Backend
+                  </span>
+                )}
               </div>
 
               {/* QuickBooks Status */}
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
-                padding: '8px 12px',
+                gap: isMobile ? '4px' : '8px',
+                padding: isMobile ? '6px 8px' : '8px 12px',
                 borderRadius: '8px',
                 backgroundColor: qbConnected ? '#F0F9FF' : '#FEF2F2',
                 border: `1px solid ${qbConnected ? '#BFDBFE' : '#FECACA'}`
               }}>
                 <div style={{
-                  width: '8px',
-                  height: '8px',
+                  width: isMobile ? '6px' : '8px',
+                  height: isMobile ? '6px' : '8px',
                   borderRadius: '50%',
                   backgroundColor: qbConnected ? '#3B82F6' : '#EF4444'
                 }} />
-                <span style={{
-                  fontSize: '12px',
-                  fontWeight: '500',
-                  color: qbConnected ? '#1E40AF' : '#DC2626'
-                }}>
-                  {qbConnected ? 'QuickBooks' : 'QB Offline'}
-                </span>
+                {!isMobile && (
+                  <span style={{
+                    fontSize: '12px',
+                    fontWeight: '500',
+                    color: qbConnected ? '#1E40AF' : '#DC2626'
+                  }}>
+                    {qbConnected ? 'QuickBooks' : 'QB Offline'}
+                  </span>
+                )}
               </div>
             </div>
           </div>

@@ -70,10 +70,12 @@ class ApiService {
     });
   }
 
-  async createSession(title = 'New Chat') {
+  async createSession(title) {
+    // If no title provided, backend will auto-generate EST timestamp
+    const body = title ? { title } : {};
     return this.request('/chat/sessions', {
       method: 'POST',
-      body: JSON.stringify({ title }),
+      body: JSON.stringify(body),
     });
   }
 
