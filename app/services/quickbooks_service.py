@@ -609,13 +609,27 @@ class QuickBooksService:
     # ==================== STATUS & HEALTH ====================
     
     def is_authenticated(self) -> bool:
-        """Check if service has valid authentication."""
+        """
+        Check if service has valid authentication.
+        Lazy-loads tokens from Google Sheets if not in memory.
+        """
+        # If tokens not in memory, try to load from Sheets
+        if not self.access_token or not self.realm_id:
+            self._load_tokens_from_sheets()
+        
         return bool(self.access_token and self.realm_id)
     
     def get_status(self) -> Dict[str, Any]:
-        """Get current service status."""
+        """
+        Get current service status.
+        Ensures tokens are loaded before reporting status.
+        """
+        # Ensure tokens loaded
+        if not self.access_token or not self.realm_id:
+            self._load_tokens_from_sheets()
+        
         return {
-            "authenticated": self.is_authenticated(),
+            "authenticated": bool(self.access_token and self.realm_id),
             "realm_id": self.realm_id,
             "environment": self.environment,
             "token_expires_at": self.token_expires_at.isoformat() if self.token_expires_at else None

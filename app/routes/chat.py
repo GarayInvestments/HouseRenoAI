@@ -126,8 +126,10 @@ async def process_chat_message(chat_data: Dict[str, Any]):
             try:
                 logger.info(f"QuickBooks service exists: {quickbooks_service is not None}")
                 if quickbooks_service:
-                    is_auth = quickbooks_service.is_authenticated()
-                    logger.info(f"QuickBooks is_authenticated: {is_auth}")
+                    # Use get_status() which reloads tokens if needed (more reliable than is_authenticated)
+                    qb_status = quickbooks_service.get_status()
+                    is_auth = qb_status.get("authenticated", False)
+                    logger.info(f"QuickBooks status: {qb_status}")
                     
                     # If not authenticated but we have a refresh token, try to refresh
                     if not is_auth and quickbooks_service.refresh_token:
@@ -140,7 +142,7 @@ async def process_chat_message(chat_data: Dict[str, Any]):
                             logger.warning(f"QB token refresh failed: {refresh_err}")
                             is_auth = False
                 
-                if quickbooks_service and quickbooks_service.is_authenticated():
+                if quickbooks_service and is_auth:
                     qb_customers = await quickbooks_service.get_customers()
                     qb_invoices = await quickbooks_service.get_invoices()
                     
