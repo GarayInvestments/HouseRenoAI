@@ -349,6 +349,72 @@ class GoogleService:
             index = index // 26 - 1
         return result
     
+    async def add_column_to_sheet(
+        self, 
+        sheet_name: str, 
+        column_name: str, 
+        default_value: str = "",
+        position: Optional[int] = None
+    ) -> bool:
+        """
+        Add a new column to a sheet with an optional default value for existing rows
+        
+        Args:
+            sheet_name: Name of the sheet (e.g., 'Projects', 'Permits', 'Clients')
+            column_name: Name of the new column to add
+            default_value: Default value to populate for existing rows (optional)
+            position: Column index to insert at (None = append to end)
+            
+        Returns:
+            True if column was added successfully, False otherwise
+        """
+        try:
+            logger.info(f"Adding column '{column_name}' to {sheet_name}")
+            
+            # Read the sheet to get current structure
+            data = await self.read_sheet_data(f'{sheet_name}!A1:Z1000')
+            
+            if not data or len(data) == 0:
+                logger.error(f"Could not read data from {sheet_name}")
+                return False
+            
+            headers = data[0]
+            
+            # Check if column already exists
+            if column_name in headers:
+                logger.warning(f"Column '{column_name}' already exists in {sheet_name}")
+                return False
+            
+            # Determine where to add the column
+            if position is None or position >= len(headers):
+                # Append to end
+                column_index = len(headers)
+                column_letter = self._column_index_to_letter(column_index)
+                
+                # Add header
+                header_range = f'{sheet_name}!{column_letter}1'
+                await self.write_sheet_data(header_range, [[column_name]])
+                logger.info(f"Added header '{column_name}' at {header_range}")
+                
+                # Add default value to all existing rows if specified
+                if default_value and len(data) > 1:
+                    row_count = len(data)
+                    values = [[default_value] for _ in range(row_count - 1)]  # Exclude header row
+                    data_range = f'{sheet_name}!{column_letter}2:{column_letter}{row_count}'
+                    await self.write_sheet_data(data_range, values)
+                    logger.info(f"Populated {row_count - 1} rows with default value '{default_value}'")
+            else:
+                # Insert at specific position (more complex - requires shifting)
+                logger.warning(f"Insert at specific position not yet implemented, appending to end")
+                return await self.add_column_to_sheet(sheet_name, column_name, default_value, None)
+            
+            logger.info(f"Successfully added column '{column_name}' to {sheet_name}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to add column to {sheet_name}: {e}")
+            return False
+    
     async def append_record(self, sheet_name: str, record_data: Dict[str, Any]) -> bool:
         """
         Append a new record to a sheet with proper field mapping

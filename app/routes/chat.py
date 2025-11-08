@@ -375,25 +375,34 @@ async def process_chat_message(chat_data: Dict[str, Any]):
                                 "status": "failed",
                                 "error": f"Failed to create invoice: {str(invoice_error)}"
                             })
+                    
+                    elif func_name == "add_column_to_sheet":
+                        sheet_name = func_args["sheet_name"]
+                        column_name = func_args["column_name"]
+                        default_value = func_args.get("default_value", "")
+                        
+                        # Execute the column addition
+                        success = await google_service.add_column_to_sheet(
+                            sheet_name=sheet_name,
+                            column_name=column_name,
+                            default_value=default_value
+                        )
                         
                         if success:
-                            fields_updated = ", ".join(updates.keys())
-                            action_taken = f"Updated client {client_id}: {fields_updated}"
+                            action_taken = f"Added column '{column_name}' to {sheet_name}"
                             data_updated = True
                             function_results.append({
                                 "function": func_name,
                                 "status": "success",
-                                "details": f"Client {client_id} updated: {fields_updated}"
+                                "details": f"Column '{column_name}' added to {sheet_name}" + 
+                                          (f" with default value '{default_value}'" if default_value else "")
                             })
-                            # Remember this in session memory
-                            memory_updates["last_client_id"] = client_id
-                            memory_updates["last_action"] = "updated_client_data"
                             logger.info(f"AI executed: {action_taken}")
                         else:
                             function_results.append({
                                 "function": func_name,
                                 "status": "failed",
-                                "error": "Update operation failed"
+                                "error": f"Failed to add column '{column_name}' to {sheet_name}"
                             })
                     
                 except Exception as e:

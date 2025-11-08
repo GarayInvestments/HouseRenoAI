@@ -42,6 +42,7 @@ class OpenAIService:
             ✅ **Query customer balances, open invoices, payment status**
             ✅ **Create QuickBooks invoices** (ALWAYS ask for confirmation before creating)
             ✅ **Update client information** (phone, email, address, etc.)
+            ✅ **Add new columns to Google Sheets** (ALWAYS ask for confirmation before adding)
             
             🔍 DATA SOURCE PRIORITY - CRITICAL RULES:
             
@@ -286,6 +287,28 @@ class OpenAIService:
                             }
                         },
                         "required": ["customer_id", "customer_name", "amount", "description"]
+                    }
+                },
+                {
+                    "name": "add_column_to_sheet",
+                    "description": "Add a new column to a Google Sheet (Clients, Projects, Permits, etc.). Ask user for confirmation before adding.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "sheet_name": {
+                                "type": "string",
+                                "description": "The name of the sheet to add column to (e.g., 'Clients', 'Projects', 'Permits')"
+                            },
+                            "column_name": {
+                                "type": "string",
+                                "description": "The name of the new column to add"
+                            },
+                            "default_value": {
+                                "type": "string",
+                                "description": "Optional default value to populate for existing rows (leave empty for blank)"
+                            }
+                        },
+                        "required": ["sheet_name", "column_name"]
                     }
                 }
             ]
