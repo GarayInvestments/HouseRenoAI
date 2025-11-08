@@ -644,19 +644,8 @@ class GoogleService:
         """
         try:
             sheet_name = 'Chat_Sessions'
-            sessions = await self.get_all_sheet_data(sheet_name)
             
-            row_to_delete = None
-            for i, session in enumerate(sessions):
-                if session.get('Session ID') == session_id:
-                    row_to_delete = i + 2  # +2 for header row and 1-indexed
-                    break
-            
-            if row_to_delete is None:
-                logger.warning(f"Session {session_id} not found for deletion")
-                return False
-            
-            # Get the actual sheetId for Chat_Sessions
+            # Get the actual sheetId for Chat_Sessions FIRST to avoid extra API call
             spreadsheet = self.sheets_service.spreadsheets().get(
                 spreadsheetId=settings.SHEET_ID
             ).execute()
@@ -669,6 +658,20 @@ class GoogleService:
             
             if sheet_id is None:
                 logger.error(f"{sheet_name} sheet not found in spreadsheet")
+                return False
+            
+            # Re-fetch sessions immediately before deletion to get latest row numbers
+            # This prevents race conditions when multiple deletes happen quickly
+            sessions = await self.get_all_sheet_data(sheet_name)
+            
+            row_to_delete = None
+            for i, session in enumerate(sessions):
+                if session.get('Session ID') == session_id:
+                    row_to_delete = i + 2  # +2 for header row and 1-indexed
+                    break
+            
+            if row_to_delete is None:
+                logger.warning(f"Session {session_id} not found for deletion (may have been already deleted)")
                 return False
             
             # Delete the row using Google Sheets API
