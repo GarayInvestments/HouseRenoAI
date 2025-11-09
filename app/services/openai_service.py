@@ -141,24 +141,36 @@ class OpenAIService:
             Don't say "I don't have access" - the data is provided to you in the context.
             """
             
+            # Start with system prompt
             messages = [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": message}
+                {"role": "system", "content": system_prompt}
             ]
+            
+            # Add conversation history for context continuity
+            if context and 'conversation_history' in context:
+                conversation_history = context['conversation_history']
+                if conversation_history:
+                    # Add previous messages to maintain context
+                    messages.extend(conversation_history)
+                    logger.info(f"Added {len(conversation_history)} previous messages for context")
+            
+            # Add current user message
+            messages.append({"role": "user", "content": message})
             
             # Add context if provided - format it clearly for AI
             if context:
                 # Build a structured context message
                 context_parts = []
                 
-                # Add session memory FIRST for conversation continuity
+                # Add session memory for entity tracking
                 if 'session_memory' in context and context['session_memory']:
-                    context_parts.append("=== SESSION MEMORY (Previous Context) ===")
+                    context_parts.append("=== SESSION MEMORY (Entity Tracking) ===")
                     session_mem = context['session_memory']
                     for key, value in session_mem.items():
-                        if key != 'metadata':  # Skip metadata, show actual memory
+                        if key not in ['metadata', 'conversation_history']:  # Skip metadata and history (already in messages)
                             context_parts.append(f"{key}: {value}")
-                    context_parts.append("")  # Blank line after memory
+                    if len([k for k in session_mem.keys() if k not in ['metadata', 'conversation_history']]) > 0:
+                        context_parts.append("")  # Blank line after memory only if there was content
                 
                 # Add counts summary
                 if 'clients_count' in context:

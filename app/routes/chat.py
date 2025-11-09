@@ -42,13 +42,22 @@ async def process_chat_message(chat_data: Dict[str, Any]):
         
         logger.info(f"Processing chat message for session {session_id}: {message[:100]}...")
         
-        # Load session memory and add to context
+        # Load session memory (conversation history) and add to context
         session_memory = memory_manager.get_all(session_id)
+        
+        # Get conversation history (last 10 messages to keep context manageable)
+        conversation_history = session_memory.get("conversation_history", [])
+        logger.info(f"Loaded {len(conversation_history)} previous messages from conversation history")
+        
         if session_memory:
             context["session_memory"] = session_memory
-            logger.debug(f"Loaded session memory: {session_memory}")
+            logger.info(f"Session memory keys: {list(session_memory.keys())}")
         else:
             context["session_memory"] = {}
+            logger.info(f"No session memory found for session {session_id}")
+        
+        # Add conversation history to context for OpenAI
+        context["conversation_history"] = conversation_history[-10:]  # Last 10 exchanges
         
         # Always fetch comprehensive data for AI context
         try:
@@ -467,6 +476,22 @@ async def process_chat_message(chat_data: Dict[str, Any]):
                     memory_manager.set(session_id, "last_client_id", client_id)
                     memory_manager.set(session_id, "last_mentioned_entity", "client")
                     break
+        
+        # Save conversation history for context in future messages
+        conversation_history = session_memory.get("conversation_history", [])
+        conversation_history.append({
+            "role": "user",
+            "content": message[:500]  # Truncate long messages to save memory
+        })
+        conversation_history.append({
+            "role": "assistant",
+            "content": ai_response[:500]  # Truncate long responses
+        })
+        # Keep only last 20 messages (10 exchanges) to prevent memory bloat
+        if len(conversation_history) > 20:
+            conversation_history = conversation_history[-20:]
+        memory_manager.set(session_id, "conversation_history", conversation_history, ttl_minutes=30)
+        logger.info(f"Saved conversation history: {len(conversation_history)} messages total")
         
         return {
             "response": ai_response,
