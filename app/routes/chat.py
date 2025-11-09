@@ -96,6 +96,38 @@ async def process_chat_message(chat_data: Dict[str, Any]):
         ai_response, function_calls = await openai_service.process_chat_message(message, context)
         timer.stop("openai_call")
         
+        # CRITICAL: Detect common hallucination patterns BEFORE any other validation
+        import re
+        
+        # Known fake names that GPT commonly generates
+        fake_name_patterns = [
+            r'\bAjay\s+Nair\b', r'\bAlex\s+Chang\b', r'\bAlice\s+Johnson\b', r'\bBob\s+Smith\b',
+            r'\bCharlotte\s+Wells\b', r'\bDavid\s+Brown\b', r'\bEmily\s+Clark\b', r'\bEthan\s+Thomas\b',
+            r'\bIsabella\s+Martinez\b', r'\bJames\s+Taylor\b', r'\bJennifer\s+Lee\b', r'\bJohn\s+Doe\b',
+            r'\bKaren\s+White\b', r'\bKevin\s+Nguyen\b', r'\bLaura\s+King\b', r'\bLinda\s+Green\b',
+            r'\bMark\s+Davis\b', r'\bMichael\s+Johnson\b', r'\bNancy\s+Wilson\b', r'\bOlivia\s+Harris\b',
+            r'\bPatricia\s+Lewis\b', r'\bRobert\s+Moore\b', r'\bSarah\s+Adams\b', r'\bThomas\s+Anderson\b'
+        ]
+        
+        # Check for any fake names in response
+        for pattern in fake_name_patterns:
+            if re.search(pattern, ai_response, re.IGNORECASE):
+                session_logger.error(
+                    session_id,
+                    f"🚨 AI HALLUCINATION DETECTED: Fabricated name found matching pattern '{pattern}'"
+                )
+                ai_response = (
+                    f"⚠️ **Data Integrity Error**\n\n"
+                    f"I detected that I was about to show you fabricated customer data (made-up names that don't exist in your system). "
+                    f"This is a safety feature to prevent misinformation.\n\n"
+                    f"**What I can do:**\n"
+                    f"- Show you ONLY real customer data from your QuickBooks and Google Sheets\n"
+                    f"- Search for specific customers by name\n"
+                    f"- List actual invoices with real data\n\n"
+                    f"Please ask your question again, and I'll make sure to show you only verified data from your system."
+                )
+                break
+        
         # CRITICAL VALIDATION: Check for fabricated QuickBooks data
         # Prevents AI hallucination of QB Client IDs that don't exist
         if 'quickbooks' in context.get('contexts_loaded', []):
