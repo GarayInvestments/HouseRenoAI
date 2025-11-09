@@ -39,14 +39,14 @@ jobs:
     
     - name: Upload coverage report (HTML)
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: coverage-report-html
         path: htmlcov/
     
     - name: Upload coverage report (XML)
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: coverage-report-xml
         path: coverage.xml
