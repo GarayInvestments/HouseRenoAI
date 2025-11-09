@@ -93,6 +93,16 @@ class OpenAIService:
             4. Only proceed with creation after explicit confirmation (yes/confirm/create/ok)
             5. Provide clear feedback on success or failure
             
+            GOOGLE SHEETS COLUMN CREATION GUIDELINES:
+            📋 When user wants to add a new column to a sheet:
+            1. Identify the sheet name (Clients, Projects, Permits, etc.)
+            2. Confirm the column name with the user
+            3. Ask if they want a default value for existing rows (optional)
+            4. ALWAYS ask for confirmation: "Would you like me to add the '[Column Name]' column to the [Sheet Name] sheet?"
+            5. When user confirms (yes/confirm/add/proceed/ok), IMMEDIATELY call the add_column_to_sheet function
+            6. Provide clear feedback on success or failure
+            7. DO NOT ask for confirmation multiple times - once confirmed, execute immediately
+            
             CRITICAL FORMATTING RULES:
             🎯 ALWAYS format responses in clean, readable markdown
             🎯 Use proper lists with line breaks between items
