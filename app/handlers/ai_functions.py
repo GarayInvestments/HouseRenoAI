@@ -721,7 +721,7 @@ async def handle_create_quickbooks_customer_from_sheet(
                 "error": f"Client '{client_identifier}' not found in Google Sheets"
             }
         
-        # Extract client data
+        # Extract client data with comprehensive field mapping
         client_name = (target_client.get('Full Name') or target_client.get('Client Name', '')).strip()
         client_email = target_client.get('Email', '').strip()
         client_phone = target_client.get('Phone', '').strip()
@@ -730,6 +730,12 @@ async def handle_create_quickbooks_customer_from_sheet(
         client_state = target_client.get('State', '').strip()
         client_zip = target_client.get('Zip', '').strip()
         
+        # Extract additional fields (Company Name, Role, Status, etc.)
+        client_company = target_client.get('Company Name', '').strip()
+        client_role = target_client.get('Role', '').strip()
+        client_status = target_client.get('Status', '').strip()
+        client_id = target_client.get('Client ID', '').strip()
+        
         if not client_name:
             return {
                 "status": "failed",
@@ -737,6 +743,7 @@ async def handle_create_quickbooks_customer_from_sheet(
             }
         
         logger.info(f"[CREATE QB CUSTOMER] Found client: {client_name}")
+        logger.info(f"[CREATE QB CUSTOMER] Client details - Email: {client_email}, Phone: {client_phone}, Company: {client_company}, Role: {client_role}")
         
         # Check if customer already exists in QB
         qb_customers = await quickbooks_service.get_customers()
@@ -826,6 +833,13 @@ async def handle_create_quickbooks_customer_from_sheet(
                 "display_name": qb_display_name,
                 "email": client_email or "N/A",
                 "phone": client_phone or "N/A",
+                "company": client_company or "N/A",
+                "role": client_role or "N/A",
+                "status": client_status or "N/A",
+                "address": client_address or "N/A",
+                "city": client_city or "N/A",
+                "state": client_state or "N/A",
+                "zip": client_zip or "N/A",
                 "type": "GC Compliance"
             },
             "sheet_updated": bool(sheet_client_id)
