@@ -23,12 +23,21 @@ async def get_all_clients():
         
         # Try to get clients data from the Clients sheet
         try:
+            logger.info("Attempting to fetch clients from Clients sheet")
             clients = await google_service.get_clients_data()
+            logger.info(f"Retrieved {len(clients)} clients from get_clients_data()")
+            
             if clients and len(clients) > 0:
+                # Log first client structure to help debug
+                if clients:
+                    first_keys = list(clients[0].keys())
+                    logger.info(f"First client keys: {first_keys}")
+                    logger.info(f"First client sample: Client ID={clients[0].get('Client ID', 'N/A')}, Name={clients[0].get('Client Name', clients[0].get('Full Name', 'N/A'))}")
+                
                 logger.info(f"Successfully retrieved {len(clients)} clients from Clients sheet")
                 return clients
         except Exception as sheet_error:
-            logger.warning(f"Could not read Clients sheet: {sheet_error}")
+            logger.warning(f"Could not read Clients sheet: {sheet_error}", exc_info=True)
         
         # Fallback: If Clients sheet doesn't exist or is empty, derive from Projects
         logger.info("Falling back to deriving clients from Projects data")

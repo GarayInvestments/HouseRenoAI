@@ -301,15 +301,19 @@ class GoogleService:
             cache_key = "clients_data"
             cached = self._get_cache(cache_key)
             if cached is not None:
+                logger.info(f"Returning {len(cached)} clients from cache")
                 return cached
             
             # Cache MISS - fetch from Sheets API
+            logger.info("Fetching clients data from Sheets API (cache miss)")
             data = await self.read_sheet_data('Clients!A1:Z1000')
             
             if not data:
+                logger.warning("No data returned from Clients sheet")
                 return []
             
             headers = data[0]
+            logger.info(f"Clients sheet headers: {headers}")
             clients = []
             
             for row in data[1:]:
@@ -321,11 +325,11 @@ class GoogleService:
             
             # Store in cache
             self._set_cache(cache_key, clients)
-            logger.info(f"Retrieved {len(clients)} clients from Sheets API")
+            logger.info(f"Retrieved {len(clients)} clients from Sheets API - Headers: {headers[:3] if headers else 'None'}")
             return clients
             
         except Exception as e:
-            logger.error(f"Failed to get clients data: {e}")
+            logger.error(f"Failed to get clients data from sheet 'Clients': {e}", exc_info=True)
             raise
     
     async def get_all_sheet_data(self, sheet_name: str, max_rows: int = 1000) -> List[Dict[str, Any]]:
