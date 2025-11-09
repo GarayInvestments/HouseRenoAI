@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from typing import Dict, Any, Optional
 import logging
+import time
 
 from app.services.openai_service import openai_service
 import app.services.google_service as google_service_module
@@ -32,6 +33,9 @@ async def process_chat_message(chat_data: Dict[str, Any]):
     Process a chat message using OpenAI and perform any necessary actions
     Includes short-term memory for conversational context
     """
+    # Start performance tracking
+    request_start = time.time()
+    
     # Reference quickbooks_service at function level to avoid scope issues
     qb_service = quickbooks_service
     
@@ -640,6 +644,10 @@ async def process_chat_message(chat_data: Dict[str, Any]):
             else:
                 ai_response = "❌ There was an issue completing that action. Please try again."
         
+        # Log performance metrics
+        request_duration_ms = (time.time() - request_start) * 1000
+        logger.info(f"[METRICS] Chat request completed in {request_duration_ms:.2f}ms | Session: {session_id} | Action: {action_taken or 'none'} | Data updated: {data_updated}")
+        
         return {
             "response": ai_response,
             "action_taken": action_taken,
@@ -650,7 +658,8 @@ async def process_chat_message(chat_data: Dict[str, Any]):
         }
         
     except Exception as e:
-        logger.error(f"Chat processing error: {e}")
+        request_duration_ms = (time.time() - request_start) * 1000
+        logger.error(f"[METRICS] Chat processing error after {request_duration_ms:.2f}ms: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to process message: {str(e)}")
 
 @router.post("/query")
