@@ -208,22 +208,29 @@ git push
 
 ## 📚 Documentation
 
-### **Core Documentation**
+### **Essential Guides**
 - 📖 [**API Documentation**](docs/API_DOCUMENTATION.md) - Complete API reference
 - 🚀 [**Deployment Guide**](docs/DEPLOYMENT.md) - Production deployment
-- 🔧 [**Project Setup**](docs/PROJECT_SETUP.md) - Development environment
+- 🔧 [**Setup Guide**](docs/SETUP_GUIDE.md) - Full development environment setup **(NEW)**
 - 🩺 [**Troubleshooting**](docs/TROUBLESHOOTING.md) - Common issues and solutions
-- 🧪 [**Chat Testing SOP**](docs/CHAT_TESTING_SOP.md) - Standard chat testing procedures **(NEW)**
+- 🧪 [**Chat Testing SOP**](docs/CHAT_TESTING_SOP.md) - Standard chat testing procedures
 
-### **Architecture & Development**
-- 📁 [**Directory Structure**](docs/directory-structure.md) - Project organization
-- 🤖 [**AI Instructions**](backend/.github/copilot-instructions.md) - AI development guide
-- 🔄 [**Implementation Progress**](docs/IMPLEMENTATION_PROGRESS.md) - Development status
+### **Quick References**
+- ⚡ [**Quick Reference**](docs/SETUP_QUICK_REFERENCE.md) - Daily commands cheat sheet
+- � [**New Machine Setup**](docs/SETUP_NEW_MACHINE.md) - Onboarding guide
+- 📋 [**Field Mapping**](docs/FIELD_MAPPING.md) - Data structure reference
+- 📊 [**Project Status**](docs/PROJECT_STATUS.md) - Current status and roadmap
 
-### **DevOps & Automation**
-- 🛠️ [**Automation Toolkit**](automation/README.md) - DevOps tools overview
-- 📊 [**Monitoring Guide**](automation/api-scripts/health-check.ps1) - Health monitoring
-- 🚀 [**Deployment Workflows**](automation/workflows/deploy-all.ps1) - Automated deployment
+### **Integration Guides**
+- 💼 [**QuickBooks Guide**](docs/QUICKBOOKS_GUIDE.md) - Complete QB integration **(NEW)**
+- 🔐 [**Git-Secret Setup**](docs/GIT_SECRET_SETUP.md) - Secrets management
+- �️ [**Logging & Security**](docs/LOGGING_SECURITY.md) - Security best practices
+
+### **DevOps & Monitoring**
+- � [**Render Logs Guide**](docs/RENDER_LOGS_GUIDE.md) - Production log access
+- ☁️ [**Render API Guide**](docs/RENDER_API_DEPLOYMENT_GUIDE.md) - Automated deployments
+- 📊 [**Baseline Metrics**](docs/BASELINE_METRICS.md) - Performance tracking
+- � [**Workflow Guide**](docs/WORKFLOW_GUIDE.md) - Development workflow
 
 ---
 
