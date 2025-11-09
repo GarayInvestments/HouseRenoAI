@@ -449,12 +449,23 @@ class GoogleService:
             
             headers = data[0]
             
-            # Find the column index for the identifier field
-            if identifier_field not in headers:
-                logger.error(f"Identifier field '{identifier_field}' not found in Clients sheet")
+            # Find the column index for the identifier field (try variations)
+            actual_identifier_field = None
+            if identifier_field in headers:
+                actual_identifier_field = identifier_field
+            elif identifier_field == "Name":
+                # Try common name field variations
+                for name_field in ["Full Name", "Client Name", "Name", "Contact Name"]:
+                    if name_field in headers:
+                        actual_identifier_field = name_field
+                        break
+            
+            if actual_identifier_field is None:
+                logger.error(f"Identifier field '{identifier_field}' not found in Clients sheet. Available fields: {headers}")
                 return False
             
-            identifier_col_index = headers.index(identifier_field)
+            identifier_col_index = headers.index(actual_identifier_field)
+            logger.info(f"Using identifier field: {actual_identifier_field}")
             
             # Find the column index for the field to update
             if field_name not in headers:
