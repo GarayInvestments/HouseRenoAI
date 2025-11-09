@@ -244,6 +244,7 @@ class OpenAIService:
                     if customers:
                         context_parts.append(f"\n\n=== QUICKBOOKS CUSTOMERS ({len(customers)} total) ===")
                         context_parts.append("🚨 THESE ARE THE ONLY REAL CUSTOMER NAMES - DO NOT INVENT OTHERS!")
+                        logger.info(f"[DEBUG] Adding {len(customers)} QB customers to context (showing up to 50)")
                         for customer in customers[:50]:  # Show up to 50
                             cust_id = customer.get('Id')
                             cust_name = customer.get('DisplayName') or customer.get('CompanyName') or customer.get('FullyQualifiedName', 'Unknown')
@@ -301,6 +302,7 @@ class OpenAIService:
                         )
                 
                 context_message = "\n".join(context_parts)
+                logger.info(f"[DEBUG] Context message length: {len(context_message)} chars, ~{len(context_message)//4} tokens")
                 messages.insert(1, {"role": "system", "content": f"DATA CONTEXT:\n{context_message}"})
             
             # Define available functions for the AI to call
