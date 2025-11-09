@@ -1,5 +1,57 @@
 # House Renovators AI Portal - Copilot Instructions
 
+## ⚡ Quick Reference: Common Tasks
+
+### When Asked to "Test Chat"
+1. **Read test procedures**: `docs/CHAT_TESTING_SOP.md` (6 standard tests, log patterns, troubleshooting)
+2. **Use test scripts**: `scripts/testing/chat-tests/test_sync_production.py` or similar
+3. **Check Render logs**: `render logs -r srv-d44ak76uk2gs73a3psig --limit 50 --confirm -o text`
+4. **Look for patterns**: `[METRICS]`, `Smart context loading:`, error traces
+5. **Verify in Sheets**: Check if data actually updated (QB sync, client data, etc.)
+
+### When Adding New AI Function
+1. **Add function handler**: `app/handlers/ai_functions.py` (handle_* pattern)
+2. **Register in FUNCTION_HANDLERS**: Same file, dictionary at bottom
+3. **Add OpenAI definition**: `app/services/openai_service.py` in `tools` array
+4. **Update context loading**: `app/utils/context_builder.py` if needs new data source
+5. **Test via chat**: Use test script from `scripts/testing/chat-tests/`
+6. **Deploy and verify logs**: Check Render for execution traces
+
+### When Deploying Changes
+1. **Commit with clear message**: `git commit -m "Feature: ..." or "Fix: ..."`
+2. **Push to main**: `git push origin main` (auto-deploys to Render + Cloudflare)
+3. **Monitor deployment**: `render services list` then check service status
+4. **Watch logs**: `render logs -r srv-d44ak76uk2gs73a3psig --tail --confirm`
+5. **Test endpoint**: Run relevant test from `scripts/testing/chat-tests/`
+
+### When Investigating Bugs
+1. **Check recent logs**: `render logs -r srv-d44ak76uk2gs73a3psig --limit 200 --confirm -o text`
+2. **Search for errors**: Pipe through `Select-String -Pattern "ERROR|CRITICAL|Exception"`
+3. **Review context loading**: Look for `Smart context loading:` to verify data sources
+4. **Check function execution**: Search for function name in logs
+5. **Verify data in Sheets**: Ensure Google Sheets has expected data/columns
+6. **Reference docs**: `docs/TROUBLESHOOTING.md` for common issues
+
+### When Setting Up New Machine
+1. **Follow setup guide**: `docs/SETUP_GUIDE.md` (comprehensive, covers all steps)
+2. **Quick start**: `docs/SETUP_NEW_MACHINE.md` (streamlined version)
+3. **Environment vars**: `docs/SETUP_QUICK_REFERENCE.md` (all required vars)
+4. **Secrets setup**: `docs/GIT_SECRET_SETUP.md` (GPG-based encryption)
+
+### When Working with QuickBooks
+1. **Complete reference**: `docs/QUICKBOOKS_GUIDE.md` (OAuth2, API, sync, troubleshooting)
+2. **Check auth status**: GET `/v1/quickbooks/status`
+3. **Connect if needed**: Navigate to `/v1/quickbooks/connect`
+4. **Test operations**: `scripts/testing/chat-tests/test_quickbooks_comprehensive.py`
+
+### When Updating Documentation
+1. **Check category**: Essential guides vs reference vs config
+2. **Update copilot instructions**: If affects common workflows or patterns
+3. **Update README.md**: If changing doc structure or adding new guides
+4. **Run reorganization script**: `scripts/docs-management/reorganize-docs.ps1` if merging/archiving
+
+---
+
 ## 🏗️ Architecture Overview
 
 **Multi-Cloud Full-Stack App**: FastAPI backend (Render) + React PWA frontend (Cloudflare Pages) + Google Sheets data layer
@@ -279,6 +331,7 @@ render logs -r srv-d44ak76uk2gs73a3psig --text "error,warning" --limit 100 --con
 
 # Programmatic access via Render API
 # See docs/RENDER_API_DEPLOYMENT_GUIDE.md and docs/RENDER_LOGS_GUIDE.md
+# See docs/LOGGING_SECURITY.md for security monitoring patterns
 ```
 **Note**: Use `-r` (resources) flag with service ID, NOT `-s` (service name). Old CLI syntax (`-s`) no longer works.
 
@@ -335,3 +388,40 @@ curl http://localhost:8000/v1/quickbooks/customers -H "Authorization: Bearer $to
 # "Smart context loading: {'sheets', 'quickbooks'} for message: 'Invoice for Temple'..."
 # "Smart context loading: {'none'} for message: 'Hello'..."
 ```
+
+**For comprehensive testing workflows, see:**
+- `docs/CHAT_TESTING_SOP.md` - Standard testing procedures for chat functionality
+- `scripts/testing/chat-tests/` - Test scripts for various features
+
+## 📚 Documentation Reference
+
+### Essential Guides (Read These First)
+- **`docs/QUICKBOOKS_GUIDE.md`** - Complete QuickBooks OAuth2, API usage, sync features
+- **`docs/SETUP_GUIDE.md`** - Dev environment setup, GitHub Actions, secrets management
+- **`docs/CHAT_TESTING_SOP.md`** - Testing chat features, log monitoring, troubleshooting
+- **`docs/API_DOCUMENTATION.md`** - Complete API reference with examples
+- **`docs/WORKFLOW_GUIDE.md`** - Daily development workflow and git patterns
+
+### Configuration & Setup
+- **`docs/GIT_SECRET_SETUP.md`** - GPG-based secrets encryption
+- **`docs/SETUP_NEW_MACHINE.md`** - Quick setup for new developers
+- **`docs/SETUP_QUICK_REFERENCE.md`** - Environment variables and quick commands
+
+### Deployment & Operations
+- **`docs/DEPLOYMENT.md`** - Render and Cloudflare deployment process
+- **`docs/RENDER_API_DEPLOYMENT_GUIDE.md`** - Programmatic deployments via Render API
+- **`docs/RENDER_LOGS_GUIDE.md`** - Log access and monitoring
+- **`docs/LOGGING_SECURITY.md`** - Security logging patterns and monitoring
+
+### Reference & Troubleshooting
+- **`docs/TROUBLESHOOTING.md`** - Common issues and solutions
+- **`docs/FIELD_MAPPING.md`** - Google Sheets column mappings
+- **`docs/PROJECT_STATUS.md`** - Current project status and roadmap
+- **`docs/BASELINE_METRICS.md`** - Performance benchmarks
+
+### Scripts Organization
+- **`scripts/testing/chat-tests/`** - All chat and integration tests
+- **`scripts/docs-management/`** - Documentation maintenance tools
+- **`scripts/setup/`** - Environment setup automation
+
+
