@@ -16,9 +16,21 @@ class OpenAIService:
         Returns: (response_text, function_calls_list)
         """
         try:
+            # Get current date/time for AI context
+            from datetime import datetime
+            import pytz
+            eastern = pytz.timezone('US/Eastern')
+            current_datetime = datetime.now(eastern)
+            current_date = current_datetime.strftime("%A, %B %d, %Y")
+            current_time = current_datetime.strftime("%I:%M %p %Z")
+            
             # Enhanced system prompt for House Renovators AI Portal
-            system_prompt = """
+            system_prompt = f"""
             You are an advanced AI assistant for House Renovators LLC, a North Carolina licensed General Contractor.
+            
+            🕐 **CURRENT DATE & TIME:**
+            Today is: {current_date}
+            Current time: {current_time}
             
             You have FULL ACCESS to comprehensive project data including:
             - All client information (names, addresses, status, roles, contacts)
