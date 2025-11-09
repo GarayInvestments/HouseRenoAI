@@ -414,6 +414,36 @@ async def process_chat_message(chat_data: Dict[str, Any]):
                                 "error": f"Failed to add column '{column_name}' to {sheet_name}"
                             })
                     
+                    elif func_name == "update_client_field":
+                        client_identifier = func_args["client_identifier"]
+                        field_name = func_args["field_name"]
+                        field_value = func_args["field_value"]
+                        identifier_field = func_args.get("identifier_field", "Name")
+                        
+                        # Execute the client field update
+                        success = await google_service.update_client_field(
+                            client_identifier=client_identifier,
+                            field_name=field_name,
+                            field_value=field_value,
+                            identifier_field=identifier_field
+                        )
+                        
+                        if success:
+                            action_taken = f"Updated {field_name} for client '{client_identifier}' to '{field_value}'"
+                            data_updated = True
+                            function_results.append({
+                                "function": func_name,
+                                "status": "success",
+                                "details": f"Updated {field_name} to '{field_value}' for client '{client_identifier}'"
+                            })
+                            logger.info(f"AI executed: {action_taken}")
+                        else:
+                            function_results.append({
+                                "function": func_name,
+                                "status": "failed",
+                                "error": f"Failed to update {field_name} for client '{client_identifier}'"
+                            })
+                    
                 except Exception as e:
                     logger.error(f"Function call execution error: {e}")
                     function_results.append({

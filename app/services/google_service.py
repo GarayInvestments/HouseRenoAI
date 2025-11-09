@@ -415,6 +415,80 @@ class GoogleService:
             logger.error(f"Failed to add column to {sheet_name}: {e}")
             return False
     
+    async def update_client_field(
+        self,
+        client_identifier: str,
+        field_name: str,
+        field_value: str,
+        identifier_field: str = "Name"
+    ) -> bool:
+        """
+        Update a specific field for a client in the Clients sheet
+        
+        Args:
+            client_identifier: The value to search for (e.g., client name, ID)
+            field_name: Name of the field/column to update (e.g., 'QBO Client ID')
+            field_value: New value to set
+            identifier_field: Which field to use for finding the client (default: 'Name')
+            
+        Returns:
+            True if update succeeded, False otherwise
+            
+        Example:
+            await update_client_field("Ajay Nair", "QBO Client ID", "164")
+        """
+        try:
+            logger.info(f"Updating {field_name} for client '{client_identifier}' to '{field_value}'")
+            
+            # Read the Clients sheet
+            data = await self.read_sheet_data('Clients!A1:Z1000')
+            
+            if not data or len(data) < 2:
+                logger.error("Could not read Clients sheet or no data found")
+                return False
+            
+            headers = data[0]
+            
+            # Find the column index for the identifier field
+            if identifier_field not in headers:
+                logger.error(f"Identifier field '{identifier_field}' not found in Clients sheet")
+                return False
+            
+            identifier_col_index = headers.index(identifier_field)
+            
+            # Find the column index for the field to update
+            if field_name not in headers:
+                logger.error(f"Field '{field_name}' not found in Clients sheet. Available fields: {headers}")
+                return False
+            
+            field_col_index = headers.index(field_name)
+            field_col_letter = self._column_index_to_letter(field_col_index)
+            
+            # Find the row with matching client
+            row_number = None
+            for i, row in enumerate(data[1:], start=2):  # Start from row 2 (skip header)
+                if len(row) > identifier_col_index:
+                    cell_value = row[identifier_col_index]
+                    # Case-insensitive comparison
+                    if str(cell_value).lower().strip() == str(client_identifier).lower().strip():
+                        row_number = i
+                        break
+            
+            if row_number is None:
+                logger.error(f"Client '{client_identifier}' not found in Clients sheet")
+                return False
+            
+            # Update the cell
+            cell_range = f'Clients!{field_col_letter}{row_number}'
+            await self.write_sheet_data(cell_range, [[field_value]])
+            logger.info(f"Successfully updated {cell_range} to '{field_value}'")
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to update client field: {e}")
+            return False
+    
     async def append_record(self, sheet_name: str, record_data: Dict[str, Any]) -> bool:
         """
         Append a new record to a sheet with proper field mapping

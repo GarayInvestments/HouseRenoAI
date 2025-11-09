@@ -341,6 +341,32 @@ class OpenAIService:
                         },
                         "required": ["sheet_name", "column_name"]
                     }
+                },
+                {
+                    "name": "update_client_field",
+                    "description": "Update a specific field/column for a client in the Clients sheet. Use this to sync QuickBooks IDs, update contact info, or modify any client field. CALL THIS when user confirms updating a client's information.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "client_identifier": {
+                                "type": "string",
+                                "description": "The client name or ID to search for (e.g., 'Ajay Nair', '64 Phillips')"
+                            },
+                            "field_name": {
+                                "type": "string",
+                                "description": "The field/column name to update (e.g., 'QBO Client ID', 'Email', 'Phone Number')"
+                            },
+                            "field_value": {
+                                "type": "string",
+                                "description": "The new value to set for this field"
+                            },
+                            "identifier_field": {
+                                "type": "string",
+                                "description": "Which field to use for finding the client (default: 'Name'). Can be 'Name', 'Client ID', 'Address', etc."
+                            }
+                        },
+                        "required": ["client_identifier", "field_name", "field_value"]
+                    }
                 }
             ]
             
