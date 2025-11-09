@@ -8,19 +8,10 @@ import app.services.google_service as google_service_module
 from app.services.quickbooks_service import quickbooks_service
 from app.memory.memory_manager import memory_manager
 from app.handlers.ai_functions import FUNCTION_HANDLERS
+from app.utils.context_builder import build_context
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
-
-def _group_by_field(data: list, field: str) -> dict:
-    """Group data items by a specific field value"""
-    grouped = {}
-    for item in data:
-        value = item.get(field, 'Unknown')
-        if value not in grouped:
-            grouped[value] = []
-        grouped[value].append(item)
-    return {k: len(v) for k, v in grouped.items()}
 
 def get_google_service():
     """Helper function to get Google service with proper error handling"""
@@ -64,143 +55,25 @@ async def process_chat_message(chat_data: Dict[str, Any]):
         # Add conversation history to context for OpenAI
         context["conversation_history"] = conversation_history[-10:]  # Last 10 exchanges
         
-        # Always fetch comprehensive data for AI context
+        # Smart context loading - only fetch what's needed based on message
+        start_context_time = time.time()
+        
         try:
             google_service = get_google_service()
             
-            # Fetch all core data
-            permits = await google_service.get_permits_data()
-            projects = await google_service.get_projects_data()
-            clients = await google_service.get_clients_data()
+            # Use smart context builder to determine what data to load
+            context = await build_context(
+                message=message,
+                google_service=google_service,
+                qb_service=qb_service,
+                session_memory=context.get("session_memory", {})
+            )
             
-            # Build comprehensive context with ALL data
-            # Extract client IDs for easy reference
-            client_ids = [c.get('Client ID', 'N/A') for c in clients if c.get('Client ID')]
-            project_ids = [p.get('Project ID', 'N/A') for p in projects if p.get('Project ID')]
-            permit_ids = [p.get('Permit ID', 'N/A') for p in permits if p.get('Permit ID')]
+            # Re-add conversation history (build_context overwrites)
+            context["conversation_history"] = conversation_history[-10:]
             
-            context.update({
-                # Counts
-                'permits_count': len(permits),
-                'projects_count': len(projects),
-                'clients_count': len(clients),
-                
-                # ID Lists for quick lookup
-                'client_ids': client_ids,
-                'project_ids': project_ids,
-                'permit_ids': permit_ids,
-                
-                # Full data arrays (AI can access everything)
-                'all_permits': permits,
-                'all_projects': projects,
-                'all_clients': clients,
-                
-                # Summary data for quick reference
-                'permits_by_status': _group_by_field(permits, 'Permit Status'),
-                'projects_by_status': _group_by_field(projects, 'Status'),
-                'clients_by_status': _group_by_field(clients, 'Status'),
-                
-                # Client summary for easy lookup
-                'clients_summary': [
-                    {
-                        'Client ID': c.get('Client ID'),
-                        'Name': c.get('Name'),
-                        'Status': c.get('Status'),
-                        'Address': c.get('Address'),
-                        'Phone': c.get('Phone Number'),
-                        'Email': c.get('Email')
-                    } for c in clients
-                ],
-                
-                # Additional metadata
-                'available_sheets': [
-                    'Clients', 'Projects', 'Permits', 'Site Visits',
-                    'Subcontractors', 'Documents', 'Tasks', 'Payments',
-                    'Jurisdiction', 'Inspectors', 'Construction Phase Tracking',
-                    'Phase Tracking Images'
-                ],
-                
-                # Data structure guide for AI
-                'data_guide': {
-                    'Clients': 'All client records with Status, Contact Info, etc.',
-                    'Projects': 'All project records linked to clients',
-                    'Permits': 'All permit records linked to projects',
-                    'Site Visits': 'Construction site visit logs',
-                    'Subcontractors': 'Subcontractor assignments and details',
-                    'Documents': 'Project documents and files',
-                    'Tasks': 'Task tracking and assignments',
-                    'Payments': 'Payment records and invoicing',
-                    'Jurisdiction': 'Permitting jurisdiction details',
-                    'Inspectors': 'Inspector contact information',
-                    'Construction Phase Tracking': 'Phase progress tracking',
-                    'Phase Tracking Images': 'Construction progress photos'
-                }
-            })
-            
-            logger.info(f"Loaded full context: {len(permits)} permits, {len(projects)} projects, {len(clients)} clients")
-            
-            # Add QuickBooks data if available
-            is_auth = False  # Initialize outside try block to avoid scope error
-            try:
-                logger.info(f"QuickBooks service exists: {qb_service is not None}")
-                if qb_service:
-                    # Use get_status() which reloads tokens if needed (more reliable than is_authenticated)
-                    qb_status = qb_service.get_status()
-                    is_auth = qb_status.get("authenticated", False)
-                    logger.info(f"QuickBooks status: {qb_status}")
-                    
-                    # If not authenticated but we have a refresh token, try to refresh
-                    if not is_auth and qb_service.refresh_token:
-                        logger.info("QB not authenticated but refresh token exists, attempting refresh...")
-                        try:
-                            await qb_service.refresh_access_token()
-                            logger.info("Successfully refreshed QB token")
-                            is_auth = True
-                        except Exception as refresh_err:
-                            logger.warning(f"QB token refresh failed: {refresh_err}")
-                            is_auth = False
-                
-                if qb_service and is_auth:
-                    qb_customers = await qb_service.get_customers()
-                    qb_invoices = await qb_service.get_invoices()
-                    
-                    logger.info(f"Successfully fetched QB data: {len(qb_customers)} customers, {len(qb_invoices)} invoices")
-                    
-                    # Only send summaries to reduce token usage
-                    # Full data is too large (56k tokens, limit is 30k)
-                    context.update({
-                        'quickbooks_connected': True,
-                        'qb_customers_count': len(qb_customers),
-                        'qb_invoices_count': len(qb_invoices),
-                        # Send compact customer summaries only
-                        'qb_customers_summary': [
-                            {
-                                'id': c.get('Id'),
-                                'name': c.get('DisplayName') or c.get('CompanyName') or c.get('FullyQualifiedName'),
-                                'email': c.get('PrimaryEmailAddr', {}).get('Address') if c.get('PrimaryEmailAddr') else None,
-                                'phone': c.get('PrimaryPhone', {}).get('FreeFormNumber') if c.get('PrimaryPhone') else None,
-                                'balance': c.get('Balance', 0)
-                            } for c in qb_customers
-                        ],
-                        # Send compact invoice summaries only (not full objects)
-                        'qb_invoices_summary': [
-                            {
-                                'id': inv.get('Id'),
-                                'doc_number': inv.get('DocNumber'),
-                                'customer_name': inv.get('CustomerRef', {}).get('name'),
-                                'txn_date': inv.get('TxnDate'),
-                                'total': inv.get('TotalAmt', 0),
-                                'balance': inv.get('Balance', 0),
-                                'status': 'Paid' if inv.get('Balance', 0) == 0 else 'Unpaid'
-                            } for inv in qb_invoices
-                        ]
-                    })
-                    logger.info(f"Added QuickBooks context: {len(qb_customers)} customers, {len(qb_invoices)} invoices (summaries only)")
-                else:
-                    context['quickbooks_connected'] = False
-            except Exception as qb_err:
-                logger.warning(f"Could not fetch QuickBooks data: {qb_err}")
-                context['quickbooks_connected'] = False
+            context_duration = time.time() - start_context_time
+            logger.info(f"Smart context loaded in {context_duration:.2f}s - {context.get('smart_loading', {})}")
             
         except Exception as e:
             logger.warning(f"Could not fetch data context: {e}")
