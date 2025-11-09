@@ -151,6 +151,15 @@ class OpenAIService:
                 # Build a structured context message
                 context_parts = []
                 
+                # Add session memory FIRST for conversation continuity
+                if 'session_memory' in context and context['session_memory']:
+                    context_parts.append("=== SESSION MEMORY (Previous Context) ===")
+                    session_mem = context['session_memory']
+                    for key, value in session_mem.items():
+                        if key != 'metadata':  # Skip metadata, show actual memory
+                            context_parts.append(f"{key}: {value}")
+                    context_parts.append("")  # Blank line after memory
+                
                 # Add counts summary
                 if 'clients_count' in context:
                     context_parts.append(f"Total Clients: {context['clients_count']}")
