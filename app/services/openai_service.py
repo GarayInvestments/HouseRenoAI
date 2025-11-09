@@ -474,6 +474,20 @@ class OpenAIService:
                         },
                         "required": ["client_identifier", "field_name", "field_value"]
                     }
+                },
+                {
+                    "name": "sync_quickbooks_clients",
+                    "description": "Sync ALL clients from Google Sheets with QuickBooks customers. Matches clients by name and email, then updates the QBO_Client_ID column in Sheets. Use when user asks to 'sync clients with QuickBooks', 'update QB IDs', or 'match clients to QuickBooks'. Supports dry_run parameter for preview without changes.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "dry_run": {
+                                "type": "boolean",
+                                "description": "If true, shows what would be synced without making changes (default: false)"
+                            }
+                        },
+                        "required": []
+                    }
                 }
             ]
             

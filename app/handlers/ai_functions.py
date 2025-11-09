@@ -473,6 +473,193 @@ async def handle_update_client_field(
         raise HTTPException(status_code=500, detail=f"Error updating client field: {str(e)}")
 
 
+async def handle_sync_quickbooks_clients(
+    args: Dict[str, Any],
+    quickbooks_service,
+    memory_manager,
+    session_id: str
+) -> Dict[str, Any]:
+    """
+    Sync all clients from Google Sheets with QuickBooks customers
+    Matches by name/email and updates QBO_Client_ID column
+    
+    Args:
+        args: Function arguments (dry_run: bool optional)
+        quickbooks_service: QuickBooks service instance  
+        memory_manager: Session memory manager
+        session_id: Current session ID
+        
+    Returns:
+        Dictionary with sync results
+    """
+    try:
+        dry_run = args.get("dry_run", False)
+        
+        # Import google_service here to avoid circular dependency
+        import app.services.google_service as google_service_module
+        google_service = google_service_module.google_service
+        
+        if not google_service:
+            return {
+                "status": "failed",
+                "error": "Google service not available"
+            }
+        
+        # Get all clients from Sheets
+        clients_data = await google_service.get_all_sheet_data('Clients')
+        if not clients_data:
+            return {
+                "status": "failed",
+                "error": "No clients found in database"
+            }
+        
+        # Get all QB customers
+        qb_customers = await quickbooks_service.get_customers()
+        if not qb_customers:
+            return {
+                "status": "failed",
+                "error": "No QuickBooks customers found"
+            }
+        
+        # Build QB lookup by name and email
+        qb_by_name = {}
+        qb_by_email = {}
+        for customer in qb_customers:
+            # Name variations
+            display_name = customer.get('DisplayName', '').lower().strip()
+            company_name = customer.get('CompanyName', '').lower().strip()
+            full_name = customer.get('FullyQualifiedName', '').lower().strip()
+            
+            qb_id = str(customer.get('Id'))
+            
+            if display_name:
+                qb_by_name[display_name] = qb_id
+            if company_name:
+                qb_by_name[company_name] = qb_id
+            if full_name:
+                qb_by_name[full_name] = qb_id
+            
+            # Email lookup
+            email_obj = customer.get('PrimaryEmailAddr', {})
+            if isinstance(email_obj, dict):
+                email = email_obj.get('Address', '').lower().strip()
+                if email:
+                    qb_by_email[email] = qb_id
+        
+        # Match and sync
+        matched = []
+        not_matched = []
+        already_synced = []
+        updates_made = []
+        
+        for client in clients_data:
+            client_name = (client.get('Full Name') or client.get('Client Name') or '').strip()
+            client_email = (client.get('Email') or '').strip().lower()
+            current_qbo_id = client.get('QBO_Client_ID')
+            client_id = client.get('Client ID')
+            
+            if not client_name:
+                continue
+            
+            # Check if already has QBO ID
+            if current_qbo_id:
+                already_synced.append({
+                    "name": client_name,
+                    "qbo_id": current_qbo_id
+                })
+                continue
+            
+            # Try to match
+            qb_id = None
+            match_method = None
+            
+            # Try name matching (with variations)
+            client_name_lower = client_name.lower().strip()
+            client_name_no_llc = client_name_lower.replace(' llc', '').replace(', llc', '').strip()
+            
+            if client_name_lower in qb_by_name:
+                qb_id = qb_by_name[client_name_lower]
+                match_method = "exact_name"
+            elif client_name_no_llc in qb_by_name:
+                qb_id = qb_by_name[client_name_no_llc]
+                match_method = "name_without_llc"
+            elif client_email and client_email in qb_by_email:
+                qb_id = qb_by_email[client_email]
+                match_method = "email"
+            
+            if qb_id:
+                matched.append({
+                    "name": client_name,
+                    "email": client_email,
+                    "qbo_id": qb_id,
+                    "match_method": match_method
+                })
+                
+                # Update in Sheets (unless dry run)
+                if not dry_run and client_id:
+                    success = await google_service.update_record_by_id(
+                        sheet_name='Clients',
+                        id_field='Client ID',
+                        record_id=client_id,
+                        updates={'QBO_Client_ID': qb_id}
+                    )
+                    if success:
+                        updates_made.append(client_name)
+            else:
+                not_matched.append({
+                    "name": client_name,
+                    "email": client_email
+                })
+        
+        # Build result message
+        result_message = f"**QuickBooks Sync Results**\n\n"
+        result_message += f"✅ Matched: {len(matched)}\n"
+        result_message += f"⏭️ Already synced: {len(already_synced)}\n"
+        result_message += f"❌ Not matched: {len(not_matched)}\n"
+        
+        if dry_run:
+            result_message += f"\n🔍 **DRY RUN MODE** - No changes were made\n"
+        else:
+            result_message += f"\n✏️ Updated: {len(updates_made)} clients\n"
+        
+        if matched:
+            result_message += f"\n**Newly Matched:**\n"
+            for m in matched[:10]:  # Show first 10
+                result_message += f"- {m['name']} → QB ID {m['qbo_id']} ({m['match_method']})\n"
+            if len(matched) > 10:
+                result_message += f"... and {len(matched) - 10} more\n"
+        
+        if not_matched:
+            result_message += f"\n**Not Found in QuickBooks:**\n"
+            for nm in not_matched[:5]:  # Show first 5
+                result_message += f"- {nm['name']}\n"
+            if len(not_matched) > 5:
+                result_message += f"... and {len(not_matched) - 5} more\n"
+        
+        logger.info(f"QB Sync: Matched {len(matched)}, Already synced {len(already_synced)}, "
+                   f"Not matched {len(not_matched)}, Updated {len(updates_made)}")
+        
+        return {
+            "status": "success",
+            "details": result_message,
+            "action_taken": f"Synced {len(matched)} clients with QuickBooks" + (" (dry run)" if dry_run else ""),
+            "data_updated": len(updates_made) > 0,
+            "sync_stats": {
+                "matched": len(matched),
+                "already_synced": len(already_synced),
+                "not_matched": len(not_matched),
+                "updated": len(updates_made)
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Error syncing QuickBooks clients: {e}")
+        return {
+            "status": "failed",
+            "error": f"Sync failed: {str(e)}"
+        }
+
+
 # Handler registry - maps function names to handler functions
 FUNCTION_HANDLERS = {
     "update_project_status": handle_update_project_status,
@@ -482,4 +669,5 @@ FUNCTION_HANDLERS = {
     "update_quickbooks_invoice": handle_update_quickbooks_invoice,
     "add_column_to_sheet": handle_add_column_to_sheet,
     "update_client_field": handle_update_client_field,
+    "sync_quickbooks_clients": handle_sync_quickbooks_clients,
 }
