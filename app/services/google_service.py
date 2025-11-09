@@ -300,7 +300,7 @@ class GoogleService:
             raise
     
     async def get_clients_data(self) -> List[Dict[str, Any]]:
-        """Get all clients data from the sheet (with caching)"""
+        """Get all clients data from the sheet (with caching). Falls back to deriving from Projects if Clients sheet is empty/wrong."""
         try:
             # Check cache first
             cache_key = "clients_data"
@@ -309,32 +309,72 @@ class GoogleService:
                 logger.info(f"Returning {len(cached)} clients from cache")
                 return cached
             
-            # Cache MISS - fetch from Sheets API
-            logger.info("Fetching clients data from Sheets API (cache miss)")
-            data = await self.read_sheet_data('Clients!A1:Z1000')
+            # Try to fetch from Clients sheet
+            try:
+                logger.info("Fetching clients data from Sheets API (cache miss)")
+                data = await self.read_sheet_data('Clients!A1:Z1000')
+                
+                if data and len(data) > 1:
+                    headers = data[0]
+                    logger.info(f"Clients sheet headers: {headers}")
+                    
+                    # Check if this looks like real client data (has Client ID or Full Name)
+                    has_client_id = 'Client ID' in headers
+                    has_full_name = 'Full Name' in headers
+                    
+                    if has_client_id or has_full_name:
+                        clients = []
+                        for row in data[1:]:
+                            if len(row) > 0:
+                                client = {}
+                                for i, header in enumerate(headers):
+                                    client[header] = row[i] if i < len(row) else ""
+                                clients.append(client)
+                        
+                        if clients:
+                            # Store in cache
+                            self._set_cache(cache_key, clients)
+                            logger.info(f"Retrieved {len(clients)} clients from Clients sheet with proper format")
+                            return clients
+                    else:
+                        logger.warning(f"Clients sheet has wrong format (headers: {headers[:3]}), falling back to Projects")
+                else:
+                    logger.warning("Clients sheet is empty, falling back to Projects")
+                    
+            except Exception as sheet_error:
+                logger.warning(f"Could not read Clients sheet: {sheet_error}, falling back to Projects")
             
-            if not data:
-                logger.warning("No data returned from Clients sheet")
-                return []
+            # Fallback: Derive clients from Projects data
+            logger.info("Deriving clients from Projects data")
+            projects = await self.get_projects_data()
             
-            headers = data[0]
-            logger.info(f"Clients sheet headers: {headers}")
-            clients = []
+            # Extract unique clients from projects
+            clients_dict = {}
+            for project in projects:
+                client_id = project.get('Client ID', '')
+                if client_id and client_id not in clients_dict:
+                    clients_dict[client_id] = {
+                        'Client ID': client_id,
+                        'Full Name': project.get('Owner Name (PM\'s Client)', 'Unknown Client'),
+                        'Email': project.get('Email', ''),
+                        'Phone': project.get('Phone', ''),
+                        'Address': project.get('Address', ''),
+                        'Status': project.get('Owner Status', ''),
+                        'Role': project.get('Owner Role', ''),
+                        'Company Name': project.get('Owner Company', ''),
+                        'Notes': project.get('Notes', ''),
+                        'QBO Client ID': project.get('QBO Client ID', ''),
+                    }
             
-            for row in data[1:]:
-                if len(row) > 0:
-                    client = {}
-                    for i, header in enumerate(headers):
-                        client[header] = row[i] if i < len(row) else ""
-                    clients.append(client)
+            clients = list(clients_dict.values())
             
             # Store in cache
             self._set_cache(cache_key, clients)
-            logger.info(f"Retrieved {len(clients)} clients from Sheets API - Headers: {headers[:3] if headers else 'None'}")
+            logger.info(f"Derived {len(clients)} clients from Projects data")
             return clients
             
         except Exception as e:
-            logger.error(f"Failed to get clients data from sheet 'Clients': {e}", exc_info=True)
+            logger.error(f"Failed to get clients data: {e}", exc_info=True)
             raise
     
     async def get_all_sheet_data(self, sheet_name: str, max_rows: int = 1000) -> List[Dict[str, Any]]:
