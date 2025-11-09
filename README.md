@@ -72,6 +72,7 @@ HouseRenovators-api/
 - Python 3.11+ (for backend)
 - Node.js 18+ (for frontend)
 - Git
+- GPG (for encrypted secrets) - [Install Gpg4win](https://www.gpg4win.org/download.html) on Windows
 - Visual Studio Code (recommended)
 
 ### 1. Clone Repository
@@ -80,35 +81,95 @@ git clone https://github.com/GarayInvestments/HouseRenoAI.git
 cd HouseRenovators-api
 ```
 
-### 2. Backend Setup
+### 2. Decrypt Secrets (Git-Secret)
 ```bash
-# The backend code is in the root app/ directory
-# Create virtual environment in backend/ folder for organization
-cd backend
-python -m venv venv
-venv\Scripts\activate  # Windows
-# source venv/bin/activate  # macOS/Linux
+# Ensure GPG is in PATH (Windows)
+# Add to PATH: C:\Program Files (x86)\GnuPG\bin
 
-# Install dependencies from root requirements.txt
-cd ..
+# If first time on new machine, import GPG private key
+# From old machine: gpg --export-secret-keys your@email.com > private-key.asc
+# gpg --import private-key.asc
+
+# Decrypt secrets from Git
+.\scripts\git-secret-wrapper.ps1 -Action reveal
+# This decrypts: .env and config/house-renovators-credentials.json
+```
+
+### 3. Backend Setup
+```bash
+# Create virtual environment at root level
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1  # Windows
+# source .venv/bin/activate  # macOS/Linux
+
+# Install dependencies
 pip install -r requirements.txt
 
-# Run from root directory
+# Run from root directory (backend code is in app/ directory)
 python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### 3. Frontend Setup
+### 4. Frontend Setup
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-### 4. Automation Setup (Optional)
+### 5. Automation Setup (Optional)
 ```bash
 cd automation
 .\cli-tools\install-all-clis.ps1  # Windows PowerShell
 ```
+
+---
+
+## 🔐 Secrets Management
+
+### **Git-Secret Workflow**
+
+We use **git-secret** to encrypt sensitive files before committing them to Git. This allows secure collaboration without exposing credentials.
+
+#### Daily Workflow
+```powershell
+# After modifying .env or credentials
+.\scripts\git-secret-wrapper.ps1 -Action hide
+
+# Commit encrypted files
+git add .env.secret config/*.secret
+git commit -m "Update secrets"
+git push
+
+# On new machine or after git pull
+.\scripts\git-secret-wrapper.ps1 -Action reveal
+```
+
+#### Adding Team Members
+```powershell
+# Team member shares their GPG public key fingerprint
+.\scripts\git-secret-wrapper.ps1 -Action tell -Email "teammate@example.com"
+
+# Re-encrypt files so they can decrypt
+.\scripts\git-secret-wrapper.ps1 -Action hide
+git add *.secret
+git commit -m "Add teammate to secrets"
+git push
+```
+
+#### Encrypted Files in Git
+- `.env.secret` - Environment variables (API keys, JWT secrets)
+- `config/house-renovators-credentials.json.secret` - Google service account
+
+#### Alternative: PowerShell Encryption (No GPG)
+```powershell
+# Encrypt with password (no GPG required)
+.\scripts\encrypt-secrets.ps1 -Action encrypt
+
+# Decrypt with password
+.\scripts\encrypt-secrets.ps1 -Action decrypt
+```
+
+**Documentation**: See `docs/SETUP_NEW_MACHINE.md` for complete setup guide.
 
 ---
 
@@ -239,15 +300,48 @@ cd frontend && npm run dev
 - Edge optimization and global CDN
 
 ### **Environment Variables**
-```bash
-# Backend (.env)
-OPENAI_API_KEY=your_openai_key
-GOOGLE_APPLICATION_CREDENTIALS=path/to/credentials.json
-SHEET_ID=your_google_sheet_id
 
-# Frontend (.env.local)
-VITE_API_URL=https://api.houserenovatorsllc.com
+Secrets are managed with **git-secret** and automatically decrypted from Git:
+
+```bash
+# Decrypt secrets (contains all required environment variables)
+.\scripts\git-secret-wrapper.ps1 -Action reveal
+
+# This creates:
+# - .env (API keys, JWT secrets, QuickBooks credentials)
+# - config/house-renovators-credentials.json (Google service account)
 ```
+
+#### Required Variables in .env:
+```env
+# Google Sheets API
+SHEET_ID=your_google_sheet_id
+GOOGLE_SERVICE_ACCOUNT_FILE=config/house-renovators-credentials.json
+
+# OpenAI API
+OPENAI_API_KEY=sk-proj-your_key
+
+# QuickBooks OAuth2
+QUICKBOOKS_CLIENT_ID=your_client_id
+QUICKBOOKS_CLIENT_SECRET=your_client_secret
+QUICKBOOKS_REDIRECT_URI=https://houserenoai.onrender.com/v1/quickbooks/callback
+QUICKBOOKS_ENVIRONMENT=production
+
+# Security
+JWT_SECRET_KEY=your_random_secret_key
+JWT_ALGORITHM=HS256
+
+# API Settings
+API_VERSION=v1
+```
+
+#### Frontend Variables (.env.local):
+```env
+VITE_API_URL=http://localhost:8000  # Development
+# VITE_API_URL=https://api.houserenovatorsllc.com  # Production
+```
+
+**Note**: Frontend env files are not encrypted (they contain no secrets, only public URLs).
 
 ---
 
