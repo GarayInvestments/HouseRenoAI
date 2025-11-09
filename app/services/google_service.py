@@ -322,7 +322,7 @@ class GoogleService:
                     has_client_id = 'Client ID' in headers
                     has_full_name = 'Full Name' in headers
                     
-                    if has_client_id or has_full_name:
+                    if has_client_id and has_full_name:
                         clients = []
                         for row in data[1:]:
                             if len(row) > 0:
@@ -332,12 +332,25 @@ class GoogleService:
                                 clients.append(client)
                         
                         if clients:
-                            # Store in cache
-                            self._set_cache(cache_key, clients)
-                            logger.info(f"Retrieved {len(clients)} clients from Clients sheet with proper format")
-                            return clients
+                            # Validate: Check if Client IDs look valid (8-char hex)
+                            # and Full Names don't look like addresses
+                            first_client = clients[0]
+                            client_id = first_client.get('Client ID', '')
+                            full_name = first_client.get('Full Name', '')
+                            
+                            # If Client ID is 8-char hex and Full Name doesn't contain address markers
+                            is_valid_id = len(client_id) == 8 and all(c in '0123456789abcdef' for c in client_id.lower())
+                            looks_like_address = any(marker in full_name for marker in ['St', 'Ave', 'Dr', 'Rd', 'Ln', ','])
+                            
+                            if is_valid_id and not looks_like_address:
+                                # Store in cache
+                                self._set_cache(cache_key, clients)
+                                logger.info(f"Retrieved {len(clients)} clients from Clients sheet with proper format")
+                                return clients
+                            else:
+                                logger.warning(f"Clients sheet has invalid data format (ID: {client_id}, Name: {full_name}), falling back to Projects")
                     else:
-                        logger.warning(f"Clients sheet has wrong format (headers: {headers[:3]}), falling back to Projects")
+                        logger.warning(f"Clients sheet missing required columns (Client ID and/or Full Name), falling back to Projects")
                 else:
                     logger.warning("Clients sheet is empty, falling back to Projects")
                     
