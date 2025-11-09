@@ -92,10 +92,10 @@ async def build_sheets_context(google_service) -> Dict[str, Any]:
         Dict with sheets data and summaries
     """
     try:
-        # Fetch all sheets data
-        projects = await google_service.get_sheet_data("Projects")
-        permits = await google_service.get_sheet_data("Permits")
-        clients = await google_service.get_sheet_data("Clients")
+        # Fetch all sheets data using the correct methods (with caching!)
+        projects = await google_service.get_projects_data()
+        permits = await google_service.get_permits_data()
+        clients = await google_service.get_clients_data()
         
         # Summarize project statuses
         project_statuses = {}

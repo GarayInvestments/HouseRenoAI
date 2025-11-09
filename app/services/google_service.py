@@ -108,7 +108,12 @@ class GoogleService:
         """
         expires_at = datetime.now() + self._cache_ttl
         self._cache[key] = {'data': data, 'expires_at': expires_at}
-        logger.info(f"Sheets cache SET for {key} (TTL: {self._cache_ttl.seconds}s)")
+        
+        # Enhanced logging with data inspection
+        data_type = type(data).__name__
+        data_count = len(data) if isinstance(data, (list, dict)) else 'N/A'
+        first_item_type = type(data[0]).__name__ if isinstance(data, list) and len(data) > 0 else 'N/A'
+        logger.info(f"Sheets cache SET for {key} (TTL: {self._cache_ttl.seconds}s) - Type: {data_type}, Count: {data_count}, FirstItemType: {first_item_type}")
     
     def _invalidate_cache(self, key: Optional[str] = None) -> None:
         """
