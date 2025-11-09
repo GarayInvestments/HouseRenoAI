@@ -396,6 +396,89 @@ async def process_chat_message(chat_data: Dict[str, Any]):
                                 "error": f"Failed to create invoice: {str(invoice_error)}"
                             })
                     
+                    elif func_name == "update_quickbooks_invoice":
+                        invoice_id = func_args["invoice_id"]
+                        invoice_number = func_args.get("invoice_number", "")
+                        updates = func_args["updates"]
+                        
+                        # Check QB authentication
+                        if not qb_service or not qb_service.is_authenticated():
+                            function_results.append({
+                                "function": func_name,
+                                "status": "failed",
+                                "error": "QuickBooks is not authenticated. Please connect to QuickBooks first."
+                            })
+                            continue
+                        
+                        try:
+                            # Get the existing invoice to have full data
+                            existing_invoice = await qb_service.get_invoice_by_id(invoice_id)
+                            
+                            # Build updated invoice data
+                            updated_invoice_data = {**existing_invoice}
+                            
+                            # Update amount (modify line item)
+                            if "amount" in updates:
+                                new_amount = updates["amount"]
+                                if updated_invoice_data.get("Line"):
+                                    # Update the first line item amount
+                                    updated_invoice_data["Line"][0]["Amount"] = new_amount
+                                    if "SalesItemLineDetail" in updated_invoice_data["Line"][0]:
+                                        updated_invoice_data["Line"][0]["SalesItemLineDetail"]["UnitPrice"] = new_amount
+                            
+                            # Update due date
+                            if "due_date" in updates:
+                                updated_invoice_data["DueDate"] = updates["due_date"]
+                            
+                            # Update description
+                            if "description" in updates:
+                                if updated_invoice_data.get("Line"):
+                                    updated_invoice_data["Line"][0]["Description"] = updates["description"]
+                            
+                            # Update the invoice
+                            updated_invoice = await qb_service.update_invoice(invoice_id, updated_invoice_data)
+                            
+                            # Build description of what was updated
+                            update_details = []
+                            if "amount" in updates:
+                                update_details.append(f"amount to ${updates['amount']}")
+                            if "due_date" in updates:
+                                update_details.append(f"due date to {updates['due_date']}")
+                            if "description" in updates:
+                                update_details.append(f"description")
+                            
+                            update_summary = ", ".join(update_details)
+                            invoice_num = invoice_number or updated_invoice.get('DocNumber', invoice_id)
+                            
+                            action_taken = f"Updated QuickBooks invoice #{invoice_num}: {update_summary}"
+                            data_updated = True
+                            
+                            # Construct link
+                            qb_invoice_link = f"https://app.qbo.intuit.com/app/invoice?txnId={invoice_id}"
+                            
+                            function_results.append({
+                                "function": func_name,
+                                "status": "success",
+                                "details": f"Invoice #{invoice_num} updated: {update_summary}",
+                                "invoice_number": invoice_num,
+                                "invoice_id": invoice_id,
+                                "invoice_link": qb_invoice_link
+                            })
+                            logger.info(f"AI executed: {action_taken}")
+                            
+                            # Store invoice details in memory
+                            memory_updates["last_invoice_id"] = invoice_id
+                            memory_updates["last_invoice_number"] = invoice_num
+                            memory_updates["last_invoice_link"] = qb_invoice_link
+                            
+                        except Exception as invoice_error:
+                            logger.error(f"Failed to update invoice: {invoice_error}")
+                            function_results.append({
+                                "function": func_name,
+                                "status": "failed",
+                                "error": f"Failed to update invoice: {str(invoice_error)}"
+                            })
+                    
                     elif func_name == "add_column_to_sheet":
                         sheet_name = func_args["sheet_name"]
                         column_name = func_args["column_name"]

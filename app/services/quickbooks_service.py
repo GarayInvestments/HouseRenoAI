@@ -524,6 +524,42 @@ class QuickBooksService:
         response = await self._make_request("GET", f"invoice/{invoice_id}")
         return response.get("Invoice", {})
     
+    async def update_invoice(self, invoice_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Update an existing invoice in QuickBooks.
+        
+        Args:
+            invoice_id: QuickBooks invoice ID
+            updates: Fields to update (can include Amount, DueDate, Line items, etc.)
+                Note: Must include the full invoice object with SyncToken for sparse updates
+        
+        Returns:
+            Updated invoice record
+            
+        Example:
+            # Get the existing invoice first to get SyncToken
+            invoice = await qb_service.get_invoice_by_id("123")
+            
+            # Update specific fields
+            updated = await qb_service.update_invoice("123", {
+                **invoice,  # Include all existing fields
+                "DueDate": "2025-12-31",
+                "Line": [...updated line items...]
+            })
+        """
+        # QuickBooks requires a sparse update with SyncToken
+        # We need to get the existing invoice first if not provided
+        if "SyncToken" not in updates or "Id" not in updates:
+            existing_invoice = await self.get_invoice_by_id(invoice_id)
+            updates["Id"] = invoice_id
+            updates["SyncToken"] = existing_invoice.get("SyncToken")
+        
+        response = await self._make_request("POST", "invoice", data=updates, params={"operation": "update"})
+        invoice = response.get("Invoice", {})
+        
+        logger.info(f"Updated invoice: {invoice.get('DocNumber')}")
+        return invoice
+    
     # ==================== ESTIMATE OPERATIONS ====================
     
     async def create_estimate(self, estimate_data: Dict[str, Any]) -> Dict[str, Any]:

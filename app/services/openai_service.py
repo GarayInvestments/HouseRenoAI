@@ -335,6 +335,42 @@ class OpenAIService:
                     }
                 },
                 {
+                    "name": "update_quickbooks_invoice",
+                    "description": "Update an existing QuickBooks invoice. Use this to modify invoice amount, due date, description, or line items. ALWAYS ask for confirmation before updating.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "invoice_id": {
+                                "type": "string",
+                                "description": "The QuickBooks invoice ID to update"
+                            },
+                            "invoice_number": {
+                                "type": "string",
+                                "description": "The invoice number for confirmation (optional)"
+                            },
+                            "updates": {
+                                "type": "object",
+                                "description": "Fields to update (can include 'amount', 'due_date', 'description')",
+                                "properties": {
+                                    "amount": {
+                                        "type": "number",
+                                        "description": "New total amount"
+                                    },
+                                    "due_date": {
+                                        "type": "string",
+                                        "description": "New due date in YYYY-MM-DD format"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "description": "New description of services"
+                                    }
+                                }
+                            }
+                        },
+                        "required": ["invoice_id", "updates"]
+                    }
+                },
+                {
                     "name": "add_column_to_sheet",
                     "description": "CALL THIS IMMEDIATELY when user confirms they want to add a column to a sheet. Use when user says 'yes', 'confirm', 'proceed', 'add it', 'do it', or 'go ahead' after discussing adding a column.",
                     "parameters": {
