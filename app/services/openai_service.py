@@ -116,7 +116,7 @@ class OpenAIService:
                - **due_date**: To change the due date
                - **description**: To change the service description
             3. CRITICAL: You MUST populate the "updates" object with the field to update
-               Example: {"doc_number": "TTD-6441-11-08"} or {"amount": 5000}
+               Example: {{"doc_number": "TTD-6441-11-08"}} or {{"amount": 5000}}
             4. ALWAYS ask for confirmation before updating
             5. After successful update, provide the QuickBooks invoice link
             
