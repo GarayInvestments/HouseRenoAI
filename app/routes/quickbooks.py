@@ -620,3 +620,57 @@ async def get_items(item_type: Optional[str] = Query(default=None)):
     except Exception as e:
         logger.error(f"Failed to get items: {e}")
         raise HTTPException(status_code=500, detail=f"Item retrieval failed: {str(e)}")
+
+
+# ==================== SYNC OPERATIONS ====================
+
+@router.post("/sync-types")
+async def sync_customer_types(dry_run: bool = Query(default=False)):
+    """
+    Sync CustomerTypeRef for all Google Sheets clients to 'GC Compliance' in QuickBooks.
+    
+    Process:
+    1. Gets all clients from Google Sheets
+    2. Matches with QuickBooks customers by name/email
+    3. Updates CustomerTypeRef to {"name": "GC Compliance"}
+    4. Skips customers already set correctly
+    
+    Query Parameters:
+        dry_run: If true, preview changes without updating (default: false)
+    
+    Returns:
+        Sync results with matched, updated, skipped, and error counts
+    
+    Example:
+        POST /v1/quickbooks/sync-types (executes updates)
+        POST /v1/quickbooks/sync-types?dry_run=true (preview only)
+    """
+    try:
+        if not quickbooks_service.is_authenticated():
+            raise HTTPException(status_code=401, detail="Not authenticated with QuickBooks")
+        
+        # Get Google Sheets service
+        from app.services.google_service import google_service
+        
+        if not google_service or not google_service.sheets_service:
+            raise HTTPException(status_code=503, detail="Google Sheets service not initialized")
+        
+        # Execute sync
+        result = await quickbooks_service.sync_gc_customer_types_from_sheets(
+            google_service=google_service,
+            dry_run=dry_run
+        )
+        
+        if result.get("status") == "failed":
+            raise HTTPException(status_code=500, detail=result.get("error", "Sync failed"))
+        
+        return {
+            "success": True,
+            **result
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to sync customer types: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Customer type sync failed: {str(e)}")

@@ -76,9 +76,10 @@
 - [ ] Customer detail pages
 - [ ] Invoice detail pages
 
-### Phase 6: Data Management � IN PROGRESS
+### Phase 6: Data Management 🔄 IN PROGRESS
 - [x] QB Client sync (AI-assisted matching)
-- [ ] GC Compliance payments reconciliation
+- [ ] GC Compliance payments reconciliation (AI function ready)
+- [ ] QuickBooks CustomerTypeRef sync (GC Compliance labeling)
 - [ ] Create invoices
 - [ ] Create estimates
 - [ ] Record payments

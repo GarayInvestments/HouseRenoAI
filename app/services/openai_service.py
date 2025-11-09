@@ -502,6 +502,20 @@ class OpenAIService:
                         },
                         "required": []
                     }
+                },
+                {
+                    "name": "sync_quickbooks_customer_types",
+                    "description": "Update CustomerTypeRef to 'GC Compliance' for all clients from Google Sheets in QuickBooks. Matches by name/email, updates CustomerTypeRef field, skips customers already set correctly. Use when user asks to 'update QB customer types', 'set GC Compliance type', 'sync customer types to QuickBooks', or 'label customers as GC Compliance'.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "dry_run": {
+                                "type": "boolean",
+                                "description": "If true, shows what would be updated without making changes (default: false)"
+                            }
+                        },
+                        "required": []
+                    }
                 }
             ]
             

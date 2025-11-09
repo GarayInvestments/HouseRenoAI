@@ -714,6 +714,223 @@ class QuickBooksService:
         logger.info(f"Retrieved {len(items)} items")
         return items
     
+    # ==================== CUSTOMER TYPE SYNC ====================
+    
+    async def update_customer(
+        self, 
+        customer_id: str, 
+        customer_data: Dict[str, Any],
+        sync_token: str
+    ) -> Dict[str, Any]:
+        """
+        Update an existing customer in QuickBooks.
+        
+        Args:
+            customer_id: QuickBooks customer ID
+            customer_data: Updated customer information (must include Id and SyncToken)
+            sync_token: Current SyncToken for optimistic locking
+        
+        Returns:
+            Updated customer record
+        """
+        # Ensure required fields for update
+        update_data = {
+            "Id": customer_id,
+            "SyncToken": sync_token,
+            **customer_data
+        }
+        
+        response = await self._make_request("POST", "customer", data=update_data)
+        customer = response.get("Customer", {})
+        
+        # Invalidate customer cache after update
+        self._invalidate_cache()
+        logger.info(f"Updated customer ID {customer_id}: {customer.get('DisplayName')} - cache invalidated")
+        
+        return customer
+    
+    async def sync_gc_customer_types_from_sheets(
+        self,
+        google_service,
+        dry_run: bool = False
+    ) -> Dict[str, Any]:
+        """
+        Sync CustomerTypeRef to 'GC Compliance' for all clients in Google Sheets.
+        
+        Process:
+        1. Get all clients from Google Sheets
+        2. Get all QB customers
+        3. Match by name or email
+        4. Update QB customer with CustomerTypeRef = {"name": "GC Compliance"}
+        5. Skip if already set correctly
+        
+        Args:
+            google_service: Google Sheets service instance
+            dry_run: If True, preview changes without updating
+        
+        Returns:
+            Dictionary with sync results
+        """
+        try:
+            logger.info(f"[QB TYPE SYNC] Starting CustomerTypeRef sync (dry_run={dry_run})")
+            
+            # Get all clients from Sheets
+            clients_data = await google_service.get_clients_data()
+            logger.info(f"[QB TYPE SYNC] Found {len(clients_data)} clients in Google Sheets")
+            
+            # Get all QB customers
+            qb_customers = await self.get_customers()
+            logger.info(f"[QB TYPE SYNC] Found {len(qb_customers)} customers in QuickBooks")
+            
+            # Build lookup maps for efficient matching
+            qb_by_name = {}
+            qb_by_email = {}
+            
+            for customer in qb_customers:
+                name = customer.get('DisplayName', '').strip().lower()
+                email_obj = customer.get('PrimaryEmailAddr', {})
+                email = email_obj.get('Address', '').strip().lower() if email_obj else ''
+                
+                if name:
+                    qb_by_name[name] = customer
+                if email:
+                    qb_by_email[email] = customer
+            
+            # Process each Sheet client
+            matched = []
+            skipped = []
+            updated = []
+            not_found = []
+            errors = []
+            
+            for client in clients_data:
+                client_name = (client.get('Full Name') or client.get('Client Name', '')).strip()
+                client_email = client.get('Email', '').strip()
+                
+                if not client_name:
+                    continue
+                
+                # Try to find matching QB customer
+                qb_customer = None
+                match_method = None
+                
+                # Match by name (exact or without LLC variations)
+                name_lower = client_name.lower()
+                if name_lower in qb_by_name:
+                    qb_customer = qb_by_name[name_lower]
+                    match_method = "exact name"
+                else:
+                    # Try without LLC suffix
+                    name_without_llc = name_lower.replace(' llc', '').replace(', llc', '').strip()
+                    if name_without_llc in qb_by_name:
+                        qb_customer = qb_by_name[name_without_llc]
+                        match_method = "name (without LLC)"
+                
+                # Fallback to email
+                if not qb_customer and client_email:
+                    email_lower = client_email.lower()
+                    if email_lower in qb_by_email:
+                        qb_customer = qb_by_email[email_lower]
+                        match_method = "email"
+                
+                if not qb_customer:
+                    not_found.append({
+                        "client_name": client_name,
+                        "email": client_email
+                    })
+                    continue
+                
+                # Check current CustomerTypeRef
+                current_type_ref = qb_customer.get('CustomerTypeRef', {})
+                current_type_name = current_type_ref.get('name', '').strip()
+                
+                match_info = {
+                    "client_name": client_name,
+                    "qb_id": qb_customer.get('Id'),
+                    "qb_name": qb_customer.get('DisplayName'),
+                    "match_method": match_method,
+                    "current_type": current_type_name
+                }
+                
+                if current_type_name == "GC Compliance":
+                    skipped.append(match_info)
+                    logger.debug(f"[QB TYPE SYNC] Skipping {client_name} - already GC Compliance")
+                    continue
+                
+                matched.append(match_info)
+                
+                # Update if not dry run
+                if not dry_run:
+                    try:
+                        # Get full customer record to ensure we have SyncToken
+                        full_customer = await self.get_customer_by_id(qb_customer['Id'])
+                        sync_token = full_customer.get('SyncToken')
+                        
+                        if not sync_token:
+                            errors.append({
+                                **match_info,
+                                "error": "Missing SyncToken"
+                            })
+                            continue
+                        
+                        # Update with CustomerTypeRef
+                        update_data = {
+                            "CustomerTypeRef": {
+                                "name": "GC Compliance"
+                            }
+                        }
+                        
+                        updated_customer = await self.update_customer(
+                            customer_id=qb_customer['Id'],
+                            customer_data=update_data,
+                            sync_token=sync_token
+                        )
+                        
+                        updated.append({
+                            **match_info,
+                            "updated_type": updated_customer.get('CustomerTypeRef', {}).get('name', 'Unknown')
+                        })
+                        
+                        logger.info(f"[QB TYPE SYNC] Updated {client_name} → GC Compliance")
+                        
+                    except Exception as e:
+                        error_msg = str(e)
+                        errors.append({
+                            **match_info,
+                            "error": error_msg
+                        })
+                        logger.error(f"[QB TYPE SYNC] Error updating {client_name}: {error_msg}")
+            
+            result = {
+                "status": "success",
+                "dry_run": dry_run,
+                "total_clients": len(clients_data),
+                "matched": len(matched),
+                "skipped_already_set": len(skipped),
+                "updated": len(updated),
+                "not_found_in_qb": len(not_found),
+                "errors": len(errors),
+                "matched_details": matched[:20],  # First 20 for brevity
+                "skipped_details": skipped[:10],
+                "not_found_details": not_found,
+                "error_details": errors
+            }
+            
+            if dry_run:
+                result["message"] = f"Dry run: {len(matched)} customers would be updated to GC Compliance"
+            else:
+                result["message"] = f"Updated {len(updated)} customers to GC Compliance"
+            
+            logger.info(f"[QB TYPE SYNC] Complete: {result['message']}")
+            return result
+            
+        except Exception as e:
+            logger.error(f"[QB TYPE SYNC] Error: {e}", exc_info=True)
+            return {
+                "status": "failed",
+                "error": f"Sync failed: {str(e)}"
+            }
+    
     # ==================== COMPANY INFO ====================
     
     async def get_company_info(self) -> Dict[str, Any]:

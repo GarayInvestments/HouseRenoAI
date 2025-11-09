@@ -215,7 +215,10 @@ async def process_chat_message(chat_data: Dict[str, Any]):
                         handler = FUNCTION_HANDLERS[func_name]
                         
                         # Route to appropriate service based on function name
-                        if 'quickbooks' in func_name:
+                        if func_name == 'sync_quickbooks_customer_types':
+                            # This function needs both services
+                            result = await handler(func_args, google_service, quickbooks_service, memory_manager, session_id)
+                        elif 'quickbooks' in func_name:
                             result = await handler(func_args, quickbooks_service, memory_manager, session_id)
                         else:
                             result = await handler(func_args, google_service, memory_manager, session_id)

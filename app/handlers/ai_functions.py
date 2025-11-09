@@ -940,6 +940,61 @@ async def handle_sync_gc_compliance_payments(
         }
 
 
+async def handle_sync_quickbooks_customer_types(
+    args: Dict[str, Any],
+    google_service,
+    quickbooks_service,
+    memory_manager,
+    session_id: str
+) -> Dict[str, Any]:
+    """
+    Sync CustomerTypeRef to 'GC Compliance' for all Sheet clients in QuickBooks.
+    
+    Process:
+    1. Get all clients from Google Sheets
+    2. Match with QuickBooks customers by name/email
+    3. Update CustomerTypeRef = {"name": "GC Compliance"}
+    4. Skip customers already set correctly
+    
+    Args:
+        args: Function arguments (dry_run optional)
+        google_service: Google Sheets service instance
+        quickbooks_service: QuickBooks service instance
+        memory_manager: Session memory manager
+        session_id: Current session ID
+        
+    Returns:
+        Dictionary with sync results
+    """
+    try:
+        dry_run = args.get("dry_run", False)
+        logger.info(f"[QB TYPE SYNC] AI function called (dry_run={dry_run})")
+        
+        # Execute sync via QuickBooks service
+        result = await quickbooks_service.sync_gc_customer_types_from_sheets(
+            google_service=google_service,
+            dry_run=dry_run
+        )
+        
+        # Store in session memory
+        if result.get("status") == "success":
+            memory_manager.set(session_id, "last_qb_type_sync", {
+                "matched": result.get("matched", 0),
+                "updated": result.get("updated", 0),
+                "skipped": result.get("skipped_already_set", 0),
+                "not_found": result.get("not_found_in_qb", 0)
+            })
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"[QB TYPE SYNC] Error: {e}", exc_info=True)
+        return {
+            "status": "failed",
+            "error": f"Customer type sync failed: {str(e)}"
+        }
+
+
 # Handler registry - maps function names to handler functions
 FUNCTION_HANDLERS = {
     "update_project_status": handle_update_project_status,
@@ -951,4 +1006,5 @@ FUNCTION_HANDLERS = {
     "update_client_field": handle_update_client_field,
     "sync_quickbooks_clients": handle_sync_quickbooks_clients,
     "sync_gc_compliance_payments": handle_sync_gc_compliance_payments,
+    "sync_quickbooks_customer_types": handle_sync_quickbooks_customer_types,
 }
