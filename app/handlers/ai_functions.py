@@ -661,6 +661,187 @@ async def handle_sync_quickbooks_clients(
         }
 
 
+async def handle_create_quickbooks_customer_from_sheet(
+    args: Dict[str, Any],
+    google_service,
+    quickbooks_service,
+    memory_manager,
+    session_id: str
+) -> Dict[str, Any]:
+    """
+    Create a new QuickBooks customer based on a client in Google Sheets.
+    
+    Looks up client by name or ID in Sheets, then creates matching customer in QB.
+    Automatically sets CustomerTypeRef to 'GC Compliance'.
+    
+    Args:
+        args: Function arguments containing client_name or client_id
+        google_service: Google Sheets service instance
+        quickbooks_service: QuickBooks service instance
+        memory_manager: Session memory manager
+        session_id: Current session ID
+        
+    Returns:
+        Dictionary with created customer details
+    """
+    try:
+        client_identifier = args.get("client_name") or args.get("client_id")
+        if not client_identifier:
+            return {
+                "status": "failed",
+                "error": "Must provide client_name or client_id"
+            }
+        
+        logger.info(f"[CREATE QB CUSTOMER] Looking up client: {client_identifier}")
+        
+        # Check QB authentication
+        if not quickbooks_service or not quickbooks_service.is_authenticated():
+            return {
+                "status": "failed",
+                "error": "QuickBooks is not authenticated. Please connect to QuickBooks first."
+            }
+        
+        # Get all clients from Sheets
+        clients_data = await google_service.get_clients_data()
+        
+        # Find matching client
+        target_client = None
+        for client in clients_data:
+            client_name = (client.get('Full Name') or client.get('Client Name', '')).strip()
+            client_id = str(client.get('Client ID', '')).strip()
+            
+            if (client_name.lower() == client_identifier.lower() or 
+                client_id == client_identifier):
+                target_client = client
+                break
+        
+        if not target_client:
+            return {
+                "status": "failed",
+                "error": f"Client '{client_identifier}' not found in Google Sheets"
+            }
+        
+        # Extract client data
+        client_name = (target_client.get('Full Name') or target_client.get('Client Name', '')).strip()
+        client_email = target_client.get('Email', '').strip()
+        client_phone = target_client.get('Phone', '').strip()
+        client_address = target_client.get('Address', '').strip()
+        client_city = target_client.get('City', '').strip()
+        client_state = target_client.get('State', '').strip()
+        client_zip = target_client.get('Zip', '').strip()
+        
+        if not client_name:
+            return {
+                "status": "failed",
+                "error": "Client has no name in Google Sheets"
+            }
+        
+        logger.info(f"[CREATE QB CUSTOMER] Found client: {client_name}")
+        
+        # Check if customer already exists in QB
+        qb_customers = await quickbooks_service.get_customers()
+        for customer in qb_customers:
+            qb_name = customer.get('DisplayName', '').strip().lower()
+            if qb_name == client_name.lower():
+                return {
+                    "status": "failed",
+                    "error": f"Customer '{client_name}' already exists in QuickBooks (ID: {customer.get('Id')})",
+                    "existing_customer": {
+                        "id": customer.get('Id'),
+                        "name": customer.get('DisplayName'),
+                        "email": customer.get('PrimaryEmailAddr', {}).get('Address', 'N/A')
+                    }
+                }
+        
+        # Build customer data for QuickBooks
+        customer_data = {
+            "DisplayName": client_name,
+            "CustomerTypeRef": {
+                "name": "GC Compliance"
+            }
+        }
+        
+        # Add email if available
+        if client_email:
+            customer_data["PrimaryEmailAddr"] = {
+                "Address": client_email
+            }
+        
+        # Add phone if available
+        if client_phone:
+            customer_data["PrimaryPhone"] = {
+                "FreeFormNumber": client_phone
+            }
+        
+        # Add address if available
+        if client_address or client_city or client_state or client_zip:
+            bill_addr = {}
+            if client_address:
+                bill_addr["Line1"] = client_address
+            if client_city:
+                bill_addr["City"] = client_city
+            if client_state:
+                bill_addr["CountrySubDivisionCode"] = client_state
+            if client_zip:
+                bill_addr["PostalCode"] = client_zip
+            
+            if bill_addr:
+                customer_data["BillAddr"] = bill_addr
+        
+        # Create customer in QuickBooks
+        logger.info(f"[CREATE QB CUSTOMER] Creating QB customer: {client_name}")
+        created_customer = await quickbooks_service.create_customer(customer_data)
+        
+        qb_customer_id = created_customer.get('Id')
+        qb_display_name = created_customer.get('DisplayName')
+        
+        logger.info(f"[CREATE QB CUSTOMER] Created customer ID {qb_customer_id}: {qb_display_name}")
+        
+        # Update Google Sheets with QBO Client ID
+        sheet_client_id = target_client.get('Client ID', '')
+        if sheet_client_id:
+            try:
+                await google_service.update_record_by_id(
+                    sheet_name='Clients',
+                    id_field='Client ID',
+                    record_id=sheet_client_id,
+                    updates={'QBO Client ID': qb_customer_id}
+                )
+                logger.info(f"[CREATE QB CUSTOMER] Updated Sheet client {sheet_client_id} with QBO ID {qb_customer_id}")
+            except Exception as e:
+                logger.warning(f"[CREATE QB CUSTOMER] Could not update Sheet with QBO ID: {e}")
+        
+        # Store in session memory
+        memory_manager.set(session_id, "last_created_customer", {
+            "qb_id": qb_customer_id,
+            "name": qb_display_name,
+            "email": client_email
+        })
+        
+        result = {
+            "status": "success",
+            "message": f"Created QuickBooks customer: {qb_display_name}",
+            "customer": {
+                "qb_id": qb_customer_id,
+                "display_name": qb_display_name,
+                "email": client_email or "N/A",
+                "phone": client_phone or "N/A",
+                "type": "GC Compliance"
+            },
+            "sheet_updated": bool(sheet_client_id)
+        }
+        
+        logger.info(f"[CREATE QB CUSTOMER] Success: {result['message']}")
+        return result
+        
+    except Exception as e:
+        logger.error(f"[CREATE QB CUSTOMER] Error: {e}", exc_info=True)
+        return {
+            "status": "failed",
+            "error": f"Failed to create customer: {str(e)}"
+        }
+
+
 async def handle_sync_gc_compliance_payments(
     args: Dict[str, Any],
     google_service,
@@ -1005,6 +1186,7 @@ FUNCTION_HANDLERS = {
     "add_column_to_sheet": handle_add_column_to_sheet,
     "update_client_field": handle_update_client_field,
     "sync_quickbooks_clients": handle_sync_quickbooks_clients,
+    "create_quickbooks_customer_from_sheet": handle_create_quickbooks_customer_from_sheet,
     "sync_gc_compliance_payments": handle_sync_gc_compliance_payments,
     "sync_quickbooks_customer_types": handle_sync_quickbooks_customer_types,
 }

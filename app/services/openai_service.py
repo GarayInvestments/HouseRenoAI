@@ -490,6 +490,24 @@ class OpenAIService:
                     }
                 },
                 {
+                    "name": "create_quickbooks_customer_from_sheet",
+                    "description": "Create a new QuickBooks customer based on a client that exists in Google Sheets. Use when user asks to 'add [client name] to QuickBooks', 'create QB customer for [name]', or when a client is in Sheets but not in QB. Automatically sets CustomerTypeRef to 'GC Compliance' and updates the Sheet with the new QBO Client ID.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "client_name": {
+                                "type": "string",
+                                "description": "The name of the client from Google Sheets (e.g., 'Javier', 'ABC Company')"
+                            },
+                            "client_id": {
+                                "type": "string",
+                                "description": "Optional: The Client ID from Google Sheets if known"
+                            }
+                        },
+                        "required": ["client_name"]
+                    }
+                },
+                {
                     "name": "sync_gc_compliance_payments",
                     "description": "Reconcile GC Compliance payments with invoices in Google Sheets. Processes unsynced payments where Client Type is 'GC Compliance', matches them to invoices by Invoice ID or Client Name, updates invoice Amount Paid/Balance/Status, and marks payments as synced. Use when user asks to 'sync GC payments', 'reconcile compliance payments', or 'update invoices with payments'.",
                     "parameters": {
