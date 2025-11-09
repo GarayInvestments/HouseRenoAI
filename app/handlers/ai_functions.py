@@ -556,7 +556,7 @@ async def handle_sync_quickbooks_clients(
         for client in clients_data:
             client_name = (client.get('Full Name') or client.get('Client Name') or '').strip()
             client_email = (client.get('Email') or '').strip().lower()
-            current_qbo_id = client.get('QBO_Client_ID')
+            current_qbo_id = client.get('QBO Client ID')  # Column name has SPACE not underscore
             client_id = client.get('Client ID')
             
             if not client_name:
@@ -602,7 +602,7 @@ async def handle_sync_quickbooks_clients(
                         sheet_name='Clients',
                         id_field='Client ID',
                         record_id=client_id,
-                        updates={'QBO_Client_ID': qb_id}
+                        updates={'QBO Client ID': qb_id}  # Column name has SPACE not underscore
                     )
                     if success:
                         updates_made.append(client_name)
