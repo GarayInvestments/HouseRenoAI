@@ -4,6 +4,7 @@
 - Python 3.13+
 - Node.js 18+ (for frontend)
 - Git
+- GPG (for encrypted secrets)
 - PowerShell (Windows) or Bash (Mac/Linux)
 
 ## Quick Setup
@@ -14,7 +15,37 @@ git clone https://github.com/GarayInvestments/HouseRenoAI.git
 cd HouseRenoAI
 ```
 
-### 2. Backend Setup
+### 2. Install GPG (if not installed)
+**Windows:**
+```powershell
+winget install GnuPG.Gpg4win
+# Add to PATH permanently
+[Environment]::SetEnvironmentVariable("Path", $env:Path + ";C:\Program Files (x86)\GnuPG\bin", "User")
+```
+
+**Mac:**
+```bash
+brew install gnupg
+```
+
+**Linux:**
+```bash
+sudo apt install gnupg  # Debian/Ubuntu
+sudo yum install gnupg  # RedHat/CentOS
+```
+
+### 3. Decrypt Secrets
+```powershell
+# Ensure GPG key is configured (you'll need the private key from original machine)
+# Decrypt secret files
+.\scripts\git-secret-wrapper.ps1 -Action reveal
+```
+
+This will decrypt:
+- `.env` (environment variables)
+- `config/house-renovators-credentials.json` (Google service account)
+
+### 4. Backend Setup
 
 #### Create Virtual Environment
 ```powershell
@@ -28,39 +59,7 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-#### Setup Environment Variables
-Create `.env` file in project root:
-
-```env
-# Google Sheets API
-SHEET_ID=your_google_sheet_id_here
-GOOGLE_SERVICE_ACCOUNT_FILE=config/house-renovators-credentials.json
-
-# OpenAI API
-OPENAI_API_KEY=sk-proj-your_key_here
-
-# QuickBooks OAuth2
-QUICKBOOKS_CLIENT_ID=your_qb_client_id_here
-QUICKBOOKS_CLIENT_SECRET=your_qb_client_secret_here
-QUICKBOOKS_REDIRECT_URI=https://houserenoai.onrender.com/v1/quickbooks/callback
-QUICKBOOKS_ENVIRONMENT=production  # or 'sandbox'
-
-# Security
-JWT_SECRET_KEY=your_random_secret_key_here
-JWT_ALGORITHM=HS256
-
-# API Settings
-API_VERSION=v1
-```
-
-#### Add Google Service Account Credentials
-Place your `house-renovators-credentials.json` in `config/` folder:
-```powershell
-# Copy from secure location (1Password, encrypted USB, etc.)
-cp /path/to/secure/house-renovators-credentials.json config/
-```
-
-### 3. Frontend Setup
+### 5. Frontend Setup
 ```powershell
 cd frontend
 npm install
@@ -71,7 +70,7 @@ VITE_API_URL=http://localhost:8000
 "@ | Out-File -FilePath .env -Encoding utf8
 ```
 
-### 4. Test Installation
+### 6. Test Installation
 ```powershell
 # Terminal 1 - Backend
 .\.venv\Scripts\Activate.ps1
@@ -86,9 +85,9 @@ Visit: http://localhost:5173
 
 ---
 
-## Detailed Instructions
+## Git-Secret Usage (Encrypted Secrets in Git)
 
-### Option 1: Manual Transfer (Most Secure)
+### Initial Setup (First Time)
 
 **From OLD machine:**
 1. Export environment variables to encrypted file:
@@ -98,47 +97,86 @@ Visit: http://localhost:5173
    $content | Out-File -FilePath secrets-backup.txt -Encoding utf8
    
    # Encrypt file (Windows)
-   Compress-Archive -Path secrets-backup.txt, config/house-renovators-credentials.json -DestinationPath secrets-encrypted.zip
-   # Add password to zip manually
-   ```
 
-2. Transfer `secrets-encrypted.zip` via:
-   - Encrypted USB drive
-   - Secure cloud (1Password, BitWarden, LastPass)
-   - Direct cable transfer
-   - **NOT email or unencrypted cloud**
+**From OLD machine:**
+```powershell
+# Encrypt secrets
+.\scripts\git-secret-wrapper.ps1 -Action hide
+
+# Commit encrypted files
+git add .env.secret config/*.secret .gitsecret/
+git commit -m "Update encrypted secrets"
+git push
+```
 
 **On NEW machine:**
-1. Extract encrypted zip
-2. Place `.env` in project root
-3. Place `house-renovators-credentials.json` in `config/`
-4. Delete extracted files after setup
-5. Delete `secrets-encrypted.zip` from old machine
+```powershell
+# Clone repo (encrypted .secret files are included)
+git clone https://github.com/GarayInvestments/HouseRenoAI.git
+cd HouseRenoAI
 
-### Option 2: Password Manager (Recommended)
+# Import your GPG private key (if not already on new machine)
+# Export from old machine: gpg --export-secret-keys steve@garayinvestments.com > private-key.asc
+# Import on new machine: gpg --import private-key.asc
 
-**Using 1Password/BitWarden:**
+# Decrypt secrets
+.\scripts\git-secret-wrapper.ps1 -Action reveal
+```
 
-1. **OLD Machine**: Store secrets in password manager:
-   - Create "HouseRenovators Env Vars" entry
-   - Add each `.env` variable as a field
-   - Attach `house-renovators-credentials.json` as document
-   - Tag as "development", "server-credentials"
+### Daily Workflow
 
-2. **NEW Machine**: 
-   - Install password manager
-   - Retrieve credentials
-   - Recreate `.env` file
-   - Download service account JSON
+**Adding New Secrets:**
+```powershell
+# Edit .env or credentials files as needed
+# Then encrypt
+.\scripts\git-secret-wrapper.ps1 -Action hide
 
-### Option 3: Secure Cloud Storage
+# Commit encrypted versions
+git add *.secret
+git commit -m "Update secrets"
+git push
+```
 
-**Using Encrypted Cloud (Tresorit, Cryptomator, etc.):**
+**Getting Latest Secrets:**
+```powershell
+git pull
+.\scripts\git-secret-wrapper.ps1 -Action reveal
+```
 
-1. Upload encrypted backup to secure cloud
-2. Download on new machine
-3. Decrypt and place files
-4. Delete from cloud after setup (optional)
+**Adding Team Members:**
+```powershell
+# Team member shares their GPG public key fingerprint
+# Add them to git-secret
+.\scripts\git-secret-wrapper.ps1 -Action tell -Email teammate@example.com
+
+# Re-encrypt files so they can decrypt
+.\scripts\git-secret-wrapper.ps1 -Action hide
+git add *.secret
+git commit -m "Add teammate to secrets"
+git push
+```
+
+---
+
+## Alternative: PowerShell Encryption (No GPG Required)
+
+If you prefer a simpler approach without GPG, use the PowerShell encryption script:
+
+**Encrypt:**
+```powershell
+.\scripts\encrypt-secrets.ps1 -Action encrypt
+# Enter password when prompted
+# Creates .env.encrypted and config/*.encrypted
+```
+
+**Decrypt:**
+```powershell
+.\scripts\encrypt-secrets.ps1 -Action decrypt
+# Enter same password
+# Restores .env and config/house-renovators-credentials.json
+```
+
+**Note**: This method requires sharing the password securely with team members.
 
 ---
 

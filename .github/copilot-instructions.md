@@ -194,6 +194,47 @@ VITE_API_URL=https://houserenoai.onrender.com
 - `/v1/documents` - Document upload/management
 - `/v1/quickbooks/*` - OAuth flow, customers, invoices, estimates, bills
 
+## 🔐 Secrets Management
+
+### Git-Secret (Primary Method)
+Secrets are encrypted using GPG and committed to Git as `*.secret` files.
+
+**Daily Workflow:**
+```powershell
+# After modifying .env or credentials
+.\scripts\git-secret-wrapper.ps1 -Action hide
+
+# Commit encrypted files
+git add .env.secret config/*.secret
+git commit -m "Update secrets"
+git push
+
+# On new machine or after git pull
+.\scripts\git-secret-wrapper.ps1 -Action reveal
+```
+
+**Adding Team Members:**
+```powershell
+# Team member shares their GPG public key fingerprint
+.\scripts\git-secret-wrapper.ps1 -Action tell -Email "teammate@example.com"
+
+# Re-encrypt files
+.\scripts\git-secret-wrapper.ps1 -Action hide
+git add *.secret
+git commit -m "Add teammate to secrets"
+```
+
+**Files Tracked:**
+- `.env` → `.env.secret` (encrypted)
+- `config/house-renovators-credentials.json` → `.json.secret` (encrypted)
+
+**Alternative (No GPG):**
+```powershell
+# PowerShell encryption (password-based)
+.\scripts\encrypt-secrets.ps1 -Action encrypt  # Create .encrypted files
+.\scripts\encrypt-secrets.ps1 -Action decrypt  # Restore originals
+```
+
 ## 🎯 Project-Specific Conventions
 
 1. **No TypeScript**: Stick to JavaScript for frontend (existing codebase decision)

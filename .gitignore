@@ -452,3 +452,5 @@ docs/*.temp
 workspace-backup-*/
 organization-backup-*/
 frontend-archive/
+# git-secret tracked file
+.\config\house-renovators-credentials.json

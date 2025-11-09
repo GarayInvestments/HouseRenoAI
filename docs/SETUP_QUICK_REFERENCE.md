@@ -1,6 +1,6 @@
 # 🚀 Quick Setup Reference Card
 
-## For a New Machine (5 Minutes)
+## For a New Machine (3 Minutes)
 
 ### 1. Clone Repo
 ```powershell
@@ -8,17 +8,29 @@ git clone https://github.com/GarayInvestments/HouseRenoAI.git
 cd HouseRenoAI
 ```
 
-### 2. Run Automated Setup
+### 2. Install GPG (if not installed)
+```powershell
+winget install GnuPG.Gpg4win
+# Add to PATH
+[Environment]::SetEnvironmentVariable("Path", $env:Path + ";C:\Program Files (x86)\GnuPG\bin", "User")
+```
+
+### 3. Decrypt Secrets
+```powershell
+# If first time on new machine, import GPG key
+# From old machine: gpg --export-secret-keys steve@garayinvestments.com > private-key.asc
+# gpg --import private-key.asc
+
+# Decrypt secrets from Git
+.\scripts\git-secret-wrapper.ps1 -Action reveal
+```
+
+### 4. Run Automated Setup
 ```powershell
 .\scripts\setup\setup-env.ps1
 ```
 
-### 3. Add Secrets
-Copy these files from secure backup:
-- `.env` → Project root
-- `house-renovators-credentials.json` → `config/`
-
-### 4. Start Development
+### 5. Start Development
 ```powershell
 # Terminal 1: Backend
 .\.venv\Scripts\Activate.ps1
@@ -32,41 +44,103 @@ npm run dev
 
 ---
 
-## What to Backup Before Switching Machines
+## Git-Secret Commands (Primary Method)
 
-### Required Files (Keep Secure!)
+### Daily Workflow
+```powershell
+# After changing .env or credentials
+.\scripts\git-secret-wrapper.ps1 -Action hide
+
+# Commit encrypted files
+git add .env.secret config/*.secret
+git commit -m "Update secrets"
+git push
+
+# On another machine / after git pull
+.\scripts\git-secret-wrapper.ps1 -Action reveal
 ```
-.env                                    # All environment variables
-config/house-renovators-credentials.json  # Google Service Account
+
+### One-Time Setup (Already Done)
+```powershell
+# Initialize (already done)
+.\scripts\git-secret-wrapper.ps1 -Action init
+
+# Add yourself
+.\scripts\git-secret-wrapper.ps1 -Action tell -Email "your@email.com"
+
+# Track files
+.\scripts\git-secret-wrapper.ps1 -Action add -File ".env"
+.\scripts\git-secret-wrapper.ps1 -Action add -File "config/house-renovators-credentials.json"
 ```
 
-### Backup Methods (Choose One)
+### Team Collaboration
+```powershell
+# Add team member (they share their GPG public key fingerprint)
+.\scripts\git-secret-wrapper.ps1 -Action tell -Email "teammate@example.com"
 
-**Option A: Password Manager** ⭐ Recommended
-- Store in 1Password/BitWarden
-- Easy to retrieve on new machine
-- Encrypted and synced
+# Re-encrypt so they can decrypt
+.\scripts\git-secret-wrapper.ps1 -Action hide
+git add *.secret
+git commit -m "Add teammate to secrets"
+git push
+```
 
-**Option B: Encrypted USB**
-- Create encrypted zip with password
-- Transfer physically
-- Most secure for sensitive data
+---
 
-**Option C: Secure Cloud**
-- Use encrypted cloud (ProtonDrive, Tresorit)
-- Delete after transfer
-- Good for remote setups
+## Alternative: PowerShell Encryption (No GPG)
+
+If you don't want to use GPG:
+
+```powershell
+# Encrypt (password protected)
+.\scripts\encrypt-secrets.ps1 -Action encrypt
+
+# Decrypt
+.\scripts\encrypt-secrets.ps1 -Action decrypt
+```
+
+**Note**: Requires sharing password securely with team.
+
+---
+
+## What's in Git (Encrypted)
+
+### Files Tracked by git-secret:
+```
+.env.secret                                    # Encrypted environment variables
+config/house-renovators-credentials.json.secret  # Encrypted Google Service Account
+```
+
+### Configuration Files:
+```
+.gitsecret/keys                                # GPG key fingerprints
+.gitsecret/paths                               # List of tracked files
+```
+
+### Still .gitignored (Never Committed):
+```
+.env                                           # Decrypted env vars
+config/house-renovators-credentials.json       # Decrypted credentials
+```
 
 ---
 
 ## Security Checklist
 
-### ✅ Before Cloning on New Machine:
-- [ ] Password manager installed (1Password/BitWarden)
-- [ ] VPN enabled (if on public WiFi)
-- [ ] Antivirus updated
+### ✅ Before Pushing Changes:
+- [ ] Edit `.env` or credentials as needed
+- [ ] Run: `.\scripts\git-secret-wrapper.ps1 -Action hide`
+- [ ] Commit `*.secret` files only
+- [ ] Verify: `git status` shows NO unencrypted secrets
 
-### ✅ After Setup:
+### ✅ After Pulling Changes:
+- [ ] Run: `git pull`
+- [ ] Run: `.\scripts\git-secret-wrapper.ps1 -Action reveal`
+- [ ] Restart backend if secrets changed
+
+### ✅ New Machine Setup:
+- [ ] Clone repo
+- [ ] Import GPG private key (one-time)
 - [ ] Verify `.gitignore` protects `.env`
 - [ ] Verify `config/*.json` protected
 - [ ] Run: `git status` (should NOT show secrets)
