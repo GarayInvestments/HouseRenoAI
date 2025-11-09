@@ -107,6 +107,19 @@ class OpenAIService:
             6. Format the link as: "View invoice in QuickBooks: [link]"
             7. The link will be in the function_results as "invoice_link"
             
+            QUICKBOOKS INVOICE UPDATE GUIDELINES:
+            📋 When user requests to update an invoice:
+            1. Identify which invoice to update (by ID or invoice number)
+            2. Determine what fields to update:
+               - **doc_number**: To change the invoice number (e.g., "TTD-6441-11-08")
+               - **amount**: To change the total amount
+               - **due_date**: To change the due date
+               - **description**: To change the service description
+            3. CRITICAL: You MUST populate the "updates" object with the field to update
+               Example: {"doc_number": "TTD-6441-11-08"} or {"amount": 5000}
+            4. ALWAYS ask for confirmation before updating
+            5. After successful update, provide the QuickBooks invoice link
+            
             GOOGLE SHEETS COLUMN CREATION GUIDELINES:
             📋 When user wants to add a new column to a sheet:
             1. Identify the sheet name (Clients, Projects, Permits, etc.)

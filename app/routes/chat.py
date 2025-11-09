@@ -401,6 +401,8 @@ async def process_chat_message(chat_data: Dict[str, Any]):
                         invoice_number = func_args.get("invoice_number", "")
                         updates = func_args["updates"]
                         
+                        logger.info(f"Update invoice request - ID: {invoice_id}, Updates: {updates}")
+                        
                         # Check QB authentication
                         if not qb_service or not qb_service.is_authenticated():
                             function_results.append({
