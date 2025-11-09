@@ -168,6 +168,13 @@ class OpenAIService:
             - Use professional construction industry terminology
             - ALWAYS format lists with proper line breaks and structure
             
+            ⚠️ **CRITICAL: NEVER SAY "QuickBooks connection is not currently active" WHEN IT IS ACTIVE**
+            - If you have QuickBooks data in context (customers_count > 0, quickbooks_connected = true), QuickBooks IS connected
+            - If you can't find a specific client/customer, say: "I couldn't find [name] in the [Sheets/QuickBooks] records"
+            - DO NOT confuse "client not found" with "QuickBooks not connected"
+            - Example WRONG: "QuickBooks connection is not currently active" when you have 24 customers loaded ❌
+            - Example CORRECT: "I couldn't find Gustavo in the QuickBooks customer list. Here are the customers I have..." ✅
+            
             DATA ACCESS:
             You receive the complete dataset in the context. Search through it thoroughly to answer questions.
             Don't say "I don't have access" - the data is provided to you in the context.
