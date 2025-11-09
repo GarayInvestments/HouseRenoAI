@@ -175,9 +175,19 @@ class OpenAIService:
             - Example WRONG: "QuickBooks connection is not currently active" when you have 24 customers loaded ❌
             - Example CORRECT: "I couldn't find Gustavo in the QuickBooks customer list. Here are the customers I have..." ✅
             
+            🚨 **CRITICAL ANTI-HALLUCINATION RULE: NEVER FABRICATE CUSTOMER/CLIENT NAMES**
+            - You will receive ACTUAL customer data in the "=== QUICKBOOKS DATA ===" or "=== ALL CLIENTS ===" sections below
+            - ONLY show customer/client names that appear in that data
+            - NEVER generate fake names like "Ajay Nair", "Alex Chang", "Bob Smith", "Alice Johnson", etc.
+            - If you cannot find a customer, say: "I couldn't find [name]. Would you like me to show the actual customer list from the data?"
+            - If asked to list customers, ONLY list names from the provided context data
+            - Example WRONG: Showing made-up names like "Emily Clark", "John Doe", "Karen White" ❌
+            - Example CORRECT: Showing actual names from the context data like "Temple Baptist", "Marta Alder", "Rapid Restoration" ✅
+            
             DATA ACCESS:
             You receive the complete dataset in the context. Search through it thoroughly to answer questions.
             Don't say "I don't have access" - the data is provided to you in the context.
+            🚨 ONLY USE DATA PROVIDED IN CONTEXT - NEVER INVENT OR FABRICATE DATA
             """
             
             # Start with system prompt
@@ -219,38 +229,57 @@ class OpenAIService:
                 if 'permits_count' in context:
                     context_parts.append(f"Total Permits: {context['permits_count']}")
                 
-                # Add QuickBooks data summary
-                if context.get('quickbooks_connected'):
-                    context_parts.append(f"\n🔗 QuickBooks: CONNECTED")
-                    context_parts.append(f"QuickBooks Customers: {context.get('qb_customers_count', 0)}")
-                    context_parts.append(f"QuickBooks Invoices: {context.get('qb_invoices_count', 0)}")
+                # Add QuickBooks data from context_builder structure
+                if 'quickbooks' in context and context['quickbooks'].get('authenticated'):
+                    qb_data = context['quickbooks']
+                    customers = qb_data.get('customers', [])
+                    invoices = qb_data.get('invoices', [])
+                    summary = qb_data.get('summary', {})
                     
-                    # Add QuickBooks customers summary
-                    if 'qb_customers_summary' in context and context['qb_customers_summary']:
-                        context_parts.append("\n\n=== QUICKBOOKS CUSTOMERS ===")
-                        for customer in context['qb_customers_summary'][:30]:
+                    context_parts.append(f"\n🔗 QuickBooks: CONNECTED ✅")
+                    context_parts.append(f"Total Customers: {summary.get('total_customers', len(customers))}")
+                    context_parts.append(f"Total Invoices: {summary.get('total_invoices', len(invoices))}")
+                    
+                    # Add ACTUAL QuickBooks customers from context
+                    if customers:
+                        context_parts.append(f"\n\n=== QUICKBOOKS CUSTOMERS ({len(customers)} total) ===")
+                        context_parts.append("🚨 THESE ARE THE ONLY REAL CUSTOMER NAMES - DO NOT INVENT OTHERS!")
+                        for customer in customers[:50]:  # Show up to 50
+                            cust_id = customer.get('Id')
+                            cust_name = customer.get('DisplayName') or customer.get('CompanyName') or customer.get('FullyQualifiedName', 'Unknown')
+                            cust_email = customer.get('PrimaryEmailAddr', {}).get('Address', 'N/A')
+                            cust_phone = customer.get('PrimaryPhone', {}).get('FreeFormNumber', 'N/A')
+                            cust_balance = customer.get('Balance', 0)
+                            
                             context_parts.append(
-                                f"\nQB Customer ID: {customer.get('id')}"
-                                f"\n  Name: {customer.get('name')}"
-                                f"\n  Email: {customer.get('email')}"
-                                f"\n  Phone: {customer.get('phone')}"
-                                f"\n  Balance: ${customer.get('balance', 0)}"
+                                f"\n✓ Customer ID: {cust_id}"
+                                f"\n  Name: {cust_name}"
+                                f"\n  Email: {cust_email}"
+                                f"\n  Phone: {cust_phone}"
+                                f"\n  Balance: ${cust_balance}"
                             )
                     
-                    # Add QB invoice summaries (NOT full objects - too large!)
-                    if 'qb_invoices_summary' in context and context['qb_invoices_summary']:
-                        context_parts.append(f"\n\n=== QUICKBOOKS INVOICES ({len(context['qb_invoices_summary'])} total) ===")
-                        for invoice in context['qb_invoices_summary'][:30]:  # Limit to 30 most recent
+                    # Add QB invoice summaries
+                    if invoices:
+                        context_parts.append(f"\n\n=== QUICKBOOKS INVOICES ({len(invoices)} recent) ===")
+                        for invoice in invoices:
+                            inv_id = invoice.get('Id')
+                            doc_num = invoice.get('DocNumber', 'N/A')
+                            customer_ref = invoice.get('CustomerRef', {})
+                            customer_name = customer_ref.get('name', 'Unknown')
+                            txn_date = invoice.get('TxnDate', 'N/A')
+                            total = invoice.get('TotalAmt', 0)
+                            balance = invoice.get('Balance', 0)
+                            
                             context_parts.append(
-                                f"\nInvoice #{invoice.get('doc_number')} (ID: {invoice.get('id')})"
-                                f"\n  Customer: {invoice.get('customer_name')}"
-                                f"\n  Date: {invoice.get('txn_date')}"
-                                f"\n  Total: ${invoice.get('total', 0)}"
-                                f"\n  Balance: ${invoice.get('balance', 0)}"
-                                f"\n  Status: {invoice.get('status')}"
+                                f"\nInvoice #{doc_num} (ID: {inv_id})"
+                                f"\n  Customer: {customer_name}"
+                                f"\n  Date: {txn_date}"
+                                f"\n  Total: ${total}"
+                                f"\n  Balance Due: ${balance}"
                             )
                 else:
-                    context_parts.append(f"\n⚠️ QuickBooks: Not connected")
+                    context_parts.append(f"\n⚠️ QuickBooks: Not connected (no 'quickbooks' key in context or not authenticated)")
                 
                 # Add available IDs for lookup
                 if 'client_ids' in context and context['client_ids']:
