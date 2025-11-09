@@ -435,6 +435,10 @@ async def process_chat_message(chat_data: Dict[str, Any]):
                                 if updated_invoice_data.get("Line"):
                                     updated_invoice_data["Line"][0]["Description"] = updates["description"]
                             
+                            # Update DocNumber (invoice number)
+                            if "doc_number" in updates:
+                                updated_invoice_data["DocNumber"] = updates["doc_number"]
+                            
                             # Update the invoice
                             updated_invoice = await qb_service.update_invoice(invoice_id, updated_invoice_data)
                             
@@ -446,6 +450,8 @@ async def process_chat_message(chat_data: Dict[str, Any]):
                                 update_details.append(f"due date to {updates['due_date']}")
                             if "description" in updates:
                                 update_details.append(f"description")
+                            if "doc_number" in updates:
+                                update_details.append(f"invoice number to {updates['doc_number']}")
                             
                             update_summary = ", ".join(update_details)
                             invoice_num = invoice_number or updated_invoice.get('DocNumber', invoice_id)

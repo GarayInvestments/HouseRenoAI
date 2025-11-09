@@ -336,7 +336,7 @@ class OpenAIService:
                 },
                 {
                     "name": "update_quickbooks_invoice",
-                    "description": "Update an existing QuickBooks invoice. Use this to modify invoice amount, due date, description, or line items. ALWAYS ask for confirmation before updating.",
+                    "description": "Update an existing QuickBooks invoice. Use this to modify invoice amount, due date, description, or invoice number (DocNumber). ALWAYS ask for confirmation before updating.",
                     "parameters": {
                         "type": "object",
                         "properties": {
@@ -350,7 +350,7 @@ class OpenAIService:
                             },
                             "updates": {
                                 "type": "object",
-                                "description": "Fields to update (can include 'amount', 'due_date', 'description')",
+                                "description": "Fields to update (can include 'amount', 'due_date', 'description', 'doc_number')",
                                 "properties": {
                                     "amount": {
                                         "type": "number",
@@ -363,6 +363,10 @@ class OpenAIService:
                                     "description": {
                                         "type": "string",
                                         "description": "New description of services"
+                                    },
+                                    "doc_number": {
+                                        "type": "string",
+                                        "description": "New invoice number/DocNumber (e.g., 'TTD-6441-11-08')"
                                     }
                                 }
                             }
