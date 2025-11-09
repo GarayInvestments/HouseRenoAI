@@ -3,6 +3,7 @@ import json
 import logging
 import requests
 from typing import List, Dict, Any, Optional
+from datetime import datetime, timedelta
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from app.config import settings
@@ -14,6 +15,11 @@ class GoogleService:
         self.credentials = None
         self.sheets_service = None
         self.drive_service = None
+        
+        # Cache storage (2-minute TTL for Sheets data)
+        self._cache: Dict[str, Dict[str, Any]] = {}
+        self._cache_ttl = timedelta(minutes=2)
+        
         # Don't initialize automatically, wait for explicit call
         
     def initialize(self):
@@ -69,6 +75,55 @@ class GoogleService:
             import traceback
             logger.error(f"Traceback: {traceback.format_exc()}")
             # Don't raise here to allow the service to start, but log the error
+    
+    def _get_cache(self, key: str) -> Optional[Any]:
+        """
+        Get value from cache if still valid.
+        
+        Args:
+            key: Cache key
+            
+        Returns:
+            Cached data if valid, None if expired or missing
+        """
+        if key in self._cache:
+            cached_data = self._cache[key]
+            if datetime.now() < cached_data['expires_at']:
+                expires_in = (cached_data['expires_at'] - datetime.now()).seconds
+                logger.info(f"Sheets cache HIT for {key} (expires in {expires_in}s)")
+                return cached_data['data']
+            else:
+                logger.info(f"Sheets cache EXPIRED for {key}")
+                del self._cache[key]
+        logger.info(f"Sheets cache MISS for {key}")
+        return None
+    
+    def _set_cache(self, key: str, data: Any) -> None:
+        """
+        Store value in cache with TTL.
+        
+        Args:
+            key: Cache key
+            data: Data to cache
+        """
+        expires_at = datetime.now() + self._cache_ttl
+        self._cache[key] = {'data': data, 'expires_at': expires_at}
+        logger.info(f"Sheets cache SET for {key} (TTL: {self._cache_ttl.seconds}s)")
+    
+    def _invalidate_cache(self, key: Optional[str] = None) -> None:
+        """
+        Invalidate cache (specific key or all keys).
+        
+        Args:
+            key: Specific cache key to invalidate, or None to clear all
+        """
+        if key:
+            if key in self._cache:
+                del self._cache[key]
+                logger.info(f"Sheets cache INVALIDATED for {key}")
+        else:
+            self._cache.clear()
+            logger.info("Sheets cache INVALIDATED (all keys)")
     
     async def read_sheet_data(self, range_name: str, sheet_id: str = None) -> List[List[str]]:
         """Read data from Google Sheets"""
@@ -171,8 +226,15 @@ class GoogleService:
             return False
     
     async def get_permits_data(self) -> List[Dict[str, Any]]:
-        """Get all permits data from the sheet"""
+        """Get all permits data from the sheet (with caching)"""
         try:
+            # Check cache first
+            cache_key = "permits_data"
+            cached = self._get_cache(cache_key)
+            if cached is not None:
+                return cached
+            
+            # Cache MISS - fetch from Sheets API
             # Assuming permits are in a sheet named 'Permits' starting from row 2 (headers in row 1)
             data = await self.read_sheet_data('Permits!A1:Z1000')
             
@@ -189,6 +251,9 @@ class GoogleService:
                         permit[header] = row[i] if i < len(row) else ""
                     permits.append(permit)
             
+            # Store in cache
+            self._set_cache(cache_key, permits)
+            logger.info(f"Retrieved {len(permits)} permits from Sheets API")
             return permits
             
         except Exception as e:
@@ -196,8 +261,15 @@ class GoogleService:
             raise
     
     async def get_projects_data(self) -> List[Dict[str, Any]]:
-        """Get all projects data from the sheet"""
+        """Get all projects data from the sheet (with caching)"""
         try:
+            # Check cache first
+            cache_key = "projects_data"
+            cached = self._get_cache(cache_key)
+            if cached is not None:
+                return cached
+            
+            # Cache MISS - fetch from Sheets API
             data = await self.read_sheet_data('Projects!A1:Z1000')
             
             if not data:
@@ -213,6 +285,9 @@ class GoogleService:
                         project[header] = row[i] if i < len(row) else ""
                     projects.append(project)
             
+            # Store in cache
+            self._set_cache(cache_key, projects)
+            logger.info(f"Retrieved {len(projects)} projects from Sheets API")
             return projects
             
         except Exception as e:
@@ -220,8 +295,15 @@ class GoogleService:
             raise
     
     async def get_clients_data(self) -> List[Dict[str, Any]]:
-        """Get all clients data from the sheet"""
+        """Get all clients data from the sheet (with caching)"""
         try:
+            # Check cache first
+            cache_key = "clients_data"
+            cached = self._get_cache(cache_key)
+            if cached is not None:
+                return cached
+            
+            # Cache MISS - fetch from Sheets API
             data = await self.read_sheet_data('Clients!A1:Z1000')
             
             if not data:
@@ -237,6 +319,9 @@ class GoogleService:
                         client[header] = row[i] if i < len(row) else ""
                     clients.append(client)
             
+            # Store in cache
+            self._set_cache(cache_key, clients)
+            logger.info(f"Retrieved {len(clients)} clients from Sheets API")
             return clients
             
         except Exception as e:
@@ -335,6 +420,11 @@ class GoogleService:
                     logger.error(f"Failed to update {cell_range}: {e}")
                     update_success = False
             
+            # Invalidate cache after successful update
+            if update_success:
+                self._invalidate_cache()
+                logger.info(f"Updated {sheet_name} record - cache invalidated")
+            
             return update_success
             
         except Exception as e:
@@ -408,7 +498,9 @@ class GoogleService:
                 logger.warning(f"Insert at specific position not yet implemented, appending to end")
                 return await self.add_column_to_sheet(sheet_name, column_name, default_value, None)
             
-            logger.info(f"Successfully added column '{column_name}' to {sheet_name}")
+            # Invalidate cache after adding column
+            self._invalidate_cache()
+            logger.info(f"Successfully added column '{column_name}' to {sheet_name} - cache invalidated")
             return True
             
         except Exception as e:
@@ -492,7 +584,10 @@ class GoogleService:
             # Update the cell
             cell_range = f'Clients!{field_col_letter}{row_number}'
             await self.write_sheet_data(cell_range, [[field_value]])
-            logger.info(f"Successfully updated {cell_range} to '{field_value}'")
+            
+            # Invalidate cache after successful update
+            self._invalidate_cache()
+            logger.info(f"Successfully updated {cell_range} to '{field_value}' - cache invalidated")
             
             return True
             
@@ -551,7 +646,9 @@ class GoogleService:
             success = await self.append_sheet_data(f'{sheet_name}!A:Z', [row_values])
             
             if success:
-                logger.info(f"Successfully appended record to {sheet_name}")
+                # Invalidate cache after successful append
+                self._invalidate_cache()
+                logger.info(f"Successfully appended record to {sheet_name} - cache invalidated")
             else:
                 logger.error(f"Failed to append record to {sheet_name}")
             
