@@ -411,6 +411,16 @@ docs/*.temp
 **/*.p12
 **/*.pfx
 
+# ===== ENCRYPTED SECRETS (git-secret / encrypt-secrets.ps1) =====
+# Allow encrypted versions to be committed (safe)
+!.env.encrypted
+!config/*.json.encrypted
+!**/*.encrypted
+
+# git-secret files (allow these)
+!.gitsecret/
+.gitsecret/keys/random_seed
+
 # ===== DEPLOYMENT =====
 # Docker files (if not needed)
 **/.dockerignore
