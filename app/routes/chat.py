@@ -366,16 +366,27 @@ async def process_chat_message(chat_data: Dict[str, Any]):
                             # Create the invoice
                             invoice = await qb_service.create_invoice(invoice_data)
                             
+                            # Construct QuickBooks invoice link
+                            invoice_id = invoice.get('Id')
+                            invoice_number = invoice.get('DocNumber')
+                            qb_invoice_link = f"https://app.qbo.intuit.com/app/invoice?txnId={invoice_id}" if invoice_id else None
+                            
                             action_taken = f"Created QuickBooks invoice for {customer_name} - ${amount}"
                             data_updated = True
                             function_results.append({
                                 "function": func_name,
                                 "status": "success",
-                                "details": f"Invoice #{invoice.get('DocNumber')} created for {customer_name} - ${amount}",
-                                "invoice_number": invoice.get('DocNumber'),
-                                "invoice_id": invoice.get('Id')
+                                "details": f"Invoice #{invoice_number} created for {customer_name} - ${amount}",
+                                "invoice_number": invoice_number,
+                                "invoice_id": invoice_id,
+                                "invoice_link": qb_invoice_link
                             })
                             logger.info(f"AI executed: {action_taken}")
+                            
+                            # Store invoice details in memory for follow-up questions
+                            memory_updates["last_invoice_id"] = invoice_id
+                            memory_updates["last_invoice_number"] = invoice_number
+                            memory_updates["last_invoice_link"] = qb_invoice_link
                             
                         except Exception as invoice_error:
                             logger.error(f"Failed to create invoice: {invoice_error}")
@@ -527,7 +538,14 @@ async def process_chat_message(chat_data: Dict[str, Any]):
         if function_results and not ai_response:
             success_results = [r for r in function_results if r.get("status") == "success"]
             if success_results:
-                ai_response = f"✅ Done! {action_taken}"
+                # Check if it's an invoice creation - include link if available
+                invoice_result = next((r for r in success_results if r.get("function") == "create_quickbooks_invoice"), None)
+                if invoice_result and invoice_result.get("invoice_link"):
+                    invoice_link = invoice_result["invoice_link"]
+                    invoice_number = invoice_result.get("invoice_number", "")
+                    ai_response = f"✅ Done! {action_taken}\n\n📄 [View Invoice #{invoice_number} in QuickBooks]({invoice_link})"
+                else:
+                    ai_response = f"✅ Done! {action_taken}"
             else:
                 ai_response = "❌ There was an issue completing that action. Please try again."
         

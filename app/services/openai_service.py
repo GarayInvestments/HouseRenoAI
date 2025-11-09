@@ -103,7 +103,9 @@ class OpenAIService:
             2. Present a clear summary of the invoice details
             3. ALWAYS ask "Would you like me to create this invoice in QuickBooks?" before proceeding
             4. Only proceed with creation after explicit confirmation (yes/confirm/create/ok)
-            5. Provide clear feedback on success or failure
+            5. After successful creation, ALWAYS provide the QuickBooks invoice link so user can view/edit it
+            6. Format the link as: "View invoice in QuickBooks: [link]"
+            7. The link will be in the function_results as "invoice_link"
             
             GOOGLE SHEETS COLUMN CREATION GUIDELINES:
             📋 When user wants to add a new column to a sheet:
