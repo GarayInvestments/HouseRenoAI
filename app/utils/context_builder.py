@@ -48,7 +48,13 @@ def get_required_contexts(message: str, session_memory: Optional[Dict[str, Any]]
         'list', 'show', 'find', 'search', 'get', 'fetch',
         'all', 'active', 'pending', 'completed', 'address',
         'phone', 'email', 'contact', 'temple', 'renovation',
-        'construction', 'building', 'property'
+        'construction', 'building', 'property', 'sheets'
+    ]
+    
+    # Comparison/sync keywords (requires both sources)
+    comparison_keywords = [
+        'compare', 'difference', 'missing', 'not in', 'sync', 'match',
+        'discrepancy', 'mismatch', 'versus', 'vs', 'both'
     ]
     
     # Follow-up pattern keywords (same for, also, too, their, his, her)
@@ -65,6 +71,15 @@ def get_required_contexts(message: str, session_memory: Optional[Dict[str, Any]]
         # Only off-topic if message is VERY short (< 30 chars)
         if len(message) < 30:
             return {'none'}
+    
+    # Check for comparison queries (requires both Sheets + QB)
+    if any(keyword in message_lower for keyword in comparison_keywords):
+        # If mentioning both sheets and quickbooks, load both
+        if 'sheet' in message_lower and ('quickbook' in message_lower or 'qb' in message_lower):
+            logger.info(f"Comparison query detected - loading both Sheets and QuickBooks")
+            contexts.add('sheets')
+            contexts.add('quickbooks')
+            return contexts
     
     # CRITICAL FIX: Detect follow-up pattern after QB query
     # If message contains "same for X" or similar AND previous context included QB
