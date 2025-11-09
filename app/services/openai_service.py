@@ -301,7 +301,7 @@ class OpenAIService:
                 },
                 {
                     "name": "add_column_to_sheet",
-                    "description": "Add a new column to a Google Sheet (Clients, Projects, Permits, etc.). Ask user for confirmation before adding.",
+                    "description": "CALL THIS IMMEDIATELY when user confirms they want to add a column to a sheet. Use when user says 'yes', 'confirm', 'proceed', 'add it', 'do it', or 'go ahead' after discussing adding a column.",
                     "parameters": {
                         "type": "object",
                         "properties": {
