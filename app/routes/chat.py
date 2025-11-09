@@ -99,9 +99,9 @@ async def process_chat_message(chat_data: Dict[str, Any]):
         # CRITICAL: Detect common hallucination patterns BEFORE any other validation
         import re
         
-        # Known fake names that GPT commonly generates
+        # Known fake names that GPT commonly generates (excluding real customers like Ajay Nair)
         fake_name_patterns = [
-            r'\bAjay\s+Nair\b', r'\bAlex\s+Chang\b', r'\bAlice\s+Johnson\b', r'\bBob\s+Smith\b',
+            r'\bAlex\s+Chang\b', r'\bAlice\s+Johnson\b', r'\bBob\s+Smith\b',
             r'\bCharlotte\s+Wells\b', r'\bDavid\s+Brown\b', r'\bEmily\s+Clark\b', r'\bEthan\s+Thomas\b',
             r'\bIsabella\s+Martinez\b', r'\bJames\s+Taylor\b', r'\bJennifer\s+Lee\b', r'\bJohn\s+Doe\b',
             r'\bKaren\s+White\b', r'\bKevin\s+Nguyen\b', r'\bLaura\s+King\b', r'\bLinda\s+Green\b',

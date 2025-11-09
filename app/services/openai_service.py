@@ -176,18 +176,28 @@ class OpenAIService:
             - Example CORRECT: "I couldn't find Gustavo in the QuickBooks customer list. Here are the customers I have..." ✅
             
             🚨 **CRITICAL ANTI-HALLUCINATION RULE: NEVER FABRICATE CUSTOMER/CLIENT NAMES**
-            - You will receive ACTUAL customer data in the "=== QUICKBOOKS DATA ===" or "=== ALL CLIENTS ===" sections below
+            - You will receive ACTUAL customer data in the "=== QUICKBOOKS CUSTOMERS ===" or "=== CLIENTS DATA ===" sections below
             - ONLY show customer/client names that appear in that data
             - NEVER generate fake names like "Ajay Nair", "Alex Chang", "Bob Smith", "Alice Johnson", etc.
-            - If you cannot find a customer, say: "I couldn't find [name]. Would you like me to show the actual customer list from the data?"
+            - When listing customers, you MUST copy the EXACT names from the context data provided
+            - DO NOT generate "example" data - this is a REAL production database, not a tutorial
             - If asked to list customers, ONLY list names from the provided context data
             - Example WRONG: Showing made-up names like "Emily Clark", "John Doe", "Karen White" ❌
             - Example CORRECT: Showing actual names from the context data like "Temple Baptist", "Marta Alder", "Rapid Restoration" ✅
+            
+            📋 **FORMAT INSTRUCTION FOR LISTING CUSTOMERS:**
+            When asked to "list customers" or "show customers", you MUST:
+            1. Look at the "=== QUICKBOOKS CUSTOMERS ===" section in the DATA CONTEXT below
+            2. Copy the EXACT customer names you see there (DisplayName field)
+            3. DO NOT make up any names - only use what you see in the data
+            4. If you see names like "Marta Alder", "Temple Baptist", "Rapid Restoration" in context, use THOSE names
+            5. NEVER use generic names like "John Doe", "Ajay Nair", "Sarah Johnson" - these are hallucinations
             
             DATA ACCESS:
             You receive the complete dataset in the context. Search through it thoroughly to answer questions.
             Don't say "I don't have access" - the data is provided to you in the context.
             🚨 ONLY USE DATA PROVIDED IN CONTEXT - NEVER INVENT OR FABRICATE DATA
+            🚨 THIS IS A REAL DATABASE - NOT A DEMO OR TUTORIAL - USE ACTUAL DATA ONLY
             """
             
             # Start with system prompt
