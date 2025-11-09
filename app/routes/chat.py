@@ -523,6 +523,14 @@ async def process_chat_message(chat_data: Dict[str, Any]):
         memory_manager.set(session_id, "conversation_history", conversation_history, ttl_minutes=30)
         logger.info(f"Saved conversation history: {len(conversation_history)} messages total")
         
+        # If function was executed but AI didn't return text, generate a confirmation
+        if function_results and not ai_response:
+            success_results = [r for r in function_results if r.get("status") == "success"]
+            if success_results:
+                ai_response = f"✅ Done! {action_taken}"
+            else:
+                ai_response = "❌ There was an issue completing that action. Please try again."
+        
         return {
             "response": ai_response,
             "action_taken": action_taken,
