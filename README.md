@@ -9,12 +9,13 @@
 > **Complete AI-powered permit management and project tracking solution for construction professionals.**
 
 ## ✅ **STATUS: PRODUCTION READY & RESTRUCTURED**
-- 🚀 **Live Backend**: https://api.houserenovatorsllc.com *(Healthy - All systems operational)*
+- 🚀 **Live Backend**: https://houserenoai.onrender.com *(Healthy - All systems operational)*
 - 📱 **Frontend PWA**: https://portal.houserenovatorsllc.com *(Accessible and responsive)*
-- 🤖 **AI Integration**: OpenAI GPT-4o with permit data context *(Connected and responding)*
-- 📊 **Data Source**: Google Sheets real-time integration *(6 permits loaded)*
+- 🤖 **AI Integration**: OpenAI GPT-4o with full data context *(Connected and responding)*
+- 📊 **Data Source**: Google Sheets real-time integration *(Active permit/project data)*
+- 💼 **QuickBooks**: OAuth2 production integration *(24 customers, 52 invoices)*
 - 🔧 **DevOps**: Complete automation toolkit *(Validated and operational)*
-- ✨ **Directory Structure**: Recently restructured for optimal organization *(Nov 2025)*
+- ✨ **Recent Updates**: QuickBooks integration, session management, dynamic columns *(Nov 8, 2025)*
 
 ---
 
@@ -252,11 +253,14 @@ VITE_API_URL=https://api.houserenovatorsllc.com
 
 ### **Intelligent AI Assistant**
 - **Contextual Responses**: AI has access to complete permit and project database
+- **QuickBooks Integration**: Access customer data, invoices, and payment status in real-time
 - **Document Upload & Extraction**: Upload PDFs or images to automatically extract project/permit data
 - **Smart Analysis**: Automatic permit status insights and recommendations
 - **Natural Language**: Conversational interface for permit inquiries
 - **Real-time Data**: Always current with Google Sheets integration
 - **Editable Extraction**: Review and edit AI-extracted data before creating records
+- **Session Management**: Persistent chat sessions with automatic timestamp tracking
+- **Dynamic Schema**: AI can create new columns in Google Sheets on demand
 
 ### **Document Intelligence (NEW)**
 - **📄 PDF Processing**: Extract text from permit documents and proposals
@@ -266,6 +270,10 @@ VITE_API_URL=https://api.houserenovatorsllc.com
 - **✅ One-Click Creation**: Confirm extraction and create projects/permits instantly
 
 ### **Advanced Capabilities**
+- **QuickBooks Integration**: Real-time access to customer data, invoices, and payment status
+- **Invoice Creation**: Create QuickBooks invoices directly from chat with AI assistance
+- **Session Persistence**: Chat sessions saved to Google Sheets with EST timestamps
+- **Dynamic Columns**: Add new columns to Google Sheets through conversational commands
 - Permit status tracking and notifications
 - Project timeline analysis and predictions
 - Compliance checking and recommendations
@@ -369,14 +377,26 @@ This project is proprietary software developed for House Renovators AI Portal.
 
 | Component | Status | URL | Last Tested |
 |-----------|--------|-----|-------------|
-| **Backend API** | ✅ Production | https://api.houserenovatorsllc.com | Nov 3, 2025 *(Healthy - 360ms response)*|
-| **Frontend PWA** | ✅ Production | https://portal.houserenovatorsllc.com | Nov 3, 2025 *(200 OK response)* |
-| **Google Sheets** | ✅ Integrated | Connected | Nov 3, 2025 *(6 permits loaded - 1251ms)* |
-| **AI Chat** | ✅ Working | GPT-4o | Nov 3, 2025 *(Responding - 2560ms)* |
+| **Backend API** | ✅ Production | https://houserenoai.onrender.com | Nov 8, 2025 *(Healthy)*|
+| **Frontend PWA** | ✅ Production | https://portal.houserenovatorsllc.com | Nov 8, 2025 *(200 OK)* |
+| **Google Sheets** | ✅ Integrated | Connected | Nov 8, 2025 *(Permits & Projects loaded)* |
+| **QuickBooks** | ✅ Integrated | OAuth2 Production | Nov 8, 2025 *(24 customers, 52 invoices)* |
+| **AI Chat** | ✅ Working | GPT-4o | Nov 8, 2025 *(QB context active)* |
+| **Session Management** | ✅ Active | Google Sheets | Nov 8, 2025 *(EST timestamps)* |
 | **Automation** | ✅ Complete | Multi-cloud | Nov 3, 2025 *(All scripts validated)* |
 | **Monitoring** | ✅ Active | Real-time | Nov 3, 2025 *(Health check operational)* |
 
-### 🎯 **Recent Achievements (November 2025)**
+### 🎯 **Recent Achievements (November 8, 2025)**
+- ✅ **QuickBooks Integration**: Full OAuth2 production integration with customer and invoice access
+- ✅ **QB Context Loading**: AI can access QB data (24 customers, 52 invoices) in chat responses
+- ✅ **Invoice Creation**: Create QuickBooks invoices directly from AI chat interface
+- ✅ **Session Management**: Persistent chat sessions with EST timestamps stored in Google Sheets
+- ✅ **Session Deletion Fix**: Resolved race condition in concurrent session deletions
+- ✅ **Dynamic Column Creation**: AI can add new columns to Google Sheets on user request
+- ✅ **Mobile Responsive**: Collapsible sidebar, compact header, floating history button (<768px)
+- ✅ **Variable Scope Fix**: Resolved QuickBooks service scope error for reliable data loading
+
+### 🎯 **Previous Achievements (November 2025)**
 - ✅ **AI Document Upload**: Upload PDFs/images to extract project/permit data with GPT-4 Vision
 - ✅ **Editable Extraction Fields**: Review and edit AI-extracted data before creating records
 - ✅ **Enhanced UI**: Client cards show status breakdown (1 Active, 1 Completed, etc.)

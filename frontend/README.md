@@ -1,10 +1,10 @@
 # House Renovators AI Portal - Frontend
 
 **Status:** ✅ Production Ready  
-**Last Updated:** November 3, 2025  
+**Last Updated:** November 8, 2025  
 **Build:** 257KB (73KB gzipped)
 
-Modern corporate web application built with React 19, featuring a complete UI redesign with AppSheet/Notion-inspired design principles.
+Modern corporate web application built with React 19, featuring a complete UI redesign with AppSheet/Notion-inspired design principles and mobile-responsive layout.
 
 ## 🚀 Quick Start
 
@@ -12,14 +12,15 @@ Modern corporate web application built with React 19, featuring a complete UI re
 
 1. **Install Dependencies**
 ```bash
-cd house-renovators-pwa
+cd frontend
 npm install
 ```
 
 2. **Configure Environment**
 ```bash
 # Development environment is pre-configured
-# Edit .env.development if needed
+# Backend API: http://localhost:8000 (local) or https://houserenoai.onrender.com (production)
+# Edit .env if needed
 ```
 
 3. **Start Development Server**
@@ -40,9 +41,9 @@ npm run build
 
 2. **Deploy to Cloudflare Pages**
 - Connect your GitHub repository to Cloudflare Pages
-- Build command: `npm run build`
+### Build command: `npm run build`
 - Output directory: `dist`
-- Environment variables: `VITE_API_URL=https://house-renovators-ai.onrender.com`
+- Environment variables: `VITE_API_URL=https://houserenoai.onrender.com`
 
 ### Manual Deployment
 
@@ -84,17 +85,19 @@ npm run preview
 
 | Variable | Description | Development | Production |
 |----------|-------------|-------------|------------|
-| `VITE_API_URL` | Backend API URL | `http://localhost:8000` | `https://house-renovators-ai.onrender.com` |
+| `VITE_API_URL` | Backend API URL | `http://localhost:8000` | `https://houserenoai.onrender.com` |
 | `VITE_ENV` | Environment | `development` | `production` |
 | `VITE_ENABLE_DEBUG` | Debug mode | `true` | `false` |
 
 ### API Integration
 
 The app connects to the FastAPI backend for:
-- Chat message processing
+- Chat message processing with QuickBooks context
+- Session management (create, delete, list)
 - Permit data retrieval
 - Project management
 - System status monitoring
+- QuickBooks invoice and customer data
 
 ## 🏗️ Project Structure
 
@@ -117,16 +120,27 @@ src/
 
 ### Chat Interface
 - Natural language queries
+- QuickBooks data access (customers, invoices)
 - Real-time responses
+- Session persistence with EST timestamps
 - Suggested questions
 - Action indicators
 - Error handling
+- Mobile responsive design (<768px)
 
 ### Dashboard
 - Project statistics
 - Recent permits display
 - Quick actions
 - System status
+- QuickBooks status indicator
+
+### Mobile Features (NEW - Nov 8, 2025)
+- Collapsible sidebar with backdrop overlay
+- Floating history button (MessageSquarePlus icon)
+- Compact header (12px padding, no title)
+- Status dots only (no labels)
+- Responsive at 768px breakpoint
 
 ### PWA Capabilities
 - Installable on devices
