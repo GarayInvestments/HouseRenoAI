@@ -96,6 +96,74 @@ async def process_chat_message(chat_data: Dict[str, Any]):
         ai_response, function_calls = await openai_service.process_chat_message(message, context)
         timer.stop("openai_call")
         
+        # CRITICAL VALIDATION: Check for fabricated QuickBooks data
+        # Prevents AI hallucination of QB Client IDs that don't exist
+        if 'quickbooks' in context.get('contexts_loaded', []):
+            qb_data = context.get('quickbooks', {})
+            qb_customers = qb_data.get('customers', [])
+            
+            if qb_customers:
+                # Extract all valid QB Client IDs from context
+                valid_qb_ids = set()
+                for customer in qb_customers:
+                    qb_id = customer.get('Id')
+                    if qb_id:
+                        valid_qb_ids.add(str(qb_id))
+                
+                # Check if AI response contains QB Client IDs
+                import re
+                # Look for patterns like "QB Client ID: 166" or "QuickBooks ID 166"
+                qb_id_pattern = r'(?:QB|QuickBooks)\s+(?:Client\s+)?ID[:\s]+(\d+)'
+                found_ids = re.findall(qb_id_pattern, ai_response, re.IGNORECASE)
+                
+                # Validate each ID exists in loaded context
+                for found_id in found_ids:
+                    if found_id not in valid_qb_ids:
+                        session_logger.error(
+                            session_id,
+                            f"🚨 AI HALLUCINATION DETECTED: QB Client ID {found_id} not in loaded context. "
+                            f"Valid IDs: {valid_qb_ids}"
+                        )
+                        
+                        # Check if client exists in Sheets but not synced to QB
+                        sheets_clients = context.get('all_clients', [])
+                        mentioned_in_message = None
+                        
+                        for client in sheets_clients:
+                            client_name = client.get('Full Name') or client.get('Client Name', '')
+                            if client_name.lower() in message.lower():
+                                mentioned_in_message = client
+                                break
+                        
+                        if mentioned_in_message:
+                            client_name = mentioned_in_message.get('Full Name') or mentioned_in_message.get('Client Name')
+                            qbo_id = mentioned_in_message.get('QBO_Client_ID')
+                            
+                            if not qbo_id:
+                                # Client exists in Sheets but not synced to QuickBooks
+                                ai_response = (
+                                    f"⚠️ **Data Sync Issue Detected**\n\n"
+                                    f"{client_name} exists in our database but hasn't been synced to QuickBooks yet. "
+                                    f"Please sync this client to QuickBooks before viewing their financial details.\n\n"
+                                    f"_Note: I cannot fabricate QuickBooks data for clients that aren't synced._"
+                                )
+                            else:
+                                # Client has QBO_Client_ID but AI got it wrong
+                                ai_response = (
+                                    f"⚠️ **Verification Required**\n\n"
+                                    f"I detected inconsistent QuickBooks data for {client_name}. "
+                                    f"Please verify this client's QuickBooks ID manually.\n\n"
+                                    f"_Tip: Cross-check in QuickBooks Online to ensure accuracy._"
+                                )
+                        else:
+                            # Generic error - couldn't find what client they're asking about
+                            ai_response = (
+                                f"⚠️ **Data Verification Required**\n\n"
+                                f"I found inconsistent QuickBooks Client ID information. "
+                                f"Please verify this data in QuickBooks Online before taking action.\n\n"
+                                f"_Note: Always verify financial data before creating invoices or processing payments._"
+                            )
+        
         # Execute any function calls requested by AI
         action_taken = None
         data_updated = False

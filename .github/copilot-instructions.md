@@ -20,6 +20,22 @@
 ```
 **Why**: Render doesn't persist files, so credentials load from env vars on every cold start.
 
+### Authentication Pattern (JWT)
+```python
+# Protected routes use get_current_user dependency
+from app.routes.auth import get_current_user
+
+@router.get("/protected")
+async def protected_route(current_user: dict = Depends(get_current_user)):
+    # current_user contains: {"email": "...", "name": "...", "role": "..."}
+    return {"message": f"Hello {current_user['name']}"}
+
+# Frontend must send: Authorization: Bearer <token>
+# Tokens expire after 7 days
+# JWTAuthMiddleware automatically protects all routes except PUBLIC_ROUTES
+```
+**Why**: Centralized auth via middleware + dependency injection. Users stored in Google Sheets `Users` tab.
+
 ### API Route Structure
 ```python
 # All routes follow this pattern:
@@ -38,6 +54,62 @@ async def get_data():
     return data
 ```
 **Why**: Ensures service is initialized before use; consistent error handling across routes.
+
+### QuickBooks Integration Pattern
+```python
+# QuickBooks OAuth2 flow (production approved)
+from app.services.quickbooks_service import quickbooks_service
+
+# 1. Check authentication status
+if not quickbooks_service.is_authenticated():
+    # Redirect to /v1/quickbooks/connect for OAuth flow
+    
+# 2. Tokens stored in Google Sheets (QB_Tokens tab)
+# 3. Auto-refresh when expired (60-day refresh token)
+# 4. Supports sandbox + production environments
+
+# Common operations:
+customers = await quickbooks_service.get_customers()
+invoices = await quickbooks_service.get_invoices()
+invoice = await quickbooks_service.create_invoice(customer_id, line_items)
+```
+**Why**: OAuth tokens persist across deployments via Google Sheets. Service auto-refreshes expired access tokens.
+
+### Smart Context Loading (Performance Critical)
+```python
+# context_builder.py intelligently loads ONLY needed data
+from app.utils.context_builder import build_context
+
+context = await build_context(
+    message=user_message,
+    google_service=google_service,
+    qb_service=quickbooks_service,
+    session_memory=memory_manager.get_all(session_id)
+)
+
+# Examples:
+# "Show me Temple project" → Loads Sheets only (no QB API calls)
+# "Create invoice for Temple" → Loads Sheets + QB
+# "Hello" → Loads nothing (returns {'none'})
+
+# Performance: 80% fewer API calls, 60% less tokens
+```
+**Why**: Keyword analysis determines required data sources before making API calls. Dramatically reduces latency and costs.
+
+### Session Memory Pattern
+```python
+# memory_manager.py provides TTL-based session storage
+from app.memory.memory_manager import memory_manager
+
+# Store context during conversation
+memory_manager.set(session_id, "last_client_id", "123", ttl_minutes=10)
+
+# Retrieve in subsequent messages
+last_client = memory_manager.get(session_id, "last_client_id")
+
+# Automatic cleanup after TTL expires (default: 10 minutes)
+```
+**Why**: Maintains conversational context without database. User says "show me their invoices" after viewing a client - memory remembers which client.
 
 ### Frontend State Management (Zustand)
 ```javascript
@@ -59,17 +131,21 @@ const id = client['Client ID'] || client['ID'] || index;
 ## 🛠️ Development Workflow
 
 ### Running Locally
-```bash
+```powershell
 # Backend (Terminal 1) - MUST activate venv first
-cd backend && .\venv\Scripts\Activate.ps1
-cd .. && python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+.\venv\Scripts\Activate.ps1
+python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+# Runs on http://localhost:8000
 
-# Frontend (Terminal 2)
-cd frontend && npm run dev  # http://localhost:5173
+# Frontend (Terminal 2) - separate terminal
+cd frontend
+npm run dev
+# Runs on http://localhost:5173
 
 # Frontend connects to PRODUCTION backend by default (see frontend/.env)
 VITE_API_URL=https://houserenoai.onrender.com
 ```
+**Note**: venv is at root level, not in a backend/ subdirectory. Most API endpoints require JWT authentication (send `Authorization: Bearer <token>` header).
 
 ### Environment Files
 - **Backend** (`.env` at root): `SHEET_ID`, `GOOGLE_SERVICE_ACCOUNT_FILE`, `OPENAI_API_KEY`
@@ -97,11 +173,26 @@ VITE_API_URL=https://houserenoai.onrender.com
 
 ## 📁 Key Files to Reference
 
-- **API structure**: `app/main.py` (startup logic), `app/routes/` (endpoints)
-- **Google Sheets ops**: `app/services/google_service.py` (all read operations are async)
+### Backend
+- **API structure**: `app/main.py` (startup logic), `app/routes/` (all endpoints)
+- **Authentication**: `app/routes/auth.py` (JWT endpoints), `app/middleware/auth_middleware.py` (protection)
+- **Services**: `app/services/google_service.py` (Sheets), `app/services/quickbooks_service.py` (QB OAuth), `app/services/auth_service.py` (JWT + bcrypt)
+- **Smart loading**: `app/utils/context_builder.py` (80% API reduction logic)
+- **Session memory**: `app/memory/memory_manager.py` (TTL-based context storage)
+- **Config**: `app/config.py` (all env vars + CORS origins)
+
+### Frontend
 - **State management**: `frontend/src/stores/appStore.js` (navigation + global state)
 - **Component patterns**: `frontend/src/pages/ClientDetails.jsx` (shows field fallbacks + data handling)
-- **Config**: `app/config.py` (all env vars + CORS origins)
+
+### Available Routes
+- `/v1/auth/*` - Login, register, token refresh, user info
+- `/v1/chat` - AI chat with smart context loading
+- `/v1/clients` - Client data from Google Sheets
+- `/v1/projects` - Project management
+- `/v1/permits` - Permit tracking
+- `/v1/documents` - Document upload/management
+- `/v1/quickbooks/*` - OAuth flow, customers, invoices, estimates, bills
 
 ## 🎯 Project-Specific Conventions
 
@@ -111,10 +202,95 @@ VITE_API_URL=https://houserenoai.onrender.com
 4. **Google Sheets as database**: All CRUD operations go through Google Sheets API, no SQL
 5. **Module singleton pattern**: Services like `google_service` are module-level instances, not class instantiation per request
 6. **API versioning**: All routes prefixed with `/v1/` (see `settings.API_VERSION`)
+7. **JWT everywhere**: All routes protected by default except PUBLIC_ROUTES in `JWTAuthMiddleware`
+8. **Smart context loading**: ALWAYS use `context_builder.py` for chat - never load all data blindly
+9. **Session-based memory**: Use `memory_manager` for conversational context (10-min TTL)
+10. **Structured logging**: Use `logger.info("[METRICS] ...")` for performance tracking in Render logs
+
+## 📊 Logging & Monitoring
+
+### Backend Logging Pattern
+```python
+import logging
+logger = logging.getLogger(__name__)
+
+# Performance metrics (visible in Render logs)
+logger.info(f"[METRICS] API call took {duration}ms, tokens: {token_count}")
+
+# Context loading
+logger.info(f"Smart context loading: {contexts} for message: '{message[:50]}...'")
+
+# Errors with context
+logger.error(f"Google Sheets error: {e}", exc_info=True)
+```
+
+### Viewing Logs
+```powershell
+# Render CLI (CORRECT SYNTAX)
+# Service ID: srv-d44ak76uk2gs73a3psig
+render logs -r srv-d44ak76uk2gs73a3psig --limit 200 --confirm -o text
+
+# Stream live logs
+render logs -r srv-d44ak76uk2gs73a3psig --tail --confirm
+
+# Search for specific text
+render logs -r srv-d44ak76uk2gs73a3psig --text "error,warning" --limit 100 --confirm -o text
+
+# Programmatic access via Render API
+# See docs/RENDER_API_DEPLOYMENT_GUIDE.md and docs/RENDER_LOGS_GUIDE.md
+```
+**Note**: Use `-r` (resources) flag with service ID, NOT `-s` (service name). Old CLI syntax (`-s`) no longer works.
+
+**What to look for**:
+- `[METRICS]` prefix = Performance data
+- `Smart context loading:` = Which data sources were used
+- `Google service not initialized` = Missing env vars
+- `Invalid or expired token` = JWT auth issues
+- `QuickBooks not authenticated` = Need to run OAuth flow
 
 ## 🚀 When Adding Features
 
-- **New backend route**: Create in `app/routes/`, use `get_google_service()` helper, add to `app/main.py`
+- **New backend route**: Create in `app/routes/`, add auth with `Depends(get_current_user)` if protected, register in `app/main.py`
 - **New frontend page**: Add to `pages/`, update `App.jsx` switch statement, add navigation in `appStore.js`
 - **New Google Sheets column**: Update field fallbacks in frontend components to handle old/new column names
+- **New data source for chat**: Add keywords to `context_builder.py` → add loading function → update `build_context()`
+- **New QuickBooks operation**: Add method to `quickbooks_service.py`, ensure `is_authenticated()` check, handle token refresh
 - **Environment variable**: Add to `app/config.py`, document in README, set in Render/Cloudflare dashboard
+- **Performance logging**: Add `logger.info("[METRICS] ...")` for operations > 100ms or using external APIs
+
+## 🧪 Testing Patterns
+
+### Testing Protected Endpoints
+```powershell
+# 1. Login to get token
+$response = Invoke-RestMethod -Uri "http://localhost:8000/v1/auth/login" `
+    -Method Post `
+    -ContentType "application/json" `
+    -Body '{"email":"admin@example.com","password":"admin123"}'
+
+$token = $response.access_token
+
+# 2. Call protected endpoint
+$headers = @{ "Authorization" = "Bearer $token" }
+Invoke-RestMethod -Uri "http://localhost:8000/v1/clients" -Headers $headers
+```
+
+### Testing QuickBooks Integration
+```powershell
+# 1. Check auth status
+curl http://localhost:8000/v1/quickbooks/status
+
+# 2. If not authenticated, connect (opens browser)
+# Navigate to: http://localhost:8000/v1/quickbooks/connect
+
+# 3. Test operations
+curl http://localhost:8000/v1/quickbooks/customers -H "Authorization: Bearer $token"
+```
+
+### Testing Smart Context Loading
+```python
+# Look for these log messages in terminal:
+# "Smart context loading: {'sheets'} for message: 'Show Temple project'..."
+# "Smart context loading: {'sheets', 'quickbooks'} for message: 'Invoice for Temple'..."
+# "Smart context loading: {'none'} for message: 'Hello'..."
+```
