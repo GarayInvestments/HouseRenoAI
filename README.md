@@ -213,6 +213,7 @@ git push
 - 🚀 [**Deployment Guide**](docs/DEPLOYMENT.md) - Production deployment
 - 🔧 [**Project Setup**](docs/PROJECT_SETUP.md) - Development environment
 - 🩺 [**Troubleshooting**](docs/TROUBLESHOOTING.md) - Common issues and solutions
+- 🧪 [**Chat Testing SOP**](docs/CHAT_TESTING_SOP.md) - Standard chat testing procedures **(NEW)**
 
 ### **Architecture & Development**
 - 📁 [**Directory Structure**](docs/directory-structure.md) - Project organization
