@@ -79,48 +79,68 @@ def get_required_contexts(message: str) -> Set[str]:
     return contexts
 
 
-async def build_sheets_context(google_service) -> Dict[str, Any]:
+async def build_sheets_context(google_service, message: str = "") -> Dict[str, Any]:
     """
     Build context from Google Sheets data.
     
-    Fetches and summarizes:
-    - Projects (with status breakdown)
-    - Permits (with status breakdown)
-    - Clients (count only, full list available on request)
+    Selectively fetches only the data needed based on message content:
+    - "client" keywords → fetch clients only
+    - "project" keywords → fetch projects only
+    - "permit" keywords → fetch permits only
+    - Multiple keywords → fetch all mentioned
     
     Returns:
         Dict with sheets data and summaries
     """
     try:
-        # Fetch all sheets data using the correct methods (with caching!)
-        projects = await google_service.get_projects_data()
-        permits = await google_service.get_permits_data()
-        clients = await google_service.get_clients_data()
-        
-        # Summarize project statuses
-        project_statuses = {}
-        for project in projects:
-            status = project.get('Status', 'Unknown')
-            project_statuses[status] = project_statuses.get(status, 0) + 1
-        
-        # Summarize permit statuses
-        permit_statuses = {}
-        for permit in permits:
-            status = permit.get('Status', 'Unknown')
-            permit_statuses[status] = permit_statuses.get(status, 0) + 1
-        
-        return {
-            "projects": projects,
-            "permits": permits,
-            "clients": clients,
-            "summary": {
-                "total_projects": len(projects),
-                "project_statuses": project_statuses,
-                "total_permits": len(permits),
-                "permit_statuses": permit_statuses,
-                "total_clients": len(clients)
-            }
+        message_lower = message.lower()
+        result = {
+            "projects": [],
+            "permits": [],
+            "clients": [],
+            "summary": {}
         }
+        
+        # Determine what to fetch based on keywords
+        fetch_clients = any(kw in message_lower for kw in ['client', 'customer'])
+        fetch_projects = any(kw in message_lower for kw in ['project'])
+        fetch_permits = any(kw in message_lower for kw in ['permit'])
+        
+        # Fetch only what's needed
+        if fetch_clients:
+            clients = await google_service.get_clients_data()
+            result["clients"] = clients
+            result["summary"]["total_clients"] = len(clients)
+        
+        if fetch_projects:
+            projects = await google_service.get_projects_data()
+            result["projects"] = projects
+            
+            # Summarize project statuses
+            project_statuses = {}
+            for project in projects:
+                status = project.get('Status', 'Unknown')
+                project_statuses[status] = project_statuses.get(status, 0) + 1
+            
+            result["summary"]["total_projects"] = len(projects)
+            result["summary"]["project_statuses"] = project_statuses
+        
+        if fetch_permits:
+            permits = await google_service.get_permits_data()
+            result["permits"] = permits
+            
+            # Summarize permit statuses
+            permit_statuses = {}
+            for permit in permits:
+                status = permit.get('Status', 'Unknown')
+                permit_statuses[status] = permit_statuses.get(status, 0) + 1
+            
+            result["summary"]["total_permits"] = len(permits)
+            result["summary"]["permit_statuses"] = permit_statuses
+        
+        logger.info(f"Sheets context built: clients={len(result['clients'])}, projects={len(result['projects'])}, permits={len(result['permits'])}")
+        return result
+        
     except Exception as e:
         logger.error(f"Error building sheets context: {e}")
         return {
@@ -227,13 +247,15 @@ async def build_context(
     
     # Load Google Sheets context if needed
     if 'sheets' in required:
-        sheets_data = await build_sheets_context(google_service)
+        sheets_data = await build_sheets_context(google_service, message)
         context.update(sheets_data)
     
     # Load QuickBooks context if needed
     if 'quickbooks' in required:
         qb_data = await build_quickbooks_context(qb_service)
         context["quickbooks"] = qb_data
+        # Also add quickbooks_connected flag for OpenAI service
+        context["quickbooks_connected"] = qb_data.get("authenticated", False)
     
     # Add metadata
     context["smart_loading"] = {

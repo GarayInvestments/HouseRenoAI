@@ -135,6 +135,12 @@ backend/ENV/
 backend/env.bak/
 backend/venv.bak/
 
+# Root level virtual environment (Python 3.11)
+venv/
+.venv/
+env/
+ENV/
+
 # Spyder project settings
 backend/.spyderproject
 backend/.spyproject
