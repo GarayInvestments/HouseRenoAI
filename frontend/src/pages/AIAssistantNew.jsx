@@ -804,6 +804,37 @@ export default function AIAssistant() {
               <span style={{ fontSize: '13px', color: '#DC2626' }}>{error}</span>
             </div>
           )}
+          
+          {/* AI Verification Disclaimer */}
+          <div style={{
+            marginTop: '12px',
+            padding: isMobile ? '10px 12px' : '12px 16px',
+            backgroundColor: '#FEF3C7',
+            border: '1px solid #FDE68A',
+            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: isMobile ? '8px' : '10px'
+          }}>
+            <AlertCircle size={isMobile ? 16 : 18} style={{ color: '#D97706', flexShrink: 0, marginTop: '1px' }} />
+            <div style={{ flex: 1 }}>
+              <p style={{ 
+                fontSize: isMobile ? '12px' : '13px', 
+                fontWeight: '600', 
+                color: '#92400E',
+                marginBottom: '4px'
+              }}>
+                ⚠️ Always Verify AI Responses
+              </p>
+              <p style={{ 
+                fontSize: isMobile ? '11px' : '12px', 
+                color: '#78350F',
+                lineHeight: '1.5'
+              }}>
+                AI responses should be verified before taking action. <strong>Always confirm client details, QuickBooks IDs, and financial data</strong> before creating invoices or processing payments.
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Chat Messages - Reuse same structure from original */}
