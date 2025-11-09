@@ -56,6 +56,10 @@ class QuickBooksService:
         self.refresh_token: Optional[str] = None
         self.token_expires_at: Optional[datetime] = None
         
+        # Cache storage for QB data (5-minute TTL)
+        self._cache: Dict[str, Dict[str, Any]] = {}
+        self._cache_ttl = timedelta(minutes=5)
+        
         logger.info(f"QuickBooksService initialized ({self.environment} environment)")
         
         # Load tokens from Google Sheets on startup
@@ -178,6 +182,40 @@ class QuickBooksService:
             
         except Exception as e:
             logger.error(f"Failed to create tokens sheet: {e}")
+    
+    def _get_cache(self, key: str) -> Optional[Any]:
+        """Get value from cache if still valid."""
+        if key in self._cache:
+            cached_data = self._cache[key]
+            if datetime.now() < cached_data['expires_at']:
+                logger.info(f"Cache HIT for {key} (expires in {(cached_data['expires_at'] - datetime.now()).seconds}s)")
+                return cached_data['data']
+            else:
+                # Cache expired
+                logger.info(f"Cache EXPIRED for {key}")
+                del self._cache[key]
+        
+        logger.info(f"Cache MISS for {key}")
+        return None
+    
+    def _set_cache(self, key: str, data: Any) -> None:
+        """Store value in cache with TTL."""
+        expires_at = datetime.now() + self._cache_ttl
+        self._cache[key] = {
+            'data': data,
+            'expires_at': expires_at
+        }
+        logger.info(f"Cache SET for {key} (TTL: {self._cache_ttl.seconds}s)")
+    
+    def _invalidate_cache(self, key: Optional[str] = None) -> None:
+        """Invalidate cache (specific key or all keys)."""
+        if key:
+            if key in self._cache:
+                del self._cache[key]
+                logger.info(f"Cache INVALIDATED for {key}")
+        else:
+            self._cache.clear()
+            logger.info("Cache INVALIDATED (all keys)")
     
     def get_auth_url(self, state: str = "randomstate") -> str:
         """
@@ -389,7 +427,9 @@ class QuickBooksService:
     
     async def get_customers(self, active_only: bool = True) -> List[Dict[str, Any]]:
         """
-        Retrieve all customers from QuickBooks.
+        Retrieve all customers from QuickBooks with caching.
+        
+        Cache is invalidated after create/update operations.
         
         Args:
             active_only: Only return active customers
@@ -400,6 +440,15 @@ class QuickBooksService:
         Example:
             customers = await qb_service.get_customers()
         """
+        # Build cache key from filters
+        cache_key = f"customers_{active_only}"
+        
+        # Check cache first
+        cached = self._get_cache(cache_key)
+        if cached is not None:
+            return cached
+        
+        # Cache miss - fetch from API
         query = "SELECT * FROM Customer"
         if active_only:
             query += " WHERE Active = true"
@@ -409,7 +458,11 @@ class QuickBooksService:
         response = await self._make_request("GET", "query", params=params)
         customers = response.get("QueryResponse", {}).get("Customer", [])
         
-        logger.info(f"Retrieved {len(customers)} customers")
+        logger.info(f"Retrieved {len(customers)} customers from QB API")
+        
+        # Store in cache
+        self._set_cache(cache_key, customers)
+        
         return customers
     
     async def create_customer(self, customer_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -435,7 +488,10 @@ class QuickBooksService:
         response = await self._make_request("POST", "customer", data=customer_data)
         customer = response.get("Customer", {})
         
-        logger.info(f"Created customer: {customer.get('DisplayName')}")
+        # Invalidate customer cache after creation
+        self._invalidate_cache()  # Clear all customer caches
+        logger.info(f"Created customer: {customer.get('DisplayName')} - cache invalidated")
+        
         return customer
     
     async def get_customer_by_id(self, customer_id: str) -> Dict[str, Any]:
@@ -452,7 +508,10 @@ class QuickBooksService:
         customer_id: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """
-        Retrieve invoices from QuickBooks.
+        Retrieve invoices from QuickBooks with caching.
+        
+        Cache key includes filters to ensure correct data.
+        Cache is invalidated after create/update/delete operations.
         
         Args:
             start_date: Filter by TxnDate >= start_date (YYYY-MM-DD)
@@ -465,6 +524,15 @@ class QuickBooksService:
         Example:
             invoices = await qb_service.get_invoices(customer_id="123")
         """
+        # Build cache key from filters
+        cache_key = f"invoices_{start_date}_{end_date}_{customer_id}"
+        
+        # Check cache first
+        cached = self._get_cache(cache_key)
+        if cached is not None:
+            return cached
+        
+        # Cache miss - fetch from API
         query = "SELECT * FROM Invoice"
         conditions = []
         
@@ -484,7 +552,12 @@ class QuickBooksService:
         response = await self._make_request("GET", "query", params=params)
         invoices = response.get("QueryResponse", {}).get("Invoice", [])
         
-        logger.info(f"Retrieved {len(invoices)} invoices")
+        logger.info(f"Retrieved {len(invoices)} invoices from QB API")
+        
+        # Store in cache
+        self._set_cache(cache_key, invoices)
+        
+        return invoices
         return invoices
     
     async def create_invoice(self, invoice_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -516,7 +589,10 @@ class QuickBooksService:
         response = await self._make_request("POST", "invoice", data=invoice_data)
         invoice = response.get("Invoice", {})
         
-        logger.info(f"Created invoice: {invoice.get('DocNumber')}")
+        # Invalidate invoice cache after creation
+        self._invalidate_cache()  # Clear all invoice caches
+        logger.info(f"Created invoice: {invoice.get('DocNumber')} - cache invalidated")
+        
         return invoice
     
     async def get_invoice_by_id(self, invoice_id: str) -> Dict[str, Any]:
@@ -557,7 +633,10 @@ class QuickBooksService:
         response = await self._make_request("POST", "invoice", data=updates, params={"operation": "update"})
         invoice = response.get("Invoice", {})
         
-        logger.info(f"Updated invoice: {invoice.get('DocNumber')}")
+        # Invalidate invoice cache after update
+        self._invalidate_cache()  # Clear all invoice caches
+        logger.info(f"Updated invoice: {invoice.get('DocNumber')} - cache invalidated")
+        
         return invoice
     
     # ==================== ESTIMATE OPERATIONS ====================
