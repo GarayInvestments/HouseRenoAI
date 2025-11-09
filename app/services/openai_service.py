@@ -300,19 +300,6 @@ class OpenAIService:
                             f"\n  Email: {client.get('Email')}"
                         )
                 
-                # Add full arrays for detailed queries (using smart context builder keys)
-                if 'clients' in context and context['clients']:
-                    context_parts.append(f"\n\n=== CLIENT RECORDS ({len(context['clients'])} total) ===")
-                    context_parts.append(str(context['clients']))
-                
-                if 'projects' in context and context['projects']:
-                    context_parts.append(f"\n\n=== PROJECT RECORDS ({len(context['projects'])} total) ===")
-                    context_parts.append(str(context['projects']))
-                
-                if 'permits' in context and context['permits']:
-                    context_parts.append(f"\n\n=== PERMIT RECORDS ({len(context['permits'])} total) ===")
-                    context_parts.append(str(context['permits']))
-                
                 context_message = "\n".join(context_parts)
                 messages.insert(1, {"role": "system", "content": f"DATA CONTEXT:\n{context_message}"})
             
@@ -481,11 +468,18 @@ class OpenAIService:
             response = self.client.chat.completions.create(
                 model="gpt-4o",
                 messages=messages,
-                max_tokens=1000,
+                max_tokens=2000,  # Increased from 1000 to prevent truncation-induced hallucinations
                 temperature=0.7,
                 functions=functions,
                 function_call="auto"  # Let AI decide when to call functions
             )
+            
+            # Log token usage for monitoring
+            usage = response.usage
+            if usage:
+                logger.info(f"[METRICS] OpenAI API - Prompt tokens: {usage.prompt_tokens}, "
+                           f"Completion tokens: {usage.completion_tokens}, "
+                           f"Total: {usage.total_tokens}")
             
             message_response = response.choices[0].message
             
