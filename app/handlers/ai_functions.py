@@ -661,6 +661,285 @@ async def handle_sync_quickbooks_clients(
         }
 
 
+async def handle_sync_gc_compliance_payments(
+    args: Dict[str, Any],
+    google_service,
+    memory_manager,
+    session_id: str
+) -> Dict[str, Any]:
+    """
+    Reconcile GC Compliance payments with invoices.
+    
+    Process:
+    1. Get all payments where Client Type == "GC Compliance"
+    2. Get all invoices
+    3. Match payments to invoices by Invoice ID or Client Name
+    4. Update invoice: Amount Paid, Balance, Status
+    5. Mark payment as synced with timestamp
+    
+    Args:
+        args: Function arguments (dry_run optional)
+        google_service: Google Sheets service instance
+        memory_manager: Session memory manager
+        session_id: Current session ID
+        
+    Returns:
+        Dictionary with sync results
+    """
+    try:
+        dry_run = args.get("dry_run", False)
+        logger.info(f"[GC PAYMENTS SYNC] Starting sync (dry_run={dry_run})")
+        
+        # Get all sheet data
+        all_data = await google_service.get_all_sheet_data()
+        
+        # Extract relevant tabs
+        payments = all_data.get('Payments', [])
+        invoices = all_data.get('Invoices', [])
+        clients = all_data.get('Clients', [])
+        
+        logger.info(f"[GC PAYMENTS SYNC] Found {len(payments)} payments, {len(invoices)} invoices")
+        
+        # Build client type lookup
+        client_type_map = {}
+        for client in clients:
+            client_name = client.get('Full Name') or client.get('Client Name', '')
+            client_type = client.get('Client Type', '')
+            if client_name:
+                client_type_map[client_name.strip().lower()] = client_type
+        
+        # Filter GC Compliance payments that haven't been synced
+        gc_payments = []
+        for payment in payments:
+            client_name = payment.get('Client Name', '').strip()
+            client_type = client_type_map.get(client_name.lower(), '')
+            is_synced = str(payment.get('Is Synced', '')).strip().upper()
+            
+            if client_type == 'GC Compliance' and is_synced != 'TRUE':
+                gc_payments.append(payment)
+        
+        logger.info(f"[GC PAYMENTS SYNC] Found {len(gc_payments)} unsynced GC Compliance payments")
+        
+        if not gc_payments:
+            return {
+                "status": "success",
+                "message": "No unsynced GC Compliance payments to process",
+                "processed": 0,
+                "matched": 0,
+                "unmatched": 0
+            }
+        
+        # Build invoice lookup by Invoice ID and Client Name
+        invoice_map = {}
+        for invoice in invoices:
+            invoice_id = str(invoice.get('Invoice ID', '')).strip()
+            client_name = invoice.get('Client Name', '').strip().lower()
+            
+            if invoice_id:
+                invoice_map[f"id:{invoice_id}"] = invoice
+            if client_name:
+                if f"name:{client_name}" not in invoice_map:
+                    invoice_map[f"name:{client_name}"] = []
+                invoice_map[f"name:{client_name}"].append(invoice)
+        
+        # Process each payment
+        matched_payments = []
+        unmatched_payments = []
+        invoice_updates = {}  # Track updates per invoice
+        payment_updates = []  # Track payment rows to mark as synced
+        
+        for payment in gc_payments:
+            payment_id = payment.get('Payment ID', '')
+            invoice_id = str(payment.get('Invoice ID', '')).strip()
+            client_name = payment.get('Client Name', '').strip()
+            amount = payment.get('Amount', 0)
+            payment_date = payment.get('Payment Date', '')
+            
+            # Try to parse amount
+            try:
+                if isinstance(amount, str):
+                    amount = float(amount.replace('$', '').replace(',', '').strip())
+                else:
+                    amount = float(amount)
+            except (ValueError, TypeError):
+                logger.warning(f"[GC PAYMENTS SYNC] Invalid amount for payment {payment_id}: {amount}")
+                amount = 0
+            
+            matched_invoice = None
+            match_method = None
+            
+            # Match by Invoice ID first
+            if invoice_id:
+                matched_invoice = invoice_map.get(f"id:{invoice_id}")
+                if matched_invoice:
+                    match_method = "Invoice ID"
+            
+            # Fallback to Client Name
+            if not matched_invoice and client_name:
+                client_invoices = invoice_map.get(f"name:{client_name.lower()}", [])
+                if client_invoices:
+                    # Find the first unpaid or partially paid invoice
+                    for inv in client_invoices:
+                        balance = inv.get('Balance', 0)
+                        try:
+                            if isinstance(balance, str):
+                                balance = float(balance.replace('$', '').replace(',', '').strip())
+                            else:
+                                balance = float(balance)
+                        except (ValueError, TypeError):
+                            balance = 0
+                        
+                        if balance > 0:
+                            matched_invoice = inv
+                            match_method = "Client Name"
+                            break
+            
+            if matched_invoice:
+                matched_payments.append({
+                    "payment_id": payment_id,
+                    "invoice_id": matched_invoice.get('Invoice ID', ''),
+                    "client_name": client_name,
+                    "amount": amount,
+                    "payment_date": payment_date,
+                    "match_method": match_method
+                })
+                
+                # Track invoice update
+                inv_id = matched_invoice.get('Invoice ID', '')
+                if inv_id not in invoice_updates:
+                    invoice_updates[inv_id] = {
+                        "invoice": matched_invoice,
+                        "payments_applied": 0,
+                        "total_paid": 0
+                    }
+                
+                invoice_updates[inv_id]["payments_applied"] += 1
+                invoice_updates[inv_id]["total_paid"] += amount
+                
+                # Track payment to mark as synced
+                payment_updates.append({
+                    "payment_id": payment_id,
+                    "payment_date": payment_date
+                })
+            else:
+                unmatched_payments.append({
+                    "payment_id": payment_id,
+                    "client_name": client_name,
+                    "amount": amount,
+                    "invoice_id": invoice_id or "N/A"
+                })
+        
+        logger.info(f"[GC PAYMENTS SYNC] Matched: {len(matched_payments)}, Unmatched: {len(unmatched_payments)}")
+        
+        # Apply updates if not dry run
+        invoices_updated = 0
+        payments_marked = 0
+        
+        if not dry_run:
+            # Update invoices
+            for inv_id, update_info in invoice_updates.items():
+                invoice = update_info["invoice"]
+                total_paid_from_payments = update_info["total_paid"]
+                
+                # Get current values
+                current_paid = invoice.get('Amount Paid', 0)
+                try:
+                    if isinstance(current_paid, str):
+                        current_paid = float(current_paid.replace('$', '').replace(',', '').strip())
+                    else:
+                        current_paid = float(current_paid)
+                except (ValueError, TypeError):
+                    current_paid = 0
+                
+                total_amount = invoice.get('Total Amount', 0)
+                try:
+                    if isinstance(total_amount, str):
+                        total_amount = float(total_amount.replace('$', '').replace(',', '').strip())
+                    else:
+                        total_amount = float(total_amount)
+                except (ValueError, TypeError):
+                    total_amount = 0
+                
+                # Calculate new values
+                new_paid = current_paid + total_paid_from_payments
+                new_balance = total_amount - new_paid
+                
+                # Determine status
+                if new_balance <= 0:
+                    new_status = "Paid"
+                elif new_paid > 0:
+                    new_status = "Partially Paid"
+                else:
+                    new_status = invoice.get('Status', 'Unpaid')
+                
+                # Update invoice
+                success = await google_service.update_record_by_id(
+                    sheet_name='Invoices',
+                    id_field='Invoice ID',
+                    record_id=inv_id,
+                    updates={
+                        'Amount Paid': new_paid,
+                        'Balance': new_balance,
+                        'Status': new_status
+                    }
+                )
+                
+                if success:
+                    invoices_updated += 1
+                    logger.info(f"[GC PAYMENTS SYNC] Updated Invoice {inv_id}: Paid=${new_paid:.2f}, Balance=${new_balance:.2f}, Status={new_status}")
+            
+            # Mark payments as synced
+            current_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            for payment_update in payment_updates:
+                success = await google_service.update_record_by_id(
+                    sheet_name='Payments',
+                    id_field='Payment ID',
+                    record_id=payment_update["payment_id"],
+                    updates={
+                        'Is Synced': 'TRUE',
+                        'Synced At': current_timestamp
+                    }
+                )
+                
+                if success:
+                    payments_marked += 1
+        
+        # Store in session memory
+        memory_manager.set(session_id, "last_gc_payment_sync", {
+            "matched": len(matched_payments),
+            "unmatched": len(unmatched_payments),
+            "invoices_updated": invoices_updated,
+            "payments_marked": payments_marked
+        })
+        
+        result = {
+            "status": "success",
+            "dry_run": dry_run,
+            "processed": len(gc_payments),
+            "matched": len(matched_payments),
+            "unmatched": len(unmatched_payments),
+            "invoices_updated": invoices_updated,
+            "payments_marked": payments_marked,
+            "matched_details": matched_payments[:10],  # First 10 for brevity
+            "unmatched_details": unmatched_payments
+        }
+        
+        if dry_run:
+            result["message"] = "Dry run complete - no changes made"
+        else:
+            result["message"] = f"Synced {payments_marked} payments to {invoices_updated} invoices"
+        
+        logger.info(f"[GC PAYMENTS SYNC] Complete: {result['message']}")
+        return result
+        
+    except Exception as e:
+        logger.error(f"[GC PAYMENTS SYNC] Error: {e}", exc_info=True)
+        return {
+            "status": "failed",
+            "error": f"Sync failed: {str(e)}"
+        }
+
+
 # Handler registry - maps function names to handler functions
 FUNCTION_HANDLERS = {
     "update_project_status": handle_update_project_status,
@@ -671,4 +950,5 @@ FUNCTION_HANDLERS = {
     "add_column_to_sheet": handle_add_column_to_sheet,
     "update_client_field": handle_update_client_field,
     "sync_quickbooks_clients": handle_sync_quickbooks_clients,
+    "sync_gc_compliance_payments": handle_sync_gc_compliance_payments,
 }

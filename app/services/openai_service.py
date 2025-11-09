@@ -488,6 +488,20 @@ class OpenAIService:
                         },
                         "required": []
                     }
+                },
+                {
+                    "name": "sync_gc_compliance_payments",
+                    "description": "Reconcile GC Compliance payments with invoices in Google Sheets. Processes unsynced payments where Client Type is 'GC Compliance', matches them to invoices by Invoice ID or Client Name, updates invoice Amount Paid/Balance/Status, and marks payments as synced. Use when user asks to 'sync GC payments', 'reconcile compliance payments', or 'update invoices with payments'.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "dry_run": {
+                                "type": "boolean",
+                                "description": "If true, shows what would be synced without making changes (default: false)"
+                            }
+                        },
+                        "required": []
+                    }
                 }
             ]
             
