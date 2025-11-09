@@ -9,8 +9,12 @@ from app.services.quickbooks_service import quickbooks_service
 from app.memory.memory_manager import memory_manager
 from app.handlers.ai_functions import FUNCTION_HANDLERS
 from app.utils.context_builder import build_context
+from app.utils.logger import SessionLogger
+from app.utils.timing import RequestTimer
 
-logger = logging.getLogger(__name__)
+# Session-aware logger for multi-user debugging
+session_logger = SessionLogger(__name__)
+logger = logging.getLogger(__name__)  # Keep for backward compatibility
 router = APIRouter()
 
 def get_google_service():
@@ -36,27 +40,32 @@ async def process_chat_message(chat_data: Dict[str, Any]):
         context = chat_data.get("context", {})
         session_id = chat_data.get("session_id", "default")  # Get session ID from frontend
         
-        logger.info(f"Processing chat message for session {session_id}: {message[:100]}...")
+        # Initialize request timer for detailed performance tracking
+        timer = RequestTimer(session_id)
+        
+        session_logger.info(session_id, f"Processing message: {message[:100]}...")
         
         # Load session memory (conversation history) and add to context
+        timer.start("memory_load")
         session_memory = memory_manager.get_all(session_id)
         
         # Get conversation history (last 10 messages to keep context manageable)
         conversation_history = session_memory.get("conversation_history", [])
-        logger.info(f"Loaded {len(conversation_history)} previous messages from conversation history")
+        timer.stop("memory_load")
+        session_logger.info(session_id, f"Loaded {len(conversation_history)} messages from history")
         
         if session_memory:
             context["session_memory"] = session_memory
-            logger.info(f"Session memory keys: {list(session_memory.keys())}")
+            session_logger.debug(session_id, f"Session memory keys: {list(session_memory.keys())}")
         else:
             context["session_memory"] = {}
-            logger.info(f"No session memory found for session {session_id}")
+            session_logger.info(session_id, "No session memory found")
         
         # Add conversation history to context for OpenAI
         context["conversation_history"] = conversation_history[-10:]  # Last 10 exchanges
         
         # Smart context loading - only fetch what's needed based on message
-        start_context_time = time.time()
+        timer.start("context_build")
         
         try:
             google_service = get_google_service()
@@ -72,18 +81,20 @@ async def process_chat_message(chat_data: Dict[str, Any]):
             # Re-add conversation history (build_context overwrites)
             context["conversation_history"] = conversation_history[-10:]
             
-            context_duration = time.time() - start_context_time
-            logger.info(f"Smart context loaded in {context_duration:.2f}s - {context.get('smart_loading', {})}")
+            timer.stop("context_build")
             
         except Exception as e:
-            logger.warning(f"Could not fetch data context: {e}")
+            timer.stop("context_build")
+            session_logger.warning(session_id, f"Could not fetch data context: {e}")
             context.update({
                 'error': 'Could not load full data context',
                 'available_data': 'limited'
             })
         
         # Process message with OpenAI (now returns tuple: response, function_calls)
+        timer.start("openai_call")
         ai_response, function_calls = await openai_service.process_chat_message(message, context)
+        timer.stop("openai_call")
         
         # Execute any function calls requested by AI
         action_taken = None
@@ -92,6 +103,7 @@ async def process_chat_message(chat_data: Dict[str, Any]):
         memory_updates = {}  # Track what to remember
         
         if function_calls:
+            timer.start("function_execution")
             google_service = get_google_service()
             
             for func_call in function_calls:
@@ -128,18 +140,20 @@ async def process_chat_message(chat_data: Dict[str, Any]):
                         })
                 
                 except Exception as e:
-                    logger.error(f"Function call execution error: {e}")
+                    session_logger.error(session_id, f"Function call execution error: {e}")
                     function_results.append({
                         "function": func_name,
                         "status": "error",
                         "error": str(e)
                     })
+            
+            timer.stop("function_execution")
         
         # Update session memory with any new context
         if memory_updates:
             for key, value in memory_updates.items():
                 memory_manager.set(session_id, key, value)
-            logger.debug(f"Updated session memory: {memory_updates}")
+            session_logger.debug(session_id, f"Updated memory: {memory_updates}")
         
         # Sync session activity to Google Sheets (async, non-blocking)
         try:
@@ -159,7 +173,7 @@ async def process_chat_message(chat_data: Dict[str, Any]):
                 import asyncio
                 asyncio.create_task(google_service.save_session(metadata))
         except Exception as sync_err:
-            logger.warning(f"Failed to sync session to Sheets: {sync_err}")
+            session_logger.warning(session_id, f"Failed to sync session to Sheets: {sync_err}")
         
         # Auto-detect and store entities mentioned in the message
         # This helps with follow-up questions like "update its status"
@@ -204,7 +218,7 @@ async def process_chat_message(chat_data: Dict[str, Any]):
         if len(conversation_history) > 20:
             conversation_history = conversation_history[-20:]
         memory_manager.set(session_id, "conversation_history", conversation_history, ttl_minutes=30)
-        logger.info(f"Saved conversation history: {len(conversation_history)} messages total")
+        session_logger.info(session_id, f"Saved conversation: {len(conversation_history)} messages total")
         
         # If function was executed but AI didn't return text, generate a confirmation
         if function_results and not ai_response:
@@ -221,9 +235,19 @@ async def process_chat_message(chat_data: Dict[str, Any]):
             else:
                 ai_response = "❌ There was an issue completing that action. Please try again."
         
-        # Log performance metrics
+        # Log comprehensive performance metrics with timing breakdown
         request_duration_ms = (time.time() - request_start) * 1000
-        logger.info(f"[METRICS] Chat request completed in {request_duration_ms:.2f}ms | Session: {session_id} | Action: {action_taken or 'none'} | Data updated: {data_updated}")
+        timing_summary = timer.get_summary()
+        
+        # Detailed timing log
+        session_logger.info(
+            session_id,
+            f"Request completed in {request_duration_ms:.0f}ms | "
+            f"Context: {timing_summary.get('context_build', 0):.2f}s | "
+            f"OpenAI: {timing_summary.get('openai_call', 0):.2f}s | "
+            f"Functions: {timing_summary.get('function_execution', 0):.2f}s | "
+            f"Action: {action_taken or 'none'}"
+        )
         
         return {
             "response": ai_response,
@@ -236,7 +260,9 @@ async def process_chat_message(chat_data: Dict[str, Any]):
         
     except Exception as e:
         request_duration_ms = (time.time() - request_start) * 1000
-        logger.error(f"[METRICS] Chat processing error after {request_duration_ms:.2f}ms: {e}")
+        # Try to get session_id, fall back to None if not defined yet
+        sid = locals().get('session_id') or chat_data.get('session_id')
+        session_logger.error(sid, f"Chat error after {request_duration_ms:.0f}ms: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to process message: {str(e)}")
 
 @router.post("/query")
