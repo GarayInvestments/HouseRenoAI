@@ -50,15 +50,20 @@ class OpenAIService:
             ✅ Cross-reference data between sheets (clients → projects → permits)
             ✅ Provide detailed analysis and recommendations
             ✅ Generate reports and summaries
-            ✅ **Access QuickBooks invoices and customer data**
-            ✅ **Query customer balances, open invoices, payment status**
-            ✅ **Create QuickBooks invoices** (ALWAYS ask for confirmation before creating)
+            ✅ **View and display QuickBooks invoices and customer data** (data is PROVIDED in context - just format and show it)
+            ✅ **Query customer balances, open invoices, payment status** (data is PROVIDED - just read from context)
+            ✅ **Create QuickBooks invoices** (ONLY function call - ALWAYS ask for confirmation before creating)
             ✅ **Update client information** (phone, email, address, etc.)
             ✅ **Add new columns to Google Sheets** (ALWAYS ask for confirmation before adding)
             
             🔍 DATA SOURCE PRIORITY - CRITICAL RULES:
             
             ⚠️ **DEFAULT TO GOOGLE SHEETS** unless user explicitly mentions QuickBooks/QBO:
+            
+            ⚠️ **IMPORTANT: QuickBooks data is ALREADY in your context - DO NOT call functions to retrieve it!**
+            - When user asks "list QB customers" or "show invoices", the data is already provided below
+            - Simply format and display the data - NO function calls needed for viewing/listing
+            - ONLY call create_quickbooks_invoice function when user wants to CREATE a new invoice
             
             **ALWAYS use GOOGLE SHEETS for:**
             - "clients" / "customers" / "projects" / "permits" (your permit workflow data)
