@@ -13,6 +13,7 @@ from datetime import datetime, timedelta
 from urllib.parse import urlencode
 
 from app.config import settings
+from app.utils.sanitizer import sanitize_log_message
 
 logger = logging.getLogger(__name__)
 
@@ -417,7 +418,8 @@ class QuickBooksService:
                 return response.json()
                 
         except httpx.HTTPStatusError as e:
-            logger.error(f"QuickBooks API error: {e.response.text}")
+            # Sanitize response to avoid leaking QB data or tokens
+            logger.error(f"QuickBooks API error: {sanitize_log_message(e.response.text)}")
             raise
         except Exception as e:
             logger.error(f"Request failed: {e}")
