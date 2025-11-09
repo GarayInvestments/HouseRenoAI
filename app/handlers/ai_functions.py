@@ -494,6 +494,7 @@ async def handle_sync_quickbooks_clients(
     """
     try:
         dry_run = args.get("dry_run", False)
+        logger.info(f"[SYNC DEBUG] Received args: {args}, dry_run={dry_run}")
         
         # Import google_service here to avoid circular dependency
         import app.services.google_service as google_service_module
