@@ -6,6 +6,7 @@ Google Sheets, QuickBooks, and other services. Each handler follows a consistent
 pattern with error handling and logging.
 """
 
+import json
 import logging
 from typing import Dict, Any
 from datetime import datetime, timedelta
@@ -762,11 +763,12 @@ async def handle_create_quickbooks_customer_from_sheet(
         
         # Build customer data for QuickBooks
         customer_data = {
-            "DisplayName": client_name,
-            "CustomerTypeRef": {
-                "name": "GC Compliance"
-            }
+            "DisplayName": client_name
         }
+        
+        # Note: Temporarily excluding CustomerTypeRef to debug QB API error
+        # QuickBooks was throwing NullPointerException - may need to set up
+        # "GC Compliance" type in QB first, or use type ID instead of name
         
         # Add email if available
         if client_email:
@@ -794,6 +796,9 @@ async def handle_create_quickbooks_customer_from_sheet(
             
             if bill_addr:
                 customer_data["BillAddr"] = bill_addr
+        
+        # Log the data we're sending (for debugging)
+        logger.info(f"[CREATE QB CUSTOMER] Customer data to send: {json.dumps(customer_data, indent=2)}")
         
         # Create customer in QuickBooks
         logger.info(f"[CREATE QB CUSTOMER] Creating QB customer: {client_name}")
