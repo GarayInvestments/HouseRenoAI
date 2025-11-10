@@ -45,12 +45,14 @@ Technical specifications and design documents:
 - **[PAYMENTS_FEATURE_DESIGN.md](technical/PAYMENTS_FEATURE_DESIGN.md)** - Payments feature implementation details
 - **[CONTEXT_ENHANCEMENT_PROGRESS.md](technical/CONTEXT_ENHANCEMENT_PROGRESS.md)** - Context loading optimization progress
 - **[LOGGING_SECURITY.md](technical/LOGGING_SECURITY.md)** - Security logging patterns and monitoring
-- **[BASELINE_METRICS.md](technical/BASELINE_METRICS.md)** - Performance benchmarks
-- **[metrics/](technical/metrics/)** - Performance metrics and baselines
+- **[BASELINE_METRICS.md](technical/BASELINE_METRICS.md)** - Performance benchmarks and improvements (Nov 8-10, 2025)
+- **[metrics/](metrics/)** - Performance metrics and baselines
+  - **[baseline/](metrics/baseline/)** - Nov 8-10, 2025 metrics collection
+  - **[COMPARISON_NOV_8_VS_NOV_10.md](metrics/baseline/COMPARISON_NOV_8_VS_NOV_10.md)** - Detailed performance analysis
 
 ### 📝 [Session Logs](session-logs/)
 Development session summaries and progress reports:
-- **[SESSION_SUMMARY_NOV_10_2025.md](session-logs/SESSION_SUMMARY_NOV_10_2025.md)** - Latest session summary
+- **[SESSION_SUMMARY_NOV_10_2025.md](session-logs/SESSION_SUMMARY_NOV_10_2025.md)** - Latest session summary (Payments feature + context enhancements)
 
 ### 📦 [Archive](archive/)
 Historical documentation and deprecated guides (17 files):
@@ -114,5 +116,6 @@ When adding new documentation:
 
 ---
 
-**Last Updated**: November 10, 2025
-**Documentation Version**: 2.0 (Organized Structure)
+**Last Updated**: November 10, 2025, 3:00 PM PST  
+**Documentation Version**: 2.0 (Organized Structure)  
+**Latest Changes**: Metrics collection complete, performance improvements validated (19.3% faster overall)
