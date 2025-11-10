@@ -184,12 +184,16 @@ async def handle_create_quickbooks_invoice(
     Create QuickBooks invoice with property address-based invoice numbering
     
     Invoice Number Convention:
-    - Uses short property address format (e.g., "1105-Sandy-Bottom" from "1105 Sandy Bottom Dr")
+    - Uses short property address format with city (e.g., "1105-Sandy-Bottom-Concord" from "1105 Sandy Bottom Dr, Concord, NC")
     - Appends sequential number if duplicate addresses exist
     - Falls back to customer name if no address available
     
+    Description Enhancement:
+    - Main line: "GC Permit Oversight - [Project Name]"
+    - Details: Includes full scope of work from Projects sheet
+    
     Args:
-        args: Function arguments containing customer_id, customer_name, amount, description, etc.
+        args: Function arguments containing customer_id, customer_name, amount, description, scope_of_work, city, etc.
         google_service: Google Sheets service instance (passed for consistency, may be unused)
         qb_service: QuickBooks service instance
         memory_manager: Session memory manager
@@ -204,6 +208,8 @@ async def handle_create_quickbooks_invoice(
         customer_name = args["customer_name"]
         amount = args["amount"]
         description = args["description"]
+        scope_of_work = args.get("scope_of_work", "")  # Optional detailed scope
+        city = args.get("city", "")  # Optional city for invoice numbering
         invoice_date = args.get("invoice_date", datetime.now().strftime("%Y-%m-%d"))
         due_date = args.get("due_date")  # No default - will use "Due on Receipt"
         property_address = args.get("property_address", "")  # Optional property address
@@ -217,39 +223,46 @@ async def handle_create_quickbooks_invoice(
             }
         
         # Generate invoice number from property address
-        def generate_invoice_number(address: str, fallback_name: str) -> str:
+        def generate_invoice_number(address: str, city: str, fallback_name: str) -> str:
             """
-            Generate invoice number from property address or customer name.
+            Generate invoice number from property address and city, or customer name.
             
             Examples:
-            - "1105 Sandy Bottom Dr NW, Concord, NC" → "1105-Sandy-Bottom"
-            - "64 Phillips Ln, Spruce Pine, NC" → "64-Phillips"
+            - "1105 Sandy Bottom Dr NW, Concord, NC" + "Concord" → "1105-Sandy-Bottom-Concord"
+            - "64 Phillips Ln, Spruce Pine, NC" + "Spruce Pine" → "64-Phillips-Spruce-Pine"
             - "Temple Baptist Church" (no address) → "Temple-Baptist"
             """
+            parts = []
+            
             if address and address.strip():
                 # Parse address to extract street number and first 2-3 words of street name
-                parts = address.strip().split(',')[0].split()  # Get street part only
+                street_parts = address.strip().split(',')[0].split()  # Get street part only
                 
                 # Filter out common suffixes (Dr, St, Ave, Ln, Rd, NW, SE, etc.)
                 suffixes = {'dr', 'st', 'ave', 'ln', 'rd', 'blvd', 'ct', 'way', 'pl', 'nw', 'ne', 'sw', 'se', 'n', 's', 'e', 'w'}
-                filtered_parts = []
                 
-                for part in parts[:4]:  # Take max 4 parts
+                for part in street_parts[:4]:  # Take max 4 parts
                     cleaned = part.lower().rstrip('.,')
                     if cleaned not in suffixes:
-                        filtered_parts.append(part.strip('.,'))
-                    if len(filtered_parts) >= 3:  # Max 3 meaningful parts
+                        parts.append(part.strip('.,'))
+                    if len(parts) >= 3:  # Max 3 meaningful parts for address
                         break
-                
-                if filtered_parts:
-                    return '-'.join(filtered_parts)
             
-            # Fallback to customer name
-            # Take first 2-3 words from customer name
+            # If we have address parts, append city
+            if parts and city and city.strip():
+                # Handle multi-word cities (e.g., "Spruce Pine" → "Spruce-Pine")
+                city_parts = city.strip().replace(' ', '-')
+                parts.append(city_parts)
+                return '-'.join(parts)
+            elif parts:
+                # Have address but no city
+                return '-'.join(parts)
+            
+            # Fallback to customer name (first 2-3 words)
             name_parts = fallback_name.split()[:3]
             return '-'.join(name_parts)
         
-        base_invoice_number = generate_invoice_number(property_address, customer_name)
+        base_invoice_number = generate_invoice_number(property_address, city, customer_name)
         
         # Check for existing invoices with same base number and append counter if needed
         existing_invoices = await qb_service.get_invoices()
@@ -277,7 +290,8 @@ async def handle_create_quickbooks_invoice(
         else:
             invoice_number = base_invoice_number
         
-        logger.info(f"[INVOICE] Generated invoice number: {invoice_number} (from address: '{property_address}' or name: '{customer_name}')")
+        city_suffix = f" in {city}" if city else ""
+        logger.info(f"[INVOICE] Generated invoice number: {invoice_number} (from address: '{property_address}'{city_suffix} or name: '{customer_name}')")
         
         # Use specific "GC Permit Oversight" service item (itemId=108)
         GC_PERMIT_OVERSIGHT_ITEM_ID = "108"
@@ -299,9 +313,15 @@ async def handle_create_quickbooks_invoice(
         
         logger.info(f"[INVOICE] Using service item: {gc_permit_item.get('Name')} (ID: {gc_permit_item.get('Id')})")
         
+        # Build detailed description with scope of work
+        detailed_description = description  # Start with main title (e.g., "GC Permit Oversight - 47 Main")
+        if scope_of_work and scope_of_work.strip():
+            # Append scope of work details
+            detailed_description = f"{description}\n\nScope: {scope_of_work.strip()}"
+        
         # Build invoice data with custom DocNumber
         invoice_data = {
-            "DocNumber": invoice_number,  # Custom invoice number based on property
+            "DocNumber": invoice_number,  # Custom invoice number based on property + city
             "CustomerRef": {"value": customer_id},
             "TxnDate": invoice_date,
             "CustomerMemo": {
@@ -310,7 +330,7 @@ async def handle_create_quickbooks_invoice(
             "Line": [{
                 "Amount": amount,
                 "DetailType": "SalesItemLineDetail",
-                "Description": description,
+                "Description": detailed_description,  # Includes scope of work
                 "SalesItemLineDetail": {
                     "ItemRef": {"value": gc_permit_item.get('Id')},  # Use GC Permit Oversight item
                     "Qty": 1,

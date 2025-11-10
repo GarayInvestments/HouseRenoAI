@@ -551,7 +551,7 @@ class OpenAIService:
                     "type": "function",
                     "function": {
                         "name": "create_quickbooks_invoice",
-                        "description": "Create a new invoice in QuickBooks Online with property address-based invoice numbering (e.g., '1105-Sandy-Bottom' from '1105 Sandy Bottom Dr'). ONLY call this after user confirms they want to create the invoice. CRITICAL: When creating an invoice for a PROJECT, use the 'HR PC Service Fee' column value from the Projects sheet as the invoice amount. Always include property_address and client_email from project/client data. The service item 'GC Permit Oversight' (ID: 108) is automatically used. Payment terms are set to 'Due on Receipt' with memo 'Zelle: steve@houserenovatorsllc.com'.",
+                        "description": "Create a new invoice in QuickBooks Online with property address-based invoice numbering (e.g., '1105-Sandy-Bottom-Concord' from '1105 Sandy Bottom Dr, Concord, NC'). ONLY call this after user confirms they want to create the invoice. CRITICAL: When creating an invoice for a PROJECT, use the 'HR PC Service Fee' column value from the Projects sheet as the invoice amount. Always include property_address, city, scope_of_work, and client_email from project/client data. The service item 'GC Permit Oversight' (ID: 108) is automatically used. Payment terms are set to 'Due on Receipt' with memo 'Zelle: steve@houserenovatorsllc.com'.",
                         "parameters": {
                             "type": "object",
                             "properties": {
@@ -569,11 +569,19 @@ class OpenAIService:
                                 },
                                 "description": {
                                     "type": "string",
-                                    "description": "Description of services/work performed (e.g., 'GC Permit Oversight - [Project Name]')"
+                                    "description": "Short description/title of services (e.g., 'GC Permit Oversight - [Project Name]'). This is the main line item title."
+                                },
+                                "scope_of_work": {
+                                    "type": "string",
+                                    "description": "Detailed project scope from Projects sheet 'Scope of Work' column. This provides context about what the project entails (e.g., 'Sunroom Extension to existing house and adding square footage'). Include this whenever available from project data."
                                 },
                                 "property_address": {
                                     "type": "string",
-                                    "description": "Property address for invoice numbering (e.g., '1105 Sandy Bottom Dr, Concord, NC'). If available from project data, include it to generate meaningful invoice numbers like '1105-Sandy-Bottom'."
+                                    "description": "Property address for invoice numbering (e.g., '1105 Sandy Bottom Dr, Concord, NC'). If available from project data, include it to generate meaningful invoice numbers."
+                                },
+                                "city": {
+                                    "type": "string",
+                                    "description": "City name from Projects sheet 'City' column (e.g., 'Concord', 'Spruce Pine'). Used to append to invoice number (e.g., '1105-Sandy-Bottom-Concord')."
                                 },
                                 "client_email": {
                                     "type": "string",
