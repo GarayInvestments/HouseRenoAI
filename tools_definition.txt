@@ -1,0 +1,5 @@
+# THIS FILE SHOWS THE CORRECT TOOLS FORMAT
+# Each tool needs to be wrapped like:
+# {"type": "function", "function": {... original function def ...}}
+
+# For reference - this is the structure needed for line 413-697 replacement

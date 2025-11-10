@@ -409,292 +409,328 @@ class OpenAIService:
                 logger.info(f"[DEBUG] Context message length: {len(context_message)} chars, ~{len(context_message)//4} tokens")
                 messages.insert(1, {"role": "system", "content": f"DATA CONTEXT:\n{context_message}"})
             
-            # Define available functions for the AI to call
-            functions = [
+            # Define available tools for the AI to call (using modern tools API)
+            tools = [
                 {
-                    "name": "update_project_status",
-                    "description": "Update the status of a construction project in Google Sheets",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "project_id": {
-                                "type": "string",
-                                "description": "The unique Project ID (e.g., '12b59b62')"
+                    "type": "function",
+                    "function": {
+                        "name": "update_project_status",
+                        "description": "Update the status of a construction project in Google Sheets",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "project_id": {
+                                    "type": "string",
+                                    "description": "The unique Project ID (e.g., '12b59b62')"
+                                },
+                                "new_status": {
+                                    "type": "string",
+                                    "description": "The new status value (e.g., 'Completed', 'In Progress', 'Permit Approved')"
+                                }
                             },
-                            "new_status": {
-                                "type": "string",
-                                "description": "The new status value (e.g., 'Completed', 'In Progress', 'Permit Approved')"
-                            }
-                        },
-                        "required": ["project_id", "new_status"]
+                            "required": ["project_id", "new_status"]
+                        }
                     }
                 },
                 {
-                    "name": "update_permit_status",
-                    "description": "Update the status of a construction permit in Google Sheets",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "permit_id": {
-                                "type": "string",
-                                "description": "The unique Permit ID"
+                    "type": "function",
+                    "function": {
+                        "name": "update_permit_status",
+                        "description": "Update the status of a construction permit in Google Sheets",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "permit_id": {
+                                    "type": "string",
+                                    "description": "The unique Permit ID"
+                                },
+                                "new_status": {
+                                    "type": "string",
+                                    "description": "The new permit status (e.g., 'Approved', 'Pending', 'Under Review')"
+                                }
                             },
-                            "new_status": {
-                                "type": "string",
-                                "description": "The new permit status (e.g., 'Approved', 'Pending', 'Under Review')"
-                            }
-                        },
-                        "required": ["permit_id", "new_status"]
+                            "required": ["permit_id", "new_status"]
+                        }
                     }
                 },
                 {
-                    "name": "create_quickbooks_invoice",
-                    "description": "Create a new invoice in QuickBooks Online. ONLY call this after user confirms they want to create the invoice.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "customer_id": {
-                                "type": "string",
-                                "description": "The QuickBooks customer ID (from qb_customers_summary)"
+                    "type": "function",
+                    "function": {
+                        "name": "create_quickbooks_invoice",
+                        "description": "Create a new invoice in QuickBooks Online. ONLY call this after user confirms they want to create the invoice.",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "customer_id": {
+                                    "type": "string",
+                                    "description": "The QuickBooks customer ID (from qb_customers_summary)"
+                                },
+                                "customer_name": {
+                                    "type": "string",
+                                    "description": "The customer display name for confirmation"
+                                },
+                                "amount": {
+                                    "type": "number",
+                                    "description": "The total invoice amount in USD"
+                                },
+                                "description": {
+                                    "type": "string",
+                                    "description": "Description of services/work performed"
+                                },
+                                "invoice_date": {
+                                    "type": "string",
+                                    "description": "Invoice date in YYYY-MM-DD format (default: today)"
+                                },
+                                "due_date": {
+                                    "type": "string",
+                                    "description": "Due date in YYYY-MM-DD format (default: 30 days from invoice date)"
+                                }
                             },
-                            "customer_name": {
-                                "type": "string",
-                                "description": "The customer display name for confirmation"
-                            },
-                            "amount": {
-                                "type": "number",
-                                "description": "The total invoice amount in USD"
-                            },
-                            "description": {
-                                "type": "string",
-                                "description": "Description of services/work performed"
-                            },
-                            "invoice_date": {
-                                "type": "string",
-                                "description": "Invoice date in YYYY-MM-DD format (default: today)"
-                            },
-                            "due_date": {
-                                "type": "string",
-                                "description": "Due date in YYYY-MM-DD format (default: 30 days from invoice date)"
-                            }
-                        },
-                        "required": ["customer_id", "customer_name", "amount", "description"]
+                            "required": ["customer_id", "customer_name", "amount", "description"]
+                        }
                     }
                 },
                 {
-                    "name": "update_quickbooks_invoice",
-                    "description": "Update an existing QuickBooks invoice. Use this to modify invoice amount, due date, description, or invoice number (DocNumber). ALWAYS ask for confirmation before updating.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "invoice_id": {
-                                "type": "string",
-                                "description": "The QuickBooks invoice ID to update"
-                            },
-                            "invoice_number": {
-                                "type": "string",
-                                "description": "The invoice number for confirmation (optional)"
-                            },
-                            "updates": {
-                                "type": "object",
-                                "description": "Fields to update (can include 'amount', 'due_date', 'description', 'doc_number')",
-                                "properties": {
-                                    "amount": {
-                                        "type": "number",
-                                        "description": "New total amount"
-                                    },
-                                    "due_date": {
-                                        "type": "string",
-                                        "description": "New due date in YYYY-MM-DD format"
-                                    },
-                                    "description": {
-                                        "type": "string",
-                                        "description": "New description of services"
-                                    },
-                                    "doc_number": {
-                                        "type": "string",
-                                        "description": "New invoice number/DocNumber (e.g., 'TTD-6441-11-08')"
+                    "type": "function",
+                    "function": {
+                        "name": "update_quickbooks_invoice",
+                        "description": "Update an existing QuickBooks invoice. Use this to modify invoice amount, due date, description, or invoice number (DocNumber). ALWAYS ask for confirmation before updating.",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "invoice_id": {
+                                    "type": "string",
+                                    "description": "The QuickBooks invoice ID to update"
+                                },
+                                "invoice_number": {
+                                    "type": "string",
+                                    "description": "The invoice number for confirmation (optional)"
+                                },
+                                "updates": {
+                                    "type": "object",
+                                    "description": "Fields to update (can include 'amount', 'due_date', 'description', 'doc_number')",
+                                    "properties": {
+                                        "amount": {
+                                            "type": "number",
+                                            "description": "New total amount"
+                                        },
+                                        "due_date": {
+                                            "type": "string",
+                                            "description": "New due date in YYYY-MM-DD format"
+                                        },
+                                        "description": {
+                                            "type": "string",
+                                            "description": "New description of services"
+                                        },
+                                        "doc_number": {
+                                            "type": "string",
+                                            "description": "New invoice number/DocNumber (e.g., 'TTD-6441-11-08')"
+                                        }
                                     }
                                 }
-                            }
-                        },
-                        "required": ["invoice_id", "updates"]
+                            },
+                            "required": ["invoice_id", "updates"]
+                        }
                     }
                 },
                 {
-                    "name": "update_quickbooks_customer",
-                    "description": "Update an existing QuickBooks customer with new information. Supports sparse updates - only specified fields will be updated. Use this to update company name, contact info, address, tax settings, etc. Common fields: CompanyName, GivenName, FamilyName, PrimaryPhone, PrimaryEmailAddr, Mobile, BillAddr, ShipAddr, Notes, Taxable, Active. ALWAYS ask for confirmation before updating.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "customer_id": {
-                                "type": "string",
-                                "description": "The QuickBooks customer ID to update (required)"
-                            },
-                            "updates": {
+                    "type": "function",
+                    "function": {
+                            "name": "update_quickbooks_customer",
+                            "description": "Update an existing QuickBooks customer with new information. Supports sparse updates - only specified fields will be updated. Use this to update company name, contact info, address, tax settings, etc. Common fields: CompanyName, GivenName, FamilyName, PrimaryPhone, PrimaryEmailAddr, Mobile, BillAddr, ShipAddr, Notes, Taxable, Active. ALWAYS ask for confirmation before updating.",
+                            "parameters": {
                                 "type": "object",
-                                "description": "Fields to update. Can include: CompanyName (string), GivenName (string), FamilyName (string), DisplayName (string), PrimaryPhone (object with FreeFormNumber), PrimaryEmailAddr (object with Address), Mobile (object with FreeFormNumber), BillAddr (object with Line1, City, CountrySubDivisionCode, PostalCode), Notes (string), Taxable (boolean), Active (boolean), etc.",
                                 "properties": {
-                                    "CompanyName": {
+                                    "customer_id": {
                                         "type": "string",
-                                        "description": "Company name"
+                                        "description": "The QuickBooks customer ID to update (required)"
                                     },
-                                    "GivenName": {
-                                        "type": "string",
-                                        "description": "First name"
-                                    },
-                                    "FamilyName": {
-                                        "type": "string",
-                                        "description": "Last name"
-                                    },
-                                    "DisplayName": {
-                                        "type": "string",
-                                        "description": "Display name (must be unique)"
-                                    },
-                                    "Notes": {
-                                        "type": "string",
-                                        "description": "Notes about the customer"
-                                    },
-                                    "Taxable": {
-                                        "type": "boolean",
-                                        "description": "Whether customer is taxable"
-                                    },
-                                    "Active": {
-                                        "type": "boolean",
-                                        "description": "Whether customer is active"
+                                    "updates": {
+                                        "type": "object",
+                                        "description": "Fields to update. Can include: CompanyName (string), GivenName (string), FamilyName (string), DisplayName (string), PrimaryPhone (object with FreeFormNumber), PrimaryEmailAddr (object with Address), Mobile (object with FreeFormNumber), BillAddr (object with Line1, City, CountrySubDivisionCode, PostalCode), Notes (string), Taxable (boolean), Active (boolean), etc.",
+                                        "properties": {
+                                            "CompanyName": {
+                                                "type": "string",
+                                                "description": "Company name"
+                                            },
+                                            "GivenName": {
+                                                "type": "string",
+                                                "description": "First name"
+                                            },
+                                            "FamilyName": {
+                                                "type": "string",
+                                                "description": "Last name"
+                                            },
+                                            "DisplayName": {
+                                                "type": "string",
+                                                "description": "Display name (must be unique)"
+                                            },
+                                            "Notes": {
+                                                "type": "string",
+                                                "description": "Notes about the customer"
+                                            },
+                                            "Taxable": {
+                                                "type": "boolean",
+                                                "description": "Whether customer is taxable"
+                                            },
+                                            "Active": {
+                                                "type": "boolean",
+                                                "description": "Whether customer is active"
+                                            }
+                                        }
                                     }
-                                }
+                                },
+                                "required": ["customer_id", "updates"]
                             }
-                        },
-                        "required": ["customer_id", "updates"]
-                    }
-                },
+                        }
+                    },
                 {
-                    "name": "add_column_to_sheet",
-                    "description": "CALL THIS IMMEDIATELY when user confirms they want to add a column to a sheet. Use when user says 'yes', 'confirm', 'proceed', 'add it', 'do it', or 'go ahead' after discussing adding a column.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "sheet_name": {
-                                "type": "string",
-                                "description": "The name of the sheet to add column to (e.g., 'Clients', 'Projects', 'Permits')"
-                            },
-                            "column_name": {
-                                "type": "string",
-                                "description": "The name of the new column to add"
-                            },
-                            "default_value": {
-                                "type": "string",
-                                "description": "Optional default value to populate for existing rows (leave empty for blank)"
+                    "type": "function",
+                    "function": {
+                            "name": "add_column_to_sheet",
+                            "description": "CALL THIS IMMEDIATELY when user confirms they want to add a column to a sheet. Use when user says 'yes', 'confirm', 'proceed', 'add it', 'do it', or 'go ahead' after discussing adding a column.",
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "sheet_name": {
+                                        "type": "string",
+                                        "description": "The name of the sheet to add column to (e.g., 'Clients', 'Projects', 'Permits')"
+                                    },
+                                    "column_name": {
+                                        "type": "string",
+                                        "description": "The name of the new column to add"
+                                    },
+                                    "default_value": {
+                                        "type": "string",
+                                        "description": "Optional default value to populate for existing rows (leave empty for blank)"
+                                    }
+                                },
+                                "required": ["sheet_name", "column_name"]
                             }
-                        },
-                        "required": ["sheet_name", "column_name"]
-                    }
-                },
+                        }
+                    },
                 {
-                    "name": "update_client_field",
-                    "description": "Update a specific field/column for a client in the Clients sheet. Use this to sync QuickBooks IDs, update contact info, or modify any client field. CALL THIS when user confirms updating a client's information.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "client_identifier": {
-                                "type": "string",
-                                "description": "The client name or ID to search for (e.g., 'Ajay Nair', '64 Phillips')"
-                            },
-                            "field_name": {
-                                "type": "string",
-                                "description": "The field/column name to update (e.g., 'QBO Client ID', 'Email', 'Phone Number')"
-                            },
-                            "field_value": {
-                                "type": "string",
-                                "description": "The new value to set for this field"
-                            },
-                            "identifier_field": {
-                                "type": "string",
-                                "description": "Which field to use for finding the client (default: 'Name'). Can be 'Name', 'Client ID', 'Address', etc."
+                    "type": "function",
+                    "function": {
+                            "name": "update_client_field",
+                            "description": "Update a specific field/column for a client in the Clients sheet. Use this to sync QuickBooks IDs, update contact info, or modify any client field. CALL THIS when user confirms updating a client's information.",
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "client_identifier": {
+                                        "type": "string",
+                                        "description": "The client name or ID to search for (e.g., 'Ajay Nair', '64 Phillips')"
+                                    },
+                                    "field_name": {
+                                        "type": "string",
+                                        "description": "The field/column name to update (e.g., 'QBO Client ID', 'Email', 'Phone Number')"
+                                    },
+                                    "field_value": {
+                                        "type": "string",
+                                        "description": "The new value to set for this field"
+                                    },
+                                    "identifier_field": {
+                                        "type": "string",
+                                        "description": "Which field to use for finding the client (default: 'Name'). Can be 'Name', 'Client ID', 'Address', etc."
+                                    }
+                                },
+                                "required": ["client_identifier", "field_name", "field_value"]
                             }
-                        },
-                        "required": ["client_identifier", "field_name", "field_value"]
-                    }
-                },
+                        }
+                    },
                 {
-                    "name": "sync_quickbooks_clients",
-                    "description": "Sync ALL clients from Google Sheets with QuickBooks customers. Matches clients by name and email, then updates the QBO_Client_ID column in Sheets. Use when user asks to 'sync clients with QuickBooks', 'update QB IDs', or 'match clients to QuickBooks'. Supports dry_run parameter for preview without changes.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "dry_run": {
-                                "type": "boolean",
-                                "description": "If true, shows what would be synced without making changes (default: false)"
+                    "type": "function",
+                    "function": {
+                            "name": "sync_quickbooks_clients",
+                            "description": "Sync ALL clients from Google Sheets with QuickBooks customers. Matches clients by name and email, then updates the QBO_Client_ID column in Sheets. Use when user asks to 'sync clients with QuickBooks', 'update QB IDs', or 'match clients to QuickBooks'. Supports dry_run parameter for preview without changes.",
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "dry_run": {
+                                        "type": "boolean",
+                                        "description": "If true, shows what would be synced without making changes (default: false)"
+                                    }
+                                },
+                                "required": []
                             }
-                        },
-                        "required": []
-                    }
-                },
+                        }
+                    },
                 {
-                    "name": "map_clients_to_customers",
-                    "description": "Establish comprehensive mapping between Google Sheets Clients and QuickBooks Customers. Analyzes all clients and customers, matches by QBO ID/email/name, updates 'QBO Client ID' column in Sheets, reports unmapped clients (in Sheets but not QB) and orphaned customers (in QB but not Sheets). Use for 'map clients to QB', 'sync client mappings', 'link clients to customers', or 'show unmapped clients'. Provides detailed statistics and identifies data quality issues.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "auto_create": {
-                                "type": "boolean",
-                                "description": "If true, automatically creates QB customers for unmapped Sheet clients (default: false)"
-                            },
-                            "dry_run": {
-                                "type": "boolean",
-                                "description": "If true, previews matches without updating Sheets (default: false)"
+                    "type": "function",
+                    "function": {
+                            "name": "map_clients_to_customers",
+                            "description": "Establish comprehensive mapping between Google Sheets Clients and QuickBooks Customers. Analyzes all clients and customers, matches by QBO ID/email/name, updates 'QBO Client ID' column in Sheets, reports unmapped clients (in Sheets but not QB) and orphaned customers (in QB but not Sheets). Use for 'map clients to QB', 'sync client mappings', 'link clients to customers', or 'show unmapped clients'. Provides detailed statistics and identifies data quality issues.",
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "auto_create": {
+                                        "type": "boolean",
+                                        "description": "If true, automatically creates QB customers for unmapped Sheet clients (default: false)"
+                                    },
+                                    "dry_run": {
+                                        "type": "boolean",
+                                        "description": "If true, previews matches without updating Sheets (default: false)"
+                                    }
+                                },
+                                "required": []
                             }
-                        },
-                        "required": []
-                    }
-                },
+                        }
+                    },
                 {
-                    "name": "create_quickbooks_customer_from_sheet",
-                    "description": "Create a new QuickBooks customer using data from an existing client in Google Sheets. IMPORTANT: This function automatically looks up the client's information (email, phone, address, company, role) from the Sheets - you do NOT need to ask the user for these details. Use when user asks to 'add [client name] to QuickBooks', 'create QB customer for [name]', or when a client exists in Sheets but not in QB. The function will extract all available client details from the Sheet automatically and create the QB customer. Automatically sets CustomerTypeRef to 'GC Compliance' and updates the Sheet with the new QBO Client ID.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "client_name": {
-                                "type": "string",
-                                "description": "The name of the client from Google Sheets (e.g., 'Javier Martinez', 'ABC Company')"
-                            },
-                            "client_id": {
-                                "type": "string",
-                                "description": "Optional: The Client ID from Google Sheets if known"
+                    "type": "function",
+                    "function": {
+                            "name": "create_quickbooks_customer_from_sheet",
+                            "description": "Create a new QuickBooks customer using data from an existing client in Google Sheets. IMPORTANT: This function automatically looks up the client's information (email, phone, address, company, role) from the Sheets - you do NOT need to ask the user for these details. Use when user asks to 'add [client name] to QuickBooks', 'create QB customer for [name]', or when a client exists in Sheets but not in QB. The function will extract all available client details from the Sheet automatically and create the QB customer. Automatically sets CustomerTypeRef to 'GC Compliance' and updates the Sheet with the new QBO Client ID.",
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "client_name": {
+                                        "type": "string",
+                                        "description": "The name of the client from Google Sheets (e.g., 'Javier Martinez', 'ABC Company')"
+                                    },
+                                    "client_id": {
+                                        "type": "string",
+                                        "description": "Optional: The Client ID from Google Sheets if known"
+                                    }
+                                },
+                                "required": ["client_name"]
                             }
-                        },
-                        "required": ["client_name"]
-                    }
-                },
+                        }
+                    },
                 {
-                    "name": "sync_gc_compliance_payments",
-                    "description": "Reconcile GC Compliance payments with invoices in Google Sheets. Processes unsynced payments where Client Type is 'GC Compliance', matches them to invoices by Invoice ID or Client Name, updates invoice Amount Paid/Balance/Status, and marks payments as synced. Use when user asks to 'sync GC payments', 'reconcile compliance payments', or 'update invoices with payments'.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "dry_run": {
-                                "type": "boolean",
-                                "description": "If true, shows what would be synced without making changes (default: false)"
+                    "type": "function",
+                    "function": {
+                            "name": "sync_gc_compliance_payments",
+                            "description": "Reconcile GC Compliance payments with invoices in Google Sheets. Processes unsynced payments where Client Type is 'GC Compliance', matches them to invoices by Invoice ID or Client Name, updates invoice Amount Paid/Balance/Status, and marks payments as synced. Use when user asks to 'sync GC payments', 'reconcile compliance payments', or 'update invoices with payments'.",
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "dry_run": {
+                                        "type": "boolean",
+                                        "description": "If true, shows what would be synced without making changes (default: false)"
+                                    }
+                                },
+                                "required": []
                             }
-                        },
-                        "required": []
-                    }
-                },
+                        }
+                    },
                 {
-                    "name": "sync_quickbooks_customer_types",
-                    "description": "Update CustomerTypeRef to 'GC Compliance' for all clients from Google Sheets in QuickBooks. Matches by name/email, updates CustomerTypeRef field, skips customers already set correctly. Use when user asks to 'update QB customer types', 'set GC Compliance type', 'sync customer types to QuickBooks', or 'label customers as GC Compliance'.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "dry_run": {
-                                "type": "boolean",
-                                "description": "If true, shows what would be updated without making changes (default: false)"
+                    "type": "function",
+                    "function": {
+                            "name": "sync_quickbooks_customer_types",
+                            "description": "Update CustomerTypeRef to 'GC Compliance' for all clients from Google Sheets in QuickBooks. Matches by name/email, updates CustomerTypeRef field, skips customers already set correctly. Use when user asks to 'update QB customer types', 'set GC Compliance type', 'sync customer types to QuickBooks', or 'label customers as GC Compliance'.",
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "dry_run": {
+                                        "type": "boolean",
+                                        "description": "If true, shows what would be updated without making changes (default: false)"
+                                    }
+                                },
+                                "required": []
                             }
-                        },
-                        "required": []
+                        }
                     }
-                }
             ]
             
             response = self.client.chat.completions.create(
@@ -702,8 +738,8 @@ class OpenAIService:
                 messages=messages,
                 max_tokens=2000,  # Increased from 1000 to prevent truncation-induced hallucinations
                 temperature=0.7,
-                functions=functions,
-                function_call="auto"  # Let AI decide when to call functions
+                tools=tools,
+                tool_choice="auto"  # Let AI decide when to call tools
             )
             
             # Log token usage for monitoring
@@ -715,14 +751,16 @@ class OpenAIService:
             
             message_response = response.choices[0].message
             
-            # Check if AI wants to call a function
+            # Check if AI wants to call tools
             function_calls = []
-            if message_response.function_call:
+            if message_response.tool_calls:
                 import json
-                function_calls.append({
-                    "name": message_response.function_call.name,
-                    "arguments": json.loads(message_response.function_call.arguments)
-                })
+                for tool_call in message_response.tool_calls:
+                    if tool_call.type == "function":
+                        function_calls.append({
+                            "name": tool_call.function.name,
+                            "arguments": json.loads(tool_call.function.arguments)
+                        })
             
             # Sanitize AI output to catch any remaining hallucinations
             def sanitize_ai_output(text: str) -> str:
