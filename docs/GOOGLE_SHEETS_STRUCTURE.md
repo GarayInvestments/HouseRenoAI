@@ -184,13 +184,48 @@ These may appear in extracted data but aren't standard columns:
 
 ---
 
-## 🔗 Relationships & Linking
+## � Payments Sheet
+
+**Range:** `Payments!A1:K`  
+**Purpose:** Track invoice payments with QuickBooks sync
+
+| Col # | Column Name | Data Type | Required | Source | Notes |
+|-------|------------|-----------|----------|---------|-------|
+| 1 | Payment ID | String (8-char hex) | ✅ Yes | Auto-generated | Format: `PAY-abc123` |
+| 2 | Invoice ID | String | ⚠️ Optional | Manual/QB sync | QuickBooks invoice ID |
+| 3 | Project ID | String | ⚠️ Optional | Linked from invoice | Links to Projects sheet |
+| 4 | Client ID | String | ✅ Yes | Linked from invoice | Links to Clients sheet |
+| 5 | Amount | Number | ✅ Yes | Manual/QB sync | Payment amount (no $ symbol) |
+| 6 | Payment Date | Date (YYYY-MM-DD) | ✅ Yes | Manual/QB sync | When payment received |
+| 7 | Payment Method | String | ✅ Yes | Manual/QB sync | e.g., "Zelle", "Check", "Credit Card" |
+| 8 | Status | String | ✅ Yes | Default: "Pending" | "Pending", "Completed", "Failed", "Refunded" |
+| 9 | QB Payment ID | String | ⚠️ Optional | QB sync only | QuickBooks Payment entity ID |
+| 10 | Transaction ID | String | ⚠️ Optional | Manual entry | Zelle/check number reference |
+| 11 | Notes | String (long) | ❌ No | Manual/AI | Additional payment details |
+
+### Validation Rules:
+- **Payment ID**: Unique, 8-char hex with `PAY-` prefix
+- **Amount**: Must be positive number
+- **Payment Method**: "Zelle", "Check", "Cash", "Credit Card", "ACH", "Other"
+- **Status**: "Pending", "Completed", "Failed", "Refunded"
+- **Client ID**: Must match existing client in Clients sheet
+
+### Critical Usage Notes:
+- **Column 9 (QB Payment ID)**: Links to QuickBooks Payment records
+- **Column 4 (Client ID)**: Links payments to clients for tracking
+- **Column 2 (Invoice ID)**: Links payments to specific QB invoices
+- **Column 7 (Payment Method)**: "Zelle" for Zelle payments to steve@houserenovatorsllc.com
+
+---
+
+## �🔗 Relationships & Linking
 
 ### Primary Relationships
 ```
 Clients (Client ID) ←→ Projects (Client ID)
 Projects (Project ID) ←→ Permits (Project ID)
 Projects (Project ID) ←→ Documents (Project ID)
+Clients (Client ID) ←→ Payments (Client ID)
 Users (Email) ←→ Sessions (User Email)
 ```
 
@@ -201,6 +236,8 @@ Clients (QBO Client ID) → Direct QuickBooks customer link (preferred - faster)
 Projects (HR PC Service Fee) → QuickBooks Invoice (Amount)
 Projects (Project Address) → QuickBooks Invoice (DocNumber)
 Clients (Email) → QuickBooks Invoice (BillEmail)
+Payments (QB Payment ID) → QuickBooks Payment (Id)
+Payments (Invoice ID) → QuickBooks Invoice (Id)
 ```
 
 **Note:** Always check for QBO Client ID first - it provides instant customer lookup without searching.
@@ -208,6 +245,16 @@ Clients (Email) → QuickBooks Invoice (BillEmail)
 ---
 
 ## 🎯 Common Data Access Patterns
+
+### Syncing QuickBooks Payments to Sheets
+1. Call QB API: `GET /payment?start_date=YYYY-MM-DD`
+2. For each QB Payment:
+   - Extract: QB Payment ID, Customer ID, Total Amount, Payment Date, Payment Method
+   - Find linked Invoice ID from Payment.Line.LinkedTxn
+   - Resolve Customer ID → Client ID using Clients sheet QBO Client ID
+   - Generate Payment ID or update existing by QB Payment ID
+3. Insert/Update row in Payments sheet
+4. Return sync summary (new, updated, total)
 
 ### Creating Invoice from Project (Optimized)
 1. Get Project → Read Columns 2 (Client ID), 4 (Address), 11 (HR PC Service Fee)
@@ -220,6 +267,13 @@ Clients (Email) → QuickBooks Invoice (BillEmail)
 4. Create Invoice → Use QB Customer ID, HR PC Service Fee, Email (Column 8), Address
 
 **Performance:** Using QBO Client ID eliminates customer search, reducing API calls by ~80%.
+
+### Checking Payment Status
+1. User asks: "Has [Client] paid their invoice?"
+2. Find Client ID from Clients sheet
+3. Query Payments sheet for matching Client ID
+4. Check Status column (Completed, Pending, etc.)
+5. Show payment details (Amount, Date, Method)
 
 ### Project-Client Lookup
 1. User asks about client → Find in Clients sheet Column 2 (Full Name)
@@ -305,6 +359,13 @@ Clients (Email) → QuickBooks Invoice (BillEmail)
 ---
 
 ## 📝 Change Log
+
+### November 10, 2025 - Payments Sheet Added
+- ✅ Added Payments sheet documentation (11 columns)
+- ✅ Documented QB Payment sync integration
+- ✅ Added payment tracking workflows
+- ✅ Updated relationships to include Payments ←→ Clients/Invoices
+- ✅ Added payment status checking pattern
 
 ### November 10, 2025 - VERIFIED WITH API
 - ✅ Verified Clients sheet: 11 columns (added QBO Client ID, Notes, File Upload)
