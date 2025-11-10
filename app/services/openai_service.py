@@ -385,6 +385,7 @@ class OpenAIService:
                         project_address = safe_field(project.get('Project Address') or project.get('Address'))
                         project_status = safe_field(project.get('Status'))
                         project_client = safe_field(project.get('Client Name') or project.get('Client'))
+                        hr_pc_fee = safe_field(project.get('HR PC Service Fee'))  # CRITICAL: Invoice amount
                         
                         context_parts.append(
                             f"\n✓ Project ID: {project_id}"
@@ -393,6 +394,7 @@ class OpenAIService:
                             f"\n  Address: {project_address}"
                             f"\n  Status: {project_status}"
                             f"\n  Client: {project_client}"
+                            f"\n  HR PC Service Fee: {hr_pc_fee}"
                         )
                 
                 # Add permits data with safe_field sanitization
@@ -468,7 +470,7 @@ class OpenAIService:
                     "type": "function",
                     "function": {
                         "name": "create_quickbooks_invoice",
-                        "description": "Create a new invoice in QuickBooks Online with property address-based invoice numbering (e.g., '1105-Sandy-Bottom' from '1105 Sandy Bottom Dr'). ONLY call this after user confirms they want to create the invoice. IMPORTANT: Always try to include property_address if available from project or customer data to generate a meaningful invoice number.",
+                        "description": "Create a new invoice in QuickBooks Online with property address-based invoice numbering (e.g., '1105-Sandy-Bottom' from '1105 Sandy Bottom Dr'). ONLY call this after user confirms they want to create the invoice. CRITICAL: When creating an invoice for a PROJECT, use the 'HR PC Service Fee' column value from the Projects sheet as the invoice amount. Always include property_address from project data to generate meaningful invoice numbers. The service item 'GC Permit Oversight' is automatically used.",
                         "parameters": {
                             "type": "object",
                             "properties": {
@@ -482,11 +484,11 @@ class OpenAIService:
                                 },
                                 "amount": {
                                     "type": "number",
-                                    "description": "The total invoice amount in USD"
+                                    "description": "The total invoice amount in USD. IMPORTANT: For project invoices, use the 'HR PC Service Fee' value from the Projects sheet, NOT the 'Project Cost'."
                                 },
                                 "description": {
                                     "type": "string",
-                                    "description": "Description of services/work performed"
+                                    "description": "Description of services/work performed (e.g., 'GC Permit Oversight - [Project Name]')"
                                 },
                                 "property_address": {
                                     "type": "string",

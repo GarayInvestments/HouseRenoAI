@@ -278,16 +278,25 @@ async def handle_create_quickbooks_invoice(
         
         logger.info(f"[INVOICE] Generated invoice number: {invoice_number} (from address: '{property_address}' or name: '{customer_name}')")
         
-        # Get QB items to use for the line item
-        items = await qb_service.get_items()
-        if not items:
-            return {
-                "status": "failed",
-                "error": "No QuickBooks items/services found. Please create at least one service item in QuickBooks."
-            }
+        # Use specific "GC Permit Oversight" service item (itemId=1000100002)
+        GC_PERMIT_OVERSIGHT_ITEM_ID = "1000100002"
         
-        # Use first service/non-inventory item
-        service_item = next((item for item in items if item.get('Type') in ['Service', 'NonInventory']), items[0])
+        # Verify the item exists in QuickBooks
+        items = await qb_service.get_items()
+        gc_permit_item = next((item for item in items if item.get('Id') == GC_PERMIT_OVERSIGHT_ITEM_ID), None)
+        
+        if not gc_permit_item:
+            logger.warning(f"[INVOICE] GC Permit Oversight item (ID: {GC_PERMIT_OVERSIGHT_ITEM_ID}) not found, using fallback")
+            # Fallback: use first service/non-inventory item
+            gc_permit_item = next((item for item in items if item.get('Type') in ['Service', 'NonInventory']), items[0] if items else None)
+            
+            if not gc_permit_item:
+                return {
+                    "status": "failed",
+                    "error": "No QuickBooks items/services found. Please create at least one service item in QuickBooks."
+                }
+        
+        logger.info(f"[INVOICE] Using service item: {gc_permit_item.get('Name')} (ID: {gc_permit_item.get('Id')})")
         
         # Build invoice data with custom DocNumber
         invoice_data = {
@@ -300,7 +309,7 @@ async def handle_create_quickbooks_invoice(
                 "DetailType": "SalesItemLineDetail",
                 "Description": description,
                 "SalesItemLineDetail": {
-                    "ItemRef": {"value": service_item.get('Id')},
+                    "ItemRef": {"value": gc_permit_item.get('Id')},  # Use GC Permit Oversight item
                     "Qty": 1,
                     "UnitPrice": amount
                 }
