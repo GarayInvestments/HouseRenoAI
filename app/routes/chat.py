@@ -347,12 +347,18 @@ async def process_chat_message(chat_data: Dict[str, Any]):
         if function_results and not ai_response:
             success_results = [r for r in function_results if r.get("status") == "success"]
             if success_results:
+                # Check if result has a custom message field (like map_clients_to_customers)
+                first_result = success_results[0]
+                if first_result.get("message"):
+                    ai_response = first_result["message"]
                 # Check if it's an invoice creation - include link if available
-                invoice_result = next((r for r in success_results if r.get("function") == "create_quickbooks_invoice"), None)
-                if invoice_result and invoice_result.get("invoice_link"):
-                    invoice_link = invoice_result["invoice_link"]
-                    invoice_number = invoice_result.get("invoice_number", "")
-                    ai_response = f"✅ Done! {action_taken}\n\n📄 [View Invoice #{invoice_number} in QuickBooks]({invoice_link})"
+                elif invoice_result := next((r for r in success_results if r.get("function") == "create_quickbooks_invoice"), None):
+                    if invoice_result.get("invoice_link"):
+                        invoice_link = invoice_result["invoice_link"]
+                        invoice_number = invoice_result.get("invoice_number", "")
+                        ai_response = f"✅ Done! {action_taken}\n\n📄 [View Invoice #{invoice_number} in QuickBooks]({invoice_link})"
+                    else:
+                        ai_response = f"✅ Done! {action_taken}"
                 else:
                     ai_response = f"✅ Done! {action_taken}"
             else:
