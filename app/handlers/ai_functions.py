@@ -769,6 +769,19 @@ async def handle_create_quickbooks_customer_from_sheet(
             }
         }
         
+        # Split name into GivenName and FamilyName
+        name_parts = client_name.split()
+        if len(name_parts) >= 2:
+            customer_data["GivenName"] = name_parts[0]  # First name
+            customer_data["FamilyName"] = " ".join(name_parts[1:])  # Last name (handles middle names)
+        elif len(name_parts) == 1:
+            # If only one name, use it as FamilyName
+            customer_data["FamilyName"] = name_parts[0]
+        
+        # Add company name if available
+        if client_company:
+            customer_data["CompanyName"] = client_company
+        
         # Add email if available
         if client_email:
             customer_data["PrimaryEmailAddr"] = {
