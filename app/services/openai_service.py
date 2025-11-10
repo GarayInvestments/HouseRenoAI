@@ -462,6 +462,54 @@ class OpenAIService:
                     }
                 },
                 {
+                    "name": "update_quickbooks_customer",
+                    "description": "Update an existing QuickBooks customer with new information. Supports sparse updates - only specified fields will be updated. Use this to update company name, contact info, address, tax settings, etc. Common fields: CompanyName, GivenName, FamilyName, PrimaryPhone, PrimaryEmailAddr, Mobile, BillAddr, ShipAddr, Notes, Taxable, Active. ALWAYS ask for confirmation before updating.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "customer_id": {
+                                "type": "string",
+                                "description": "The QuickBooks customer ID to update (required)"
+                            },
+                            "updates": {
+                                "type": "object",
+                                "description": "Fields to update. Can include: CompanyName (string), GivenName (string), FamilyName (string), DisplayName (string), PrimaryPhone (object with FreeFormNumber), PrimaryEmailAddr (object with Address), Mobile (object with FreeFormNumber), BillAddr (object with Line1, City, CountrySubDivisionCode, PostalCode), Notes (string), Taxable (boolean), Active (boolean), etc.",
+                                "properties": {
+                                    "CompanyName": {
+                                        "type": "string",
+                                        "description": "Company name"
+                                    },
+                                    "GivenName": {
+                                        "type": "string",
+                                        "description": "First name"
+                                    },
+                                    "FamilyName": {
+                                        "type": "string",
+                                        "description": "Last name"
+                                    },
+                                    "DisplayName": {
+                                        "type": "string",
+                                        "description": "Display name (must be unique)"
+                                    },
+                                    "Notes": {
+                                        "type": "string",
+                                        "description": "Notes about the customer"
+                                    },
+                                    "Taxable": {
+                                        "type": "boolean",
+                                        "description": "Whether customer is taxable"
+                                    },
+                                    "Active": {
+                                        "type": "boolean",
+                                        "description": "Whether customer is active"
+                                    }
+                                }
+                            }
+                        },
+                        "required": ["customer_id", "updates"]
+                    }
+                },
+                {
                     "name": "add_column_to_sheet",
                     "description": "CALL THIS IMMEDIATELY when user confirms they want to add a column to a sheet. Use when user says 'yes', 'confirm', 'proceed', 'add it', 'do it', or 'go ahead' after discussing adding a column.",
                     "parameters": {

@@ -1207,6 +1207,84 @@ async def handle_sync_quickbooks_customer_types(
         }
 
 
+async def handle_update_quickbooks_customer(
+    args: Dict[str, Any],
+    google_service,
+    quickbooks_service,
+    session_id: str,
+    memory_manager
+) -> Dict[str, Any]:
+    """
+    Update an existing QuickBooks customer with new information.
+    Supports sparse updates - only specified fields are updated.
+    
+    Args:
+        customer_id: QuickBooks customer ID to update
+        updates: Dictionary of fields to update (e.g., {"CompanyName": "New Company", "PrimaryPhone": {"FreeFormNumber": "555-1234"}})
+    """
+    try:
+        customer_id = args.get("customer_id")
+        updates = args.get("updates", {})
+        
+        if not customer_id:
+            return {
+                "status": "failed",
+                "error": "customer_id is required"
+            }
+        
+        if not updates:
+            return {
+                "status": "failed",
+                "error": "No updates provided. Specify fields to update."
+            }
+        
+        logger.info(f"[UPDATE QB CUSTOMER] Updating customer ID {customer_id} with: {updates}")
+        
+        # Get current customer to retrieve SyncToken
+        qb_customers = await quickbooks_service.get_customers()
+        target_customer = None
+        
+        for customer in qb_customers:
+            if str(customer.get('Id')) == str(customer_id):
+                target_customer = customer
+                break
+        
+        if not target_customer:
+            return {
+                "status": "failed",
+                "error": f"Customer ID {customer_id} not found in QuickBooks"
+            }
+        
+        sync_token = target_customer.get('SyncToken')
+        customer_name = target_customer.get('DisplayName', 'Unknown')
+        
+        logger.info(f"[UPDATE QB CUSTOMER] Found customer: {customer_name} (SyncToken: {sync_token})")
+        
+        # Update customer via QuickBooks service
+        updated_customer = await quickbooks_service.update_customer(
+            customer_id=customer_id,
+            customer_data=updates,
+            sync_token=sync_token
+        )
+        
+        logger.info(f"[UPDATE QB CUSTOMER] Successfully updated customer ID {customer_id}: {customer_name}")
+        
+        return {
+            "status": "success",
+            "message": f"Successfully updated QuickBooks customer: {customer_name}",
+            "customer_id": customer_id,
+            "customer_name": updated_customer.get('DisplayName'),
+            "updated_fields": list(updates.keys())
+        }
+        
+    except Exception as e:
+        logger.error(f"[UPDATE QB CUSTOMER] Error: {e}", exc_info=True)
+        return {
+            "status": "failed",
+            "error": f"Failed to update customer: {str(e)}"
+        }
+
+
 # Handler registry - maps function names to handler functions
 FUNCTION_HANDLERS = {
     "update_project_status": handle_update_project_status,
@@ -1214,6 +1292,7 @@ FUNCTION_HANDLERS = {
     "update_client_data": handle_update_client_data,
     "create_quickbooks_invoice": handle_create_quickbooks_invoice,
     "update_quickbooks_invoice": handle_update_quickbooks_invoice,
+    "update_quickbooks_customer": handle_update_quickbooks_customer,
     "add_column_to_sheet": handle_add_column_to_sheet,
     "update_client_field": handle_update_client_field,
     "sync_quickbooks_clients": handle_sync_quickbooks_clients,
