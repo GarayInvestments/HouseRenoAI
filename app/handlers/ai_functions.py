@@ -175,6 +175,7 @@ async def handle_update_client_data(
 
 async def handle_create_quickbooks_invoice(
     args: Dict[str, Any],
+    google_service,
     qb_service,
     memory_manager,
     session_id: str
@@ -184,6 +185,7 @@ async def handle_create_quickbooks_invoice(
     
     Args:
         args: Function arguments containing customer_id, customer_name, amount, description, etc.
+        google_service: Google Sheets service instance (passed for consistency, may be unused)
         qb_service: QuickBooks service instance
         memory_manager: Session memory manager
         session_id: Current session ID
@@ -270,6 +272,7 @@ async def handle_create_quickbooks_invoice(
 
 async def handle_update_quickbooks_invoice(
     args: Dict[str, Any],
+    google_service,
     qb_service,
     memory_manager,
     session_id: str
@@ -279,6 +282,7 @@ async def handle_update_quickbooks_invoice(
     
     Args:
         args: Function arguments containing invoice_id, invoice_number (optional), and updates dict
+        google_service: Google Sheets service instance (passed for consistency, may be unused)
         qb_service: QuickBooks service instance
         memory_manager: Session memory manager
         session_id: Current session ID
@@ -476,6 +480,7 @@ async def handle_update_client_field(
 
 async def handle_sync_quickbooks_clients(
     args: Dict[str, Any],
+    google_service,
     quickbooks_service,
     memory_manager,
     session_id: str
@@ -1211,8 +1216,8 @@ async def handle_update_quickbooks_customer(
     args: Dict[str, Any],
     google_service,
     quickbooks_service,
-    session_id: str,
-    memory_manager
+    memory_manager,
+    session_id: str
 ) -> Dict[str, Any]:
     """
     Update an existing QuickBooks customer with new information.

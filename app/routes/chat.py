@@ -238,7 +238,8 @@ async def process_chat_message(chat_data: Dict[str, Any]):
                             # These functions need both services
                             result = await handler(func_args, google_service, quickbooks_service, memory_manager, session_id)
                         elif 'quickbooks' in func_name:
-                            result = await handler(func_args, quickbooks_service, memory_manager, session_id)
+                            # Pass google_service to all QB functions for consistency (even if unused)
+                            result = await handler(func_args, google_service, quickbooks_service, memory_manager, session_id)
                         else:
                             result = await handler(func_args, google_service, memory_manager, session_id)
                         
