@@ -205,8 +205,9 @@ async def handle_create_quickbooks_invoice(
         amount = args["amount"]
         description = args["description"]
         invoice_date = args.get("invoice_date", datetime.now().strftime("%Y-%m-%d"))
-        due_date = args.get("due_date", (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d"))
+        due_date = args.get("due_date")  # No default - will use "Due on Receipt"
         property_address = args.get("property_address", "")  # Optional property address
+        client_email = args.get("client_email", "")  # Optional client email
         
         # Check QB authentication
         if not qb_service or not qb_service.is_authenticated():
@@ -278,8 +279,8 @@ async def handle_create_quickbooks_invoice(
         
         logger.info(f"[INVOICE] Generated invoice number: {invoice_number} (from address: '{property_address}' or name: '{customer_name}')")
         
-        # Use specific "GC Permit Oversight" service item (itemId=1000100002)
-        GC_PERMIT_OVERSIGHT_ITEM_ID = "1000100002"
+        # Use specific "GC Permit Oversight" service item (itemId=108)
+        GC_PERMIT_OVERSIGHT_ITEM_ID = "108"
         
         # Verify the item exists in QuickBooks
         items = await qb_service.get_items()
@@ -303,7 +304,9 @@ async def handle_create_quickbooks_invoice(
             "DocNumber": invoice_number,  # Custom invoice number based on property
             "CustomerRef": {"value": customer_id},
             "TxnDate": invoice_date,
-            "DueDate": due_date,
+            "CustomerMemo": {
+                "value": "Zelle: steve@houserenovatorsllc.com"
+            },
             "Line": [{
                 "Amount": amount,
                 "DetailType": "SalesItemLineDetail",
@@ -315,6 +318,19 @@ async def handle_create_quickbooks_invoice(
                 }
             }]
         }
+        
+        # Add DueDate only if explicitly provided (otherwise QuickBooks uses "Due on Receipt" from SalesTermRef)
+        if due_date:
+            invoice_data["DueDate"] = due_date
+        
+        # Add SalesTermRef for "Due on Receipt"
+        # Note: QuickBooks term ID for "Due on Receipt" is typically "1"
+        # This will need to be verified with your specific QuickBooks setup
+        invoice_data["SalesTermRef"] = {"value": "1"}  # Due on Receipt
+        
+        # Add BillEmail if client email is provided
+        if client_email and client_email.strip():
+            invoice_data["BillEmail"] = {"Address": client_email.strip()}
         
         # Create the invoice
         invoice = await qb_service.create_invoice(invoice_data)

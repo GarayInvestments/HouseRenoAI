@@ -196,6 +196,18 @@ class OpenAIService:
             - If NO projects match the Client ID, say "No projects found for this client"
             - NEVER suggest projects from other clients based on location similarity
             
+            💰 **CREATING INVOICES FOR PROJECTS:**
+            - When creating an invoice for a project, you need THREE pieces of data:
+              1. **QuickBooks Customer ID**: Find the client in CLIENTS DATA, get their Client ID, then find matching customer in QUICKBOOKS CUSTOMERS
+              2. **Invoice Amount**: Use the "HR PC Service Fee" value from the project (NOT "Project Cost")
+              3. **Client Email**: Get the "Email" field from CLIENTS DATA for the client
+              4. **Property Address**: Get the "Project Address" from PROJECTS DATA for invoice numbering
+            - Example flow:
+              - User: "Create invoice for Temple project"
+              - You: Find Temple project → Get Client ID → Find QB customer → Get HR PC Service Fee → Get client email → Call create_quickbooks_invoice
+            - ALWAYS include client_email parameter if email is available in CLIENTS DATA
+            - The description should be "GC Permit Oversight - [Project Name]"
+            
             ⚠️ **CRITICAL: NEVER SAY "QuickBooks connection is not currently active" WHEN IT IS ACTIVE**
             - If you have QuickBooks data in context (customers_count > 0, quickbooks_connected = true), QuickBooks IS connected
             - If you can't find a specific client/customer, say: "I couldn't find [name] in the [Sheets/QuickBooks] records"
@@ -470,7 +482,7 @@ class OpenAIService:
                     "type": "function",
                     "function": {
                         "name": "create_quickbooks_invoice",
-                        "description": "Create a new invoice in QuickBooks Online with property address-based invoice numbering (e.g., '1105-Sandy-Bottom' from '1105 Sandy Bottom Dr'). ONLY call this after user confirms they want to create the invoice. CRITICAL: When creating an invoice for a PROJECT, use the 'HR PC Service Fee' column value from the Projects sheet as the invoice amount. Always include property_address from project data to generate meaningful invoice numbers. The service item 'GC Permit Oversight' is automatically used.",
+                        "description": "Create a new invoice in QuickBooks Online with property address-based invoice numbering (e.g., '1105-Sandy-Bottom' from '1105 Sandy Bottom Dr'). ONLY call this after user confirms they want to create the invoice. CRITICAL: When creating an invoice for a PROJECT, use the 'HR PC Service Fee' column value from the Projects sheet as the invoice amount. Always include property_address and client_email from project/client data. The service item 'GC Permit Oversight' (ID: 108) is automatically used. Payment terms are set to 'Due on Receipt' with memo 'Zelle: steve@houserenovatorsllc.com'.",
                         "parameters": {
                             "type": "object",
                             "properties": {
@@ -494,13 +506,17 @@ class OpenAIService:
                                     "type": "string",
                                     "description": "Property address for invoice numbering (e.g., '1105 Sandy Bottom Dr, Concord, NC'). If available from project data, include it to generate meaningful invoice numbers like '1105-Sandy-Bottom'."
                                 },
+                                "client_email": {
+                                    "type": "string",
+                                    "description": "Client email address from Clients sheet (Email column). If available, include it so QuickBooks can email the invoice."
+                                },
                                 "invoice_date": {
                                     "type": "string",
                                     "description": "Invoice date in YYYY-MM-DD format (default: today)"
                                 },
                                 "due_date": {
                                     "type": "string",
-                                    "description": "Due date in YYYY-MM-DD format (default: 30 days from invoice date)"
+                                    "description": "Due date in YYYY-MM-DD format (optional - if not provided, uses 'Due on Receipt' payment terms)"
                                 }
                             },
                             "required": ["customer_id", "customer_name", "amount", "description"]
