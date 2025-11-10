@@ -1294,8 +1294,8 @@ async def handle_map_clients_to_customers(
     args: Dict[str, Any],
     google_service,
     quickbooks_service,
-    session_id: str,
-    memory_manager
+    memory_manager,
+    session_id: str
 ) -> Dict[str, Any]:
     """
     Establish and maintain a comprehensive mapping between Google Sheets Clients and QuickBooks Customers.
