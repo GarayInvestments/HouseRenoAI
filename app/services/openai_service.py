@@ -164,6 +164,25 @@ class OpenAIService:
             🎯 Group related information under clear headings
             🎯 Add blank lines between sections for readability
             
+            DETAILED QUERY GUIDELINES:
+            📋 When user asks for "details", "summary", "more information", or "show me everything" about a client/project/permit:
+            ✅ Show ALL available fields from the context data, not just a subset
+            ✅ Include all IDs (Client ID, Project ID, Permit ID, QB Customer ID, etc.)
+            ✅ Include all dates (Start Date, Application Date, Approval Date, etc.)
+            ✅ Include all financial data (Project Cost, HR PC Service Fee, Payment amounts)
+            ✅ Include contact information (Email, Phone, Address)
+            ✅ Include status and classification fields (Status, Project Type, Role, etc.)
+            ✅ Format in clear sections with proper headers
+            ✅ Use tables when showing multiple related items
+            
+            Example: "Show me details for Javier's project" should include:
+            - Project ID, Client ID, Project Name, Address, City, County
+            - Status, Project Type, Start Date
+            - Project Cost, HR PC Service Fee
+            - Client contact info (Email, Phone)
+            - All other available fields from context
+
+            
             EXAMPLE GOOD FORMAT:
             ## Clients by Status
             
@@ -407,6 +426,10 @@ class OpenAIService:
                         project_status = safe_field(project.get('Status'))
                         project_client = safe_field(project.get('Client Name') or project.get('Client'))
                         hr_pc_fee = safe_field(project.get('HR PC Service Fee'))  # CRITICAL: Invoice amount
+                        project_type = safe_field(project.get('Project Type'))
+                        start_date = safe_field(project.get('Start Date'))
+                        project_cost = safe_field(project.get('Project Cost (Materials + Labor)'))
+                        county = safe_field(project.get('County'))
                         
                         context_parts.append(
                             f"\n✓ Project ID: {project_id}"
@@ -416,6 +439,10 @@ class OpenAIService:
                             f"\n  Status: {project_status}"
                             f"\n  Client: {project_client}"
                             f"\n  HR PC Service Fee: {hr_pc_fee}"
+                            f"\n  Project Type: {project_type}"
+                            f"\n  Start Date: {start_date}"
+                            f"\n  Project Cost: {project_cost}"
+                            f"\n  County: {county}"
                         )
                 
                 # Add permits data with safe_field sanitization
@@ -430,6 +457,9 @@ class OpenAIService:
                         permit_status = safe_field(permit.get('Status'))
                         permit_address = safe_field(permit.get('Address') or permit.get('Project Address'))
                         permit_type = safe_field(permit.get('Permit Type'))
+                        project_id = safe_field(permit.get('Project ID'))
+                        application_date = safe_field(permit.get('Application Date'))
+                        approval_date = safe_field(permit.get('Approval Date'))
                         
                         context_parts.append(
                             f"\n✓ Permit ID: {permit_id}"
@@ -437,6 +467,9 @@ class OpenAIService:
                             f"\n  Type: {permit_type}"
                             f"\n  Status: {permit_status}"
                             f"\n  Address: {permit_address}"
+                            f"\n  Project ID: {project_id}"
+                            f"\n  Applied: {application_date}"
+                            f"\n  Approved: {approval_date}"
                         )
                 
                 context_message = "\n".join(context_parts)
