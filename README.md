@@ -14,10 +14,11 @@
 - 🤖 **AI Integration**: OpenAI GPT-4o with smart context loading *(Zero hallucinations)*
 - 📊 **Data Source**: Google Sheets real-time integration *(Active permit/project data)*
 - 💼 **QuickBooks**: OAuth2 production integration *(24 customers, 53+ invoices)*
-- 🔧 **DevOps**: Complete automation toolkit *(Validated and operational)*
-- ✨ **Recent Updates**: GC Compliance sync, customer type labeling, create QB customers *(Nov 9, 2025)*
-- 🧪 **Testing**: Comprehensive test suite (87.5% & 100% pass rates)
-- � **Documentation**: 24 active docs, reorganized structure
+- � **Payments**: Full tracking with QB sync *(NEW - Nov 10, 2025)*
+- �🔧 **DevOps**: Complete automation toolkit *(Validated and operational)*
+- ✨ **Recent Updates**: Payments feature, context enhancements, docs reorganization *(Nov 10, 2025)*
+- 🧪 **Testing**: Comprehensive test suite (11/12 tests passed - 91.7%)
+- 📚 **Documentation**: Organized structure (27 docs in 6 categories)
 
 ---
 
@@ -41,6 +42,7 @@ HouseRenovators-api/
 │   │   ├── documents.py       # Document upload & AI extraction
 │   │   ├── permits.py         # Permit management endpoints
 │   │   ├── projects.py        # Project management endpoints
+│   │   ├── payments.py        # Payment tracking & QB sync (NEW Nov 10)
 │   │   └── quickbooks.py      # QB OAuth2, customers, invoices, sync
 │   ├── 📂 services/            # Core Business Logic
 │   │   ├── auth_service.py    # JWT + bcrypt authentication
@@ -64,12 +66,15 @@ HouseRenovators-api/
 │   ├── package.json
 │   └── vite.config.js
 ├── 📂 backend/                 # Legacy backend directory (for reference)
-├── 📂 docs/                    # Project Documentation
-│   ├── API_DOCUMENTATION.md   # Complete API reference (UPDATED)
-│   ├── DEPLOYMENT.md          # Production deployment guide
-│   ├── PROJECT_SETUP.md       # Development setup (UPDATED)
-│   ├── PROGRESS_REPORT_NOV_2025.md  # Latest progress report (NEW)
-│   └── TROUBLESHOOTING.md     # Debug and solutions guide
+├── 📂 docs/                    # Project Documentation (ORGANIZED Nov 10, 2025)
+│   ├── README.md              # Documentation hub and navigation guide
+│   ├── 📂 guides/             # User and developer guides (6 files)
+│   ├── 📂 setup/              # Environment setup docs (4 files)
+│   ├── 📂 deployment/         # Deployment guides (3 files)
+│   ├── 📂 technical/          # Technical specs and design (6 files)
+│   ├── 📂 session-logs/       # Development session summaries
+│   ├── 📂 metrics/            # Performance metrics and baselines
+│   └── 📂 archive/            # Historical documentation (22 files)
 ├── 📂 config/                  # Configuration Files
 ├── 📂 scripts/                 # Utility Scripts
 ├── 📄 requirements.txt         # Python dependencies (Pillow, PyPDF2 added)
@@ -496,16 +501,45 @@ This project is proprietary software developed for House Renovators AI Portal.
 
 | Component | Status | URL | Last Tested |
 |-----------|--------|-----|-------------|
-| **Backend API** | ✅ Production | https://houserenoai.onrender.com | Nov 9, 2025 *(Healthy)*|
-| **Frontend PWA** | ✅ Production | https://portal.houserenovatorsllc.com | Nov 9, 2025 *(200 OK)* |
-| **Google Sheets** | ✅ Integrated | Connected | Nov 9, 2025 *(Permits & Projects loaded)* |
-| **QuickBooks** | ✅ Integrated | OAuth2 Production | Nov 9, 2025 *(24 customers, 53+ invoices)* |
-| **AI Chat** | ✅ Working | GPT-4o | Nov 9, 2025 *(Smart context loading)* |
-| **Session Management** | ✅ Active | Google Sheets | Nov 9, 2025 *(EST timestamps)* |
-| **Automation** | ✅ Complete | Multi-cloud | Nov 3, 2025 *(All scripts validated)* |
-| **Monitoring** | ✅ Active | Real-time | Nov 3, 2025 *(Health check operational)* |
+| **Backend API** | ✅ Production | https://houserenoai.onrender.com | Nov 10, 2025 *(Healthy)*|
+| **Frontend PWA** | ✅ Production | https://portal.houserenovatorsllc.com | Nov 10, 2025 *(200 OK)* |
+| **Google Sheets** | ✅ Integrated | Connected | Nov 10, 2025 *(All sheets active)* |
+| **QuickBooks** | ✅ Integrated | OAuth2 Production | Nov 10, 2025 *(Payments sync active)* |
+| **AI Chat** | ✅ Working | GPT-4o | Nov 10, 2025 *(19.3% faster avg)* |
+| **Payments Feature** | ✅ Production | NEW | Nov 10, 2025 *(627ms response)* |
+| **Session Management** | ✅ Active | Google Sheets | Nov 10, 2025 *(EST timestamps)* |
+| **Automation** | ✅ Complete | Multi-cloud | Nov 10, 2025 *(All scripts validated)* |
+| **Monitoring** | ✅ Active | Real-time | Nov 10, 2025 *(Health check operational)* |
 
-### 🎯 **Latest Updates (November 9, 2025)**
+### 🎯 **Latest Updates (November 10, 2025)**
+- ✅ **Payments Feature Complete** (commit 4fe6043)
+  - New `/v1/payments` API endpoint with full CRUD operations
+  - QuickBooks payments sync functionality
+  - AI function handlers: sync_quickbooks_payments, get_client_payments
+  - Payments sheet created with 11 fields
+  - Integration tested and validated (11/12 tests passed)
+
+- ✅ **Context Enhancements** (commit 4fe6043)
+  - Projects enhanced with 4 payment fields (Payment Method, Invoice #, Payment Status, Due Date)
+  - Permits enhanced with 3 date fields (Submitted Date, Approved Date, Expiration Date)
+  - Smart context loading updated with payment keywords
+  - 60-80% reduction in unnecessary API calls
+
+- ✅ **Documentation Reorganization** (commit 4dae028)
+  - Created logical directory structure (guides/, setup/, deployment/, technical/, session-logs/)
+  - Moved 25 files from flat structure to organized categories
+  - Created docs/README.md navigation hub
+  - Updated copilot-instructions.md with new paths
+  - Reduced root clutter from 27 files to 7 items
+
+- ✅ **Performance Validation** (commits e47c1cd, 10f6e21)
+  - Collected Nov 10 post-enhancement metrics
+  - Overall performance: **19.3% faster** (1729ms → 1395ms)
+  - Simple Chat: **15.5% faster** (4306ms → 3640ms)
+  - Created detailed comparison analysis
+  - Updated all metrics documentation with timestamps
+
+### 🎯 **Previous Updates (November 9, 2025)**
 - ✅ **GC Compliance Payments Sync** (commit bc7e638)
   - 290-line function reconciling payments with invoices
   - Filters by Client Type = "GC Compliance" and Is Synced != TRUE
@@ -572,6 +606,8 @@ This project is proprietary software developed for House Renovators AI Portal.
 
 **Built with ❤️ for construction professionals**
 
-[🚀 Live Demo](https://api.houserenovatorsllc.com) • [📖 Documentation](docs/) • [🤖 AI Chat](https://api.houserenovatorsllc.com/docs)
+**Last Updated:** November 10, 2025, 3:30 PM PST
+
+[🚀 Live Demo](https://houserenoai.onrender.com) • [📖 Documentation](docs/) • [🤖 AI Chat](https://portal.houserenovatorsllc.com)
 
 </div>
