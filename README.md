@@ -231,9 +231,10 @@ git push
 
 ### **Quick References**
 - ⚡ [**Quick Reference**](docs/SETUP_QUICK_REFERENCE.md) - Daily commands cheat sheet
-- � [**New Machine Setup**](docs/SETUP_NEW_MACHINE.md) - Onboarding guide
-- 📋 [**Field Mapping**](docs/FIELD_MAPPING.md) - Data structure reference
-- 📊 [**Project Status**](docs/PROJECT_STATUS.md) - Current status and roadmap
+- 💻 [**New Machine Setup**](docs/SETUP_NEW_MACHINE.md) - Onboarding guide
+- 📋 [**Field Mapping**](docs/FIELD_MAPPING.md) - PDF extraction field structure
+- 📊 [**Google Sheets Structure**](docs/GOOGLE_SHEETS_STRUCTURE.md) - Complete sheet schemas **(NEW)**
+- � [**Project Status**](docs/PROJECT_STATUS.md) - Current status and roadmap
 
 ### **Integration Guides**
 - 💼 [**QuickBooks Guide**](docs/QUICKBOOKS_GUIDE.md) - Complete QB integration **(NEW)**
