@@ -181,7 +181,12 @@ async def handle_create_quickbooks_invoice(
     session_id: str
 ) -> Dict[str, Any]:
     """
-    Create QuickBooks invoice
+    Create QuickBooks invoice with property address-based invoice numbering
+    
+    Invoice Number Convention:
+    - Uses short property address format (e.g., "1105-Sandy-Bottom" from "1105 Sandy Bottom Dr")
+    - Appends sequential number if duplicate addresses exist
+    - Falls back to customer name if no address available
     
     Args:
         args: Function arguments containing customer_id, customer_name, amount, description, etc.
@@ -201,6 +206,7 @@ async def handle_create_quickbooks_invoice(
         description = args["description"]
         invoice_date = args.get("invoice_date", datetime.now().strftime("%Y-%m-%d"))
         due_date = args.get("due_date", (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d"))
+        property_address = args.get("property_address", "")  # Optional property address
         
         # Check QB authentication
         if not qb_service or not qb_service.is_authenticated():
@@ -208,6 +214,69 @@ async def handle_create_quickbooks_invoice(
                 "status": "failed",
                 "error": "QuickBooks is not authenticated. Please connect to QuickBooks first."
             }
+        
+        # Generate invoice number from property address
+        def generate_invoice_number(address: str, fallback_name: str) -> str:
+            """
+            Generate invoice number from property address or customer name.
+            
+            Examples:
+            - "1105 Sandy Bottom Dr NW, Concord, NC" → "1105-Sandy-Bottom"
+            - "64 Phillips Ln, Spruce Pine, NC" → "64-Phillips"
+            - "Temple Baptist Church" (no address) → "Temple-Baptist"
+            """
+            if address and address.strip():
+                # Parse address to extract street number and first 2-3 words of street name
+                parts = address.strip().split(',')[0].split()  # Get street part only
+                
+                # Filter out common suffixes (Dr, St, Ave, Ln, Rd, NW, SE, etc.)
+                suffixes = {'dr', 'st', 'ave', 'ln', 'rd', 'blvd', 'ct', 'way', 'pl', 'nw', 'ne', 'sw', 'se', 'n', 's', 'e', 'w'}
+                filtered_parts = []
+                
+                for part in parts[:4]:  # Take max 4 parts
+                    cleaned = part.lower().rstrip('.,')
+                    if cleaned not in suffixes:
+                        filtered_parts.append(part.strip('.,'))
+                    if len(filtered_parts) >= 3:  # Max 3 meaningful parts
+                        break
+                
+                if filtered_parts:
+                    return '-'.join(filtered_parts)
+            
+            # Fallback to customer name
+            # Take first 2-3 words from customer name
+            name_parts = fallback_name.split()[:3]
+            return '-'.join(name_parts)
+        
+        base_invoice_number = generate_invoice_number(property_address, customer_name)
+        
+        # Check for existing invoices with same base number and append counter if needed
+        existing_invoices = await qb_service.get_invoices()
+        matching_numbers = [
+            inv.get('DocNumber', '') 
+            for inv in existing_invoices 
+            if inv.get('DocNumber', '').startswith(base_invoice_number)
+        ]
+        
+        if matching_numbers:
+            # Find highest counter (e.g., "1105-Sandy-Bottom-2" → extract 2)
+            max_counter = 0
+            for doc_num in matching_numbers:
+                if doc_num == base_invoice_number:
+                    max_counter = max(max_counter, 1)
+                elif doc_num.startswith(base_invoice_number + '-'):
+                    suffix = doc_num[len(base_invoice_number)+1:]
+                    if suffix.isdigit():
+                        max_counter = max(max_counter, int(suffix))
+            
+            if max_counter > 0:
+                invoice_number = f"{base_invoice_number}-{max_counter + 1}"
+            else:
+                invoice_number = base_invoice_number
+        else:
+            invoice_number = base_invoice_number
+        
+        logger.info(f"[INVOICE] Generated invoice number: {invoice_number} (from address: '{property_address}' or name: '{customer_name}')")
         
         # Get QB items to use for the line item
         items = await qb_service.get_items()
@@ -220,8 +289,9 @@ async def handle_create_quickbooks_invoice(
         # Use first service/non-inventory item
         service_item = next((item for item in items if item.get('Type') in ['Service', 'NonInventory']), items[0])
         
-        # Build invoice data
+        # Build invoice data with custom DocNumber
         invoice_data = {
+            "DocNumber": invoice_number,  # Custom invoice number based on property
             "CustomerRef": {"value": customer_id},
             "TxnDate": invoice_date,
             "DueDate": due_date,
@@ -250,7 +320,7 @@ async def handle_create_quickbooks_invoice(
         memory_manager.set(session_id, "last_invoice_number", invoice_number)
         memory_manager.set(session_id, "last_invoice_link", qb_invoice_link)
         
-        logger.info(f"AI executed: Created QuickBooks invoice for {customer_name} - ${amount}")
+        logger.info(f"AI executed: Created QuickBooks invoice #{invoice_number} for {customer_name} - ${amount}")
         
         return {
             "status": "success",
@@ -258,7 +328,7 @@ async def handle_create_quickbooks_invoice(
             "invoice_number": invoice_number,
             "invoice_id": invoice_id,
             "invoice_link": qb_invoice_link,
-            "action_taken": f"Created QuickBooks invoice for {customer_name} - ${amount}",
+            "action_taken": f"Created QuickBooks invoice #{invoice_number} for {customer_name} - ${amount}",
             "data_updated": True
         }
         

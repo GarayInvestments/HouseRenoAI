@@ -468,7 +468,7 @@ class OpenAIService:
                     "type": "function",
                     "function": {
                         "name": "create_quickbooks_invoice",
-                        "description": "Create a new invoice in QuickBooks Online. ONLY call this after user confirms they want to create the invoice.",
+                        "description": "Create a new invoice in QuickBooks Online with property address-based invoice numbering (e.g., '1105-Sandy-Bottom' from '1105 Sandy Bottom Dr'). ONLY call this after user confirms they want to create the invoice. IMPORTANT: Always try to include property_address if available from project or customer data to generate a meaningful invoice number.",
                         "parameters": {
                             "type": "object",
                             "properties": {
@@ -487,6 +487,10 @@ class OpenAIService:
                                 "description": {
                                     "type": "string",
                                     "description": "Description of services/work performed"
+                                },
+                                "property_address": {
+                                    "type": "string",
+                                    "description": "Property address for invoice numbering (e.g., '1105 Sandy Bottom Dr, Concord, NC'). If available from project data, include it to generate meaningful invoice numbers like '1105-Sandy-Bottom'."
                                 },
                                 "invoice_date": {
                                     "type": "string",
