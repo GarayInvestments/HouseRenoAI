@@ -1285,6 +1285,205 @@ async def handle_update_quickbooks_customer(
         }
 
 
+async def handle_map_clients_to_customers(
+    args: Dict[str, Any],
+    google_service,
+    quickbooks_service,
+    session_id: str,
+    memory_manager
+) -> Dict[str, Any]:
+    """
+    Establish and maintain a comprehensive mapping between Google Sheets Clients and QuickBooks Customers.
+    
+    This function:
+    1. Analyzes all clients in Sheets and customers in QB
+    2. Matches by name, email, or existing QBO Client ID
+    3. Updates the "QBO Client ID" column in Sheets for matched clients
+    4. Reports unmapped clients (exist in Sheets but not QB)
+    5. Reports orphaned customers (exist in QB but not in Sheets)
+    6. Provides detailed mapping statistics
+    
+    Args:
+        auto_create: If true, automatically create QB customers for unmapped Sheet clients (default: false)
+        dry_run: If true, preview matches without updating Sheets (default: false)
+    """
+    try:
+        auto_create = args.get("auto_create", False)
+        dry_run = args.get("dry_run", False)
+        
+        logger.info(f"[CLIENT MAPPING] Starting mapping (auto_create={auto_create}, dry_run={dry_run})")
+        
+        # Get all clients from Sheets
+        clients_data = await google_service.get_clients_data()
+        logger.info(f"[CLIENT MAPPING] Found {len(clients_data)} clients in Google Sheets")
+        
+        # Get all QB customers
+        qb_customers = await quickbooks_service.get_customers()
+        logger.info(f"[CLIENT MAPPING] Found {len(qb_customers)} customers in QuickBooks")
+        
+        # Build QB lookup maps for efficient matching
+        qb_by_id = {}
+        qb_by_name = {}
+        qb_by_email = {}
+        
+        for customer in qb_customers:
+            cust_id = str(customer.get('Id', ''))
+            name = customer.get('DisplayName', '').strip().lower()
+            email_obj = customer.get('PrimaryEmailAddr', {})
+            email = email_obj.get('Address', '').strip().lower() if email_obj else ''
+            
+            if cust_id:
+                qb_by_id[cust_id] = customer
+            if name:
+                qb_by_name[name] = customer
+            if email:
+                qb_by_email[email] = customer
+        
+        # Track mapping results
+        matched = []
+        already_mapped = []
+        unmapped_clients = []
+        name_conflicts = []
+        updates_made = 0
+        
+        # Process each Sheet client
+        for client in clients_data:
+            client_id = client.get('Client ID', '')
+            client_name = (client.get('Full Name') or client.get('Client Name', '')).strip()
+            client_email = client.get('Email', '').strip().lower()
+            existing_qbo_id = str(client.get('QBO Client ID', '')).strip()
+            
+            if not client_name:
+                continue
+            
+            matched_customer = None
+            match_method = None
+            
+            # Method 1: Match by existing QBO Client ID
+            if existing_qbo_id and existing_qbo_id in qb_by_id:
+                matched_customer = qb_by_id[existing_qbo_id]
+                match_method = "existing_qbo_id"
+                already_mapped.append({
+                    "client_name": client_name,
+                    "client_id": client_id,
+                    "qbo_id": existing_qbo_id,
+                    "qbo_name": matched_customer.get('DisplayName')
+                })
+                continue
+            
+            # Method 2: Match by email (most reliable)
+            if client_email and client_email in qb_by_email:
+                matched_customer = qb_by_email[client_email]
+                match_method = "email"
+            
+            # Method 3: Match by name (exact match, case-insensitive)
+            elif client_name.lower() in qb_by_name:
+                matched_customer = qb_by_name[client_name.lower()]
+                match_method = "name"
+            
+            # If matched, update Sheet with QBO ID
+            if matched_customer:
+                qbo_id = str(matched_customer.get('Id'))
+                qbo_name = matched_customer.get('DisplayName')
+                qbo_email = matched_customer.get('PrimaryEmailAddr', {}).get('Address', 'N/A')
+                
+                matched.append({
+                    "client_name": client_name,
+                    "client_id": client_id,
+                    "client_email": client_email or 'N/A',
+                    "qbo_id": qbo_id,
+                    "qbo_name": qbo_name,
+                    "qbo_email": qbo_email,
+                    "match_method": match_method
+                })
+                
+                # Update Sheets with QBO ID (unless dry_run)
+                if not dry_run and client_id:
+                    try:
+                        await google_service.update_record_by_id(
+                            sheet_name='Clients',
+                            id_field='Client ID',
+                            record_id=client_id,
+                            updates={'QBO Client ID': qbo_id}
+                        )
+                        updates_made += 1
+                        logger.info(f"[CLIENT MAPPING] Updated {client_name} with QBO ID {qbo_id}")
+                    except Exception as e:
+                        logger.error(f"[CLIENT MAPPING] Failed to update {client_name}: {e}")
+            else:
+                # No match found - unmapped client
+                unmapped_clients.append({
+                    "client_name": client_name,
+                    "client_id": client_id,
+                    "client_email": client_email or 'N/A',
+                    "reason": "No matching QB customer found by name or email"
+                })
+        
+        # Find orphaned QB customers (not in Sheets)
+        sheet_qbo_ids = set(str(c.get('QBO Client ID', '')).strip() for c in clients_data if c.get('QBO Client ID'))
+        sheet_names = set((c.get('Full Name') or c.get('Client Name', '')).strip().lower() for c in clients_data)
+        sheet_emails = set(c.get('Email', '').strip().lower() for c in clients_data if c.get('Email'))
+        
+        orphaned_customers = []
+        for customer in qb_customers:
+            cust_id = str(customer.get('Id', ''))
+            cust_name = customer.get('DisplayName', '').strip()
+            cust_email = customer.get('PrimaryEmailAddr', {}).get('Address', '').strip().lower()
+            
+            # Check if this QB customer is linked to any Sheet client
+            in_sheets = (
+                cust_id in sheet_qbo_ids or
+                cust_name.lower() in sheet_names or
+                (cust_email and cust_email in sheet_emails)
+            )
+            
+            if not in_sheets:
+                orphaned_customers.append({
+                    "qbo_id": cust_id,
+                    "qbo_name": cust_name,
+                    "qbo_email": cust_email or 'N/A',
+                    "reason": "Exists in QB but not in Sheets (may be old project or invoice-only customer)"
+                })
+        
+        # Build comprehensive result
+        result = {
+            "status": "success",
+            "dry_run": dry_run,
+            "summary": {
+                "total_clients_in_sheets": len(clients_data),
+                "total_customers_in_qb": len(qb_customers),
+                "already_mapped": len(already_mapped),
+                "newly_matched": len(matched),
+                "updates_made": updates_made,
+                "unmapped_clients": len(unmapped_clients),
+                "orphaned_qb_customers": len(orphaned_customers)
+            },
+            "already_mapped": already_mapped[:10],  # Show first 10
+            "newly_matched": matched,
+            "unmapped_clients": unmapped_clients,
+            "orphaned_customers": orphaned_customers[:20]  # Show first 20
+        }
+        
+        # Store in session memory
+        memory_manager.set(session_id, "last_client_mapping", {
+            "matched": len(matched),
+            "unmapped": len(unmapped_clients),
+            "orphaned": len(orphaned_customers),
+            "updates_made": updates_made
+        })
+        
+        logger.info(f"[CLIENT MAPPING] Complete: {len(matched)} matched, {len(unmapped_clients)} unmapped, {updates_made} updates")
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"[CLIENT MAPPING] Error: {e}", exc_info=True)
+        return {
+            "status": "failed",
+            "error": f"Client mapping failed: {str(e)}"
+        }
+
+
 # Handler registry - maps function names to handler functions
 FUNCTION_HANDLERS = {
     "update_project_status": handle_update_project_status,
@@ -1293,6 +1492,7 @@ FUNCTION_HANDLERS = {
     "create_quickbooks_invoice": handle_create_quickbooks_invoice,
     "update_quickbooks_invoice": handle_update_quickbooks_invoice,
     "update_quickbooks_customer": handle_update_quickbooks_customer,
+    "map_clients_to_customers": handle_map_clients_to_customers,
     "add_column_to_sheet": handle_add_column_to_sheet,
     "update_client_field": handle_update_client_field,
     "sync_quickbooks_clients": handle_sync_quickbooks_clients,

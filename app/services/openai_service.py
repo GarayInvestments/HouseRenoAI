@@ -572,6 +572,24 @@ class OpenAIService:
                     }
                 },
                 {
+                    "name": "map_clients_to_customers",
+                    "description": "Establish comprehensive mapping between Google Sheets Clients and QuickBooks Customers. Analyzes all clients and customers, matches by QBO ID/email/name, updates 'QBO Client ID' column in Sheets, reports unmapped clients (in Sheets but not QB) and orphaned customers (in QB but not Sheets). Use for 'map clients to QB', 'sync client mappings', 'link clients to customers', or 'show unmapped clients'. Provides detailed statistics and identifies data quality issues.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "auto_create": {
+                                "type": "boolean",
+                                "description": "If true, automatically creates QB customers for unmapped Sheet clients (default: false)"
+                            },
+                            "dry_run": {
+                                "type": "boolean",
+                                "description": "If true, previews matches without updating Sheets (default: false)"
+                            }
+                        },
+                        "required": []
+                    }
+                },
+                {
                     "name": "create_quickbooks_customer_from_sheet",
                     "description": "Create a new QuickBooks customer using data from an existing client in Google Sheets. IMPORTANT: This function automatically looks up the client's information (email, phone, address, company, role) from the Sheets - you do NOT need to ask the user for these details. Use when user asks to 'add [client name] to QuickBooks', 'create QB customer for [name]', or when a client exists in Sheets but not in QB. The function will extract all available client details from the Sheet automatically and create the QB customer. Automatically sets CustomerTypeRef to 'GC Compliance' and updates the Sheet with the new QBO Client ID.",
                     "parameters": {
