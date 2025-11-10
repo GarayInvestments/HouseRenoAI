@@ -954,25 +954,47 @@ class QuickBooksService:
         self, 
         customer_id: str, 
         customer_data: Dict[str, Any],
-        sync_token: str
+        sync_token: str,
+        existing_customer: Dict[str, Any] = None
     ) -> Dict[str, Any]:
         """
         Update an existing customer in QuickBooks.
         
+        IMPORTANT: QuickBooks requires name fields (GivenName, FamilyName, or DisplayName) 
+        to be present in EVERY update, even when updating other fields like address.
+        
         Args:
             customer_id: QuickBooks customer ID
-            customer_data: Updated customer information (must include Id and SyncToken)
+            customer_data: Updated customer information (sparse - only fields to change)
             sync_token: Current SyncToken for optimistic locking
+            existing_customer: Full existing customer record (optional but recommended)
         
         Returns:
             Updated customer record
         """
-        # Ensure required fields for update
+        # Start with base required fields
         update_data = {
             "Id": customer_id,
-            "SyncToken": sync_token,
-            **customer_data
+            "SyncToken": sync_token
         }
+        
+        # If we have the existing customer, merge in required name fields
+        # (QuickBooks validation requires at least one name field present)
+        if existing_customer:
+            # Preserve existing name fields if not being updated
+            name_fields = ['GivenName', 'FamilyName', 'MiddleName', 'DisplayName', 'Title', 'Suffix']
+            for field in name_fields:
+                if field in existing_customer and existing_customer[field]:
+                    update_data[field] = existing_customer[field]
+        
+        # Apply user's updates (will override any existing fields copied above)
+        update_data.update(customer_data)
+        
+        # Ensure at least DisplayName exists (QuickBooks requirement)
+        if not any(update_data.get(field) for field in ['GivenName', 'FamilyName', 'DisplayName']):
+            # If still no name, try to use DisplayName from existing
+            if existing_customer and existing_customer.get('DisplayName'):
+                update_data['DisplayName'] = existing_customer['DisplayName']
         
         response = await self._make_request("POST", "customer", data=update_data)
         customer = response.get("Customer", {})

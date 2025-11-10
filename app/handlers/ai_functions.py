@@ -1378,11 +1378,12 @@ async def handle_update_quickbooks_customer(
         
         logger.info(f"[UPDATE QB CUSTOMER] Found customer: {customer_name} (SyncToken: {sync_token})")
         
-        # Update customer via QuickBooks service
+        # Update customer via QuickBooks service (pass existing customer for name field preservation)
         updated_customer = await quickbooks_service.update_customer(
             customer_id=customer_id,
             customer_data=updates,
-            sync_token=sync_token
+            sync_token=sync_token,
+            existing_customer=target_customer  # Pass existing data to preserve required fields
         )
         
         logger.info(f"[UPDATE QB CUSTOMER] Successfully updated customer ID {customer_id}: {customer_name}")
