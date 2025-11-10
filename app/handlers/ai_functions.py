@@ -763,12 +763,11 @@ async def handle_create_quickbooks_customer_from_sheet(
         
         # Build customer data for QuickBooks
         customer_data = {
-            "DisplayName": client_name
+            "DisplayName": client_name,
+            "CustomerTypeRef": {
+                "value": "510823"  # GC Compliance type ID
+            }
         }
-        
-        # Note: Temporarily excluding CustomerTypeRef to debug QB API error
-        # QuickBooks was throwing NullPointerException - may need to set up
-        # "GC Compliance" type in QB first, or use type ID instead of name
         
         # Add email if available
         if client_email:
