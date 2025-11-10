@@ -197,6 +197,15 @@ npm run dev
 # Frontend connects to PRODUCTION backend by default (see frontend/.env)
 VITE_API_URL=https://houserenoai.onrender.com
 ```
+
+**⚠️ CRITICAL: Server Terminal Management**
+- **Backend and Frontend servers MUST run in DEDICATED terminals**
+- **NEVER run other commands in a terminal that's running a server**
+- Running commands in server terminals will kill the server process
+- **Always open a NEW terminal** for git commands, testing, log checks, etc.
+- If you need to run a command and only have server terminals, open Terminal 3+
+- Pattern: Terminal 1 = Backend (blocked), Terminal 2 = Frontend (blocked), Terminal 3+ = Commands
+
 **Note**: venv is at root level, not in a backend/ subdirectory. Most API endpoints require JWT authentication (send `Authorization: Bearer <token>` header).
 
 ### Environment Files
