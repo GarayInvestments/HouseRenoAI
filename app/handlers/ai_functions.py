@@ -791,7 +791,6 @@ async def handle_create_quickbooks_customer_from_sheet(
     Create a new QuickBooks customer based on a client in Google Sheets.
     
     Looks up client by name or ID in Sheets, then creates matching customer in QB.
-    Automatically sets CustomerTypeRef to 'GC Compliance'.
     
     Args:
         args: Function arguments containing client_name or client_id
@@ -881,10 +880,8 @@ async def handle_create_quickbooks_customer_from_sheet(
         
         # Build customer data for QuickBooks
         customer_data = {
-            "DisplayName": client_name,
-            "CustomerTypeRef": {
-                "value": "510823"  # GC Compliance type ID
-            }
+            "DisplayName": client_name
+            # CustomerTypeRef removed - no longer categorizing customers
         }
         
         # Split name into GivenName and FamilyName
