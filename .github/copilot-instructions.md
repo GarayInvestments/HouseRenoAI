@@ -1,5 +1,14 @@
 # House Renovators AI Portal - Copilot Instructions
 
+## ⚠️ CRITICAL: Server Terminal Management
+**Backend and Frontend servers MUST run in DEDICATED terminals that are BLOCKED from other commands**
+- **NEVER run commands in a terminal that's running a server** - it will kill the server process
+- **Always open a NEW terminal** for git, testing, logs, or any other commands
+- **Pattern**: Terminal 1 = Backend (blocked), Terminal 2 = Frontend (blocked), Terminal 3+ = Commands
+- If you only have server terminals available, open Terminal 3 before running any command
+
+---
+
 ## ⚡ Quick Reference: Common Tasks
 
 ### When Asked to "Test Chat"
