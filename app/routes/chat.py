@@ -84,6 +84,24 @@ async def process_chat_message(chat_data: Dict[str, Any]):
             
             timer.stop("context_build")
             
+            # STEP 1: Log what's actually in context after building
+            session_logger.info(session_id, f"[DEBUG] Context keys: {list(context.keys())}")
+            session_logger.info(session_id, f"[DEBUG] Clients count: {len(context.get('all_clients', []))}")
+            session_logger.info(session_id, f"[DEBUG] Projects count: {len(context.get('all_projects', []))}")
+            session_logger.info(session_id, f"[DEBUG] Permits count: {len(context.get('all_permits', []))}")
+            session_logger.info(session_id, f"[DEBUG] Contexts loaded: {context.get('contexts_loaded', [])}")
+            session_logger.info(session_id, f"[DEBUG] Session memory keys: {list(context.get('session_memory', {}).keys())}")
+            
+            # STEP 4: Validate context has data before sending to OpenAI
+            if 'all_clients' not in context or len(context.get('all_clients', [])) == 0:
+                session_logger.warning(session_id, "⚠️ Context has NO clients data!")
+            
+            if 'all_projects' not in context or len(context.get('all_projects', [])) == 0:
+                session_logger.warning(session_id, "⚠️ Context has NO projects data!")
+            
+            if 'all_permits' not in context or len(context.get('all_permits', [])) == 0:
+                session_logger.warning(session_id, "⚠️ Context has NO permits data!")
+            
         except Exception as e:
             timer.stop("context_build")
             session_logger.warning(session_id, f"Could not fetch data context: {e}")

@@ -16,6 +16,25 @@ class OpenAIService:
         Returns: (response_text, function_calls_list)
         """
         try:
+            # STEP 2: Log what OpenAI service receives
+            logger.info(f"[OPENAI] Received context keys: {list(context.keys()) if context else 'None'}")
+            logger.info(f"[OPENAI] all_clients available: {'all_clients' in context if context else False}")
+            logger.info(f"[OPENAI] all_projects available: {'all_projects' in context if context else False}")
+            logger.info(f"[OPENAI] all_permits available: {'all_permits' in context if context else False}")
+            
+            if context and 'all_clients' in context:
+                logger.info(f"[OPENAI] all_clients count: {len(context['all_clients'])}")
+                # Log first client as sample
+                if context['all_clients']:
+                    first_client = context['all_clients'][0]
+                    logger.info(f"[OPENAI] Sample client keys: {list(first_client.keys())}")
+            
+            if context and 'all_projects' in context:
+                logger.info(f"[OPENAI] all_projects count: {len(context['all_projects'])}")
+            
+            if context and 'all_permits' in context:
+                logger.info(f"[OPENAI] all_permits count: {len(context['all_permits'])}")
+            
             # Get current date/time for AI context
             from datetime import datetime
             import pytz
