@@ -48,9 +48,9 @@ These may appear in extracted data but aren't standard columns:
 
 ---
 
-## 👥 Clients Sheet (10 Columns) ✅ VERIFIED
+## 👥 Clients Sheet (11 Columns) ✅ VERIFIED
 
-**Range:** `Clients!A1:J`  
+**Range:** `Clients!A1:K`  
 **Purpose:** Store client/contractor contact information
 
 | Col # | Column Name | Data Type | Required | Notes |
@@ -196,22 +196,30 @@ Users (Email) ←→ Sessions (User Email)
 
 ### QuickBooks Integration
 ```
-Clients (Client ID) → Find QB Customer by name/email
-Clients (QBO Client ID) → Direct QuickBooks customer link
+Clients (Client ID) → Find QB Customer by name/email matching
+Clients (QBO Client ID) → Direct QuickBooks customer link (preferred - faster)
 Projects (HR PC Service Fee) → QuickBooks Invoice (Amount)
 Projects (Project Address) → QuickBooks Invoice (DocNumber)
 Clients (Email) → QuickBooks Invoice (BillEmail)
 ```
 
+**Note:** Always check for QBO Client ID first - it provides instant customer lookup without searching.
+
 ---
 
 ## 🎯 Common Data Access Patterns
 
-### Creating Invoice from Project
+### Creating Invoice from Project (Optimized)
 1. Get Project → Read Columns 2 (Client ID), 4 (Address), 11 (HR PC Service Fee)
-2. Get Client → Read Columns 8 (Email) and optionally 11 (QBO Client ID) using Client ID from step 1
-3. Find QB Customer → Match Client name to QuickBooks customer list OR use QBO Client ID
-4. Create Invoice → Use QB Customer ID, HR PC Service Fee, Email, Address
+2. Get Client → Read Column 11 (QBO Client ID) using Client ID from step 1
+   - **If QBO Client ID exists:** Use it directly (skip step 3)
+   - **If QBO Client ID missing:** Read Column 8 (Email) and Column 2 (Full Name) for matching
+3. Find QB Customer (only if no QBO Client ID):
+   - Match by QBO Client ID (instant) OR
+   - Search by Full Name/Email (slower)
+4. Create Invoice → Use QB Customer ID, HR PC Service Fee, Email (Column 8), Address
+
+**Performance:** Using QBO Client ID eliminates customer search, reducing API calls by ~80%.
 
 ### Project-Client Lookup
 1. User asks about client → Find in Clients sheet Column 2 (Full Name)

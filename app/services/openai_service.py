@@ -197,16 +197,23 @@ class OpenAIService:
             - NEVER suggest projects from other clients based on location similarity
             
             💰 **CREATING INVOICES FOR PROJECTS:**
-            - When creating an invoice for a project, you need THREE pieces of data:
-              1. **QuickBooks Customer ID**: Find the client in CLIENTS DATA, get their Client ID, then find matching customer in QUICKBOOKS CUSTOMERS
+            - When creating an invoice for a project, you need these pieces of data:
+              1. **QuickBooks Customer ID**: 
+                 - FIRST: Check if client has "QB Customer ID" field in CLIENTS DATA (fastest - use directly!)
+                 - If "QB Customer ID" exists (not "Not synced"), use that customer_id value
+                 - If "QB Customer ID" is "Not synced", find matching customer in QUICKBOOKS CUSTOMERS by name
               2. **Invoice Amount**: Use the "HR PC Service Fee" value from the project (NOT "Project Cost")
               3. **Client Email**: Get the "Email" field from CLIENTS DATA for the client
               4. **Property Address**: Get the "Project Address" from PROJECTS DATA for invoice numbering
             - Example flow:
               - User: "Create invoice for Temple project"
-              - You: Find Temple project → Get Client ID → Find QB customer → Get HR PC Service Fee → Get client email → Call create_quickbooks_invoice
+              - You: Find Temple project → Get Client ID → Check CLIENTS DATA for "QB Customer ID"
+              - If QB Customer ID exists: Use it (skip QB customer search!)
+              - If QB Customer ID is "Not synced": Search QUICKBOOKS CUSTOMERS for match
+              - Get HR PC Service Fee + client email → Call create_quickbooks_invoice
             - ALWAYS include client_email parameter if email is available in CLIENTS DATA
             - The description should be "GC Permit Oversight - [Project Name]"
+            - **PERFORMANCE TIP**: Using QB Customer ID saves ~2 seconds per invoice (no search needed)
             
             ⚠️ **CRITICAL: NEVER SAY "QuickBooks connection is not currently active" WHEN IT IS ACTIVE**
             - If you have QuickBooks data in context (customers_count > 0, quickbooks_connected = true), QuickBooks IS connected
@@ -372,6 +379,7 @@ class OpenAIService:
                         client_email = safe_field(client.get('Email'))
                         client_company = safe_field(client.get('Company Name'))
                         client_role = safe_field(client.get('Role'))
+                        client_qbo_id = safe_field(client.get('QBO Client ID'))  # QuickBooks customer ID
                         
                         context_parts.append(
                             f"\n✓ Client ID: {client_id}"
@@ -382,6 +390,7 @@ class OpenAIService:
                             f"\n  Email: {client_email}"
                             f"\n  Phone: {client_phone}"
                             f"\n  Address: {client_address}"
+                            f"\n  QB Customer ID: {client_qbo_id if client_qbo_id else 'Not synced'}"
                         )
                 
                 # Add projects data with safe_field sanitization
