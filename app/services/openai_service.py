@@ -212,11 +212,22 @@ class OpenAIService:
             4. If you see names like "Marta Alder", "Temple Baptist", "Rapid Restoration" in context, use THOSE names
             5. NEVER use generic names like "John Doe", "Ajay Nair", "Sarah Johnson" - these are hallucinations
             
+            🧩 **MISSING DATA POLICY - CRITICAL:**
+            - If a field such as address, phone, email, role, company, status, or any other data is missing, blank, or shows "Not provided", respond with "Not provided" or "No [field] on file"
+            - DO NOT guess, infer, or fabricate missing information based on patterns, context, or assumptions
+            - DO NOT use placeholder values like "N/A", "Unknown", "TBD", or similar - use "Not provided"
+            - Example WRONG: Client has no email → You show "email@example.com" ❌
+            - Example CORRECT: Client has no email → You show "Email: Not provided" ✅
+            - Example WRONG: Project has no address → You show "123 Main Street" ❌
+            - Example CORRECT: Project has no address → You show "Address: Not provided" ✅
+            - If you see "Not provided" in the data context, that means the information is genuinely missing - don't try to fill it in
+            
             DATA ACCESS:
             You receive the complete dataset in the context. Search through it thoroughly to answer questions.
             Don't say "I don't have access" - the data is provided to you in the context.
             🚨 ONLY USE DATA PROVIDED IN CONTEXT - NEVER INVENT OR FABRICATE DATA
             🚨 THIS IS A REAL DATABASE - NOT A DEMO OR TUTORIAL - USE ACTUAL DATA ONLY
+            🚨 IF DATA SHOWS "Not provided" - THAT MEANS IT'S TRULY MISSING - DON'T FABRICATE IT
             """
             
             # Start with system prompt
@@ -237,6 +248,13 @@ class OpenAIService:
             
             # Add context if provided - format it clearly for AI
             if context:
+                # Helper function to sanitize missing/blank data
+                def safe_field(value):
+                    """Convert None, empty strings, or whitespace-only values to 'Not provided'"""
+                    if value is None or (isinstance(value, str) and value.strip() == ""):
+                        return "Not provided"
+                    return str(value).strip()
+                
                 # Build a structured context message
                 context_parts = []
                 
@@ -325,14 +343,14 @@ class OpenAIService:
                     logger.info(f"[DEBUG] Adding {len(clients_data)} clients to context (showing up to 50)")
                     for client in clients_data[:50]:  # Limit to prevent token overflow
                         # Handle both formats: direct fields or nested 'Name' key
-                        client_id = client.get('Client ID', 'N/A')
-                        client_name = client.get('Full Name') or client.get('Name') or client.get('Client Name', 'Unknown')
-                        client_status = client.get('Status', 'N/A')
-                        client_address = client.get('Address', 'N/A')
-                        client_phone = client.get('Phone', 'N/A')
-                        client_email = client.get('Email', 'N/A')
-                        client_company = client.get('Company Name', 'N/A')
-                        client_role = client.get('Role', 'N/A')
+                        client_id = safe_field(client.get('Client ID'))
+                        client_name = safe_field(client.get('Full Name') or client.get('Name') or client.get('Client Name'))
+                        client_status = safe_field(client.get('Status'))
+                        client_address = safe_field(client.get('Address'))
+                        client_phone = safe_field(client.get('Phone'))
+                        client_email = safe_field(client.get('Email'))
+                        client_company = safe_field(client.get('Company Name'))
+                        client_role = safe_field(client.get('Role'))
                         
                         context_parts.append(
                             f"\n✓ Client ID: {client_id}"
@@ -343,6 +361,48 @@ class OpenAIService:
                             f"\n  Email: {client_email}"
                             f"\n  Phone: {client_phone}"
                             f"\n  Address: {client_address}"
+                        )
+                
+                # Add projects data with safe_field sanitization
+                projects_data = context.get('all_projects', [])
+                if projects_data:
+                    context_parts.append("\n\n=== PROJECTS DATA ===")
+                    context_parts.append("🚨 THESE ARE THE ONLY REAL PROJECTS - USE EXACT DATA FROM HERE!")
+                    logger.info(f"[DEBUG] Adding {len(projects_data)} projects to context (showing up to 50)")
+                    for project in projects_data[:50]:
+                        project_id = safe_field(project.get('Project ID'))
+                        project_name = safe_field(project.get('Project Name') or project.get('Name'))
+                        project_address = safe_field(project.get('Project Address') or project.get('Address'))
+                        project_status = safe_field(project.get('Status'))
+                        project_client = safe_field(project.get('Client Name') or project.get('Client'))
+                        
+                        context_parts.append(
+                            f"\n✓ Project ID: {project_id}"
+                            f"\n  Name: {project_name}"
+                            f"\n  Address: {project_address}"
+                            f"\n  Status: {project_status}"
+                            f"\n  Client: {project_client}"
+                        )
+                
+                # Add permits data with safe_field sanitization
+                permits_data = context.get('all_permits', [])
+                if permits_data:
+                    context_parts.append("\n\n=== PERMITS DATA ===")
+                    context_parts.append("🚨 THESE ARE THE ONLY REAL PERMITS - USE EXACT DATA FROM HERE!")
+                    logger.info(f"[DEBUG] Adding {len(permits_data)} permits to context (showing up to 50)")
+                    for permit in permits_data[:50]:
+                        permit_id = safe_field(permit.get('Permit ID'))
+                        permit_number = safe_field(permit.get('Permit Number'))
+                        permit_status = safe_field(permit.get('Status'))
+                        permit_address = safe_field(permit.get('Address') or permit.get('Project Address'))
+                        permit_type = safe_field(permit.get('Permit Type'))
+                        
+                        context_parts.append(
+                            f"\n✓ Permit ID: {permit_id}"
+                            f"\n  Number: {permit_number}"
+                            f"\n  Type: {permit_type}"
+                            f"\n  Status: {permit_status}"
+                            f"\n  Address: {permit_address}"
                         )
                 
                 context_message = "\n".join(context_parts)
@@ -664,8 +724,56 @@ class OpenAIService:
                     "arguments": json.loads(message_response.function_call.arguments)
                 })
             
+            # Sanitize AI output to catch any remaining hallucinations
+            def sanitize_ai_output(text: str) -> str:
+                """
+                Post-filter to detect and remove common hallucination patterns.
+                Uses context-aware detection rather than blanket string matching.
+                """
+                if not text:
+                    return text
+                
+                # Track suspicious patterns (addresses)
+                suspicious_addresses = [
+                    "123 main st", "456 elm st", "789 oak ave",
+                    "123 example", "sample address", "test street"
+                ]
+                
+                # Track suspicious names (generic placeholders)
+                suspicious_names = [
+                    "john doe", "jane smith", "bob johnson",
+                    "sample customer", "demo client", "test user",
+                    "example company", "acme corp", "abc inc"
+                ]
+                
+                text_lower = text.lower()
+                found_issues = []
+                
+                # Check for suspicious addresses
+                for addr in suspicious_addresses:
+                    if addr in text_lower:
+                        found_issues.append(f"Suspicious address pattern: {addr}")
+                        logger.warning(f"[AI HALLUCINATION DETECTED] Fabricated address: {addr}")
+                
+                # Check for suspicious names (only flag if NOT in actual data context)
+                for name in suspicious_names:
+                    if name in text_lower:
+                        found_issues.append(f"Suspicious name pattern: {name}")
+                        logger.warning(f"[AI HALLUCINATION DETECTED] Fabricated name: {name}")
+                
+                # If hallucinations detected, add warning to response
+                if found_issues:
+                    warning = "\n\n⚠️ **Data Quality Warning**: Some information may be placeholder values. Please verify accuracy."
+                    return text + warning
+                
+                return text
+            
+            # Apply output sanitization
+            ai_text = message_response.content or ""
+            ai_text = sanitize_ai_output(ai_text)
+            
             # Return both the text response and any function calls
-            return (message_response.content or "", function_calls)
+            return (ai_text, function_calls)
             
         except Exception as e:
             logger.error(f"OpenAI API error: {e}")
