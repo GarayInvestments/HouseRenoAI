@@ -317,17 +317,32 @@ class OpenAIService:
                     if len(context['client_ids']) > 20:
                         context_parts.append(f"... and {len(context['client_ids']) - 20} more")
                 
-                # Add clients summary for easy reference
-                if 'clients_summary' in context and context['clients_summary']:
+                # Add clients data for easy reference - CHECK BOTH KEYS
+                clients_data = context.get('all_clients') or context.get('clients_summary') or context.get('clients', [])
+                if clients_data:
                     context_parts.append("\n\n=== CLIENTS DATA ===")
-                    for client in context['clients_summary'][:50]:  # Limit to prevent token overflow
+                    context_parts.append("🚨 THESE ARE THE ONLY REAL CLIENT NAMES - USE THESE EXACT NAMES!")
+                    logger.info(f"[DEBUG] Adding {len(clients_data)} clients to context (showing up to 50)")
+                    for client in clients_data[:50]:  # Limit to prevent token overflow
+                        # Handle both formats: direct fields or nested 'Name' key
+                        client_id = client.get('Client ID', 'N/A')
+                        client_name = client.get('Full Name') or client.get('Name') or client.get('Client Name', 'Unknown')
+                        client_status = client.get('Status', 'N/A')
+                        client_address = client.get('Address', 'N/A')
+                        client_phone = client.get('Phone', 'N/A')
+                        client_email = client.get('Email', 'N/A')
+                        client_company = client.get('Company Name', 'N/A')
+                        client_role = client.get('Role', 'N/A')
+                        
                         context_parts.append(
-                            f"\nClient ID: {client.get('Client ID')}"
-                            f"\n  Name: {client.get('Name')}"
-                            f"\n  Status: {client.get('Status')}"
-                            f"\n  Address: {client.get('Address')}"
-                            f"\n  Phone: {client.get('Phone')}"
-                            f"\n  Email: {client.get('Email')}"
+                            f"\n✓ Client ID: {client_id}"
+                            f"\n  Full Name: {client_name}"
+                            f"\n  Company: {client_company}"
+                            f"\n  Role: {client_role}"
+                            f"\n  Status: {client_status}"
+                            f"\n  Email: {client_email}"
+                            f"\n  Phone: {client_phone}"
+                            f"\n  Address: {client_address}"
                         )
                 
                 context_message = "\n".join(context_parts)
