@@ -12,7 +12,7 @@
 ## ⚡ Quick Reference: Common Tasks
 
 ### When Asked to "Test Chat"
-1. **Read test procedures**: `docs/CHAT_TESTING_SOP.md` (6 standard tests, log patterns, troubleshooting)
+1. **Read test procedures**: `docs/guides/CHAT_TESTING_SOP.md` (6 standard tests, log patterns, troubleshooting)
 2. **Use test scripts**: `scripts/testing/chat-tests/test_sync_production.py` or similar
 3. **Check Render logs**: `render logs -r srv-d44ak76uk2gs73a3psig --limit 50 --confirm -o text`
 4. **Look for patterns**: `[METRICS]`, `Smart context loading:`, error traces
@@ -39,16 +39,16 @@
 3. **Review context loading**: Look for `Smart context loading:` to verify data sources
 4. **Check function execution**: Search for function name in logs
 5. **Verify data in Sheets**: Ensure Google Sheets has expected data/columns
-6. **Reference docs**: `docs/TROUBLESHOOTING.md` for common issues
+6. **Reference docs**: `docs/guides/TROUBLESHOOTING.md` for common issues
 
 ### When Setting Up New Machine
-1. **Follow setup guide**: `docs/SETUP_GUIDE.md` (comprehensive, covers all steps)
-2. **Quick start**: `docs/SETUP_NEW_MACHINE.md` (streamlined version)
-3. **Environment vars**: `docs/SETUP_QUICK_REFERENCE.md` (all required vars)
-4. **Secrets setup**: `docs/GIT_SECRET_SETUP.md` (GPG-based encryption)
+1. **Follow setup guide**: `docs/setup/SETUP_GUIDE.md` (comprehensive, covers all steps)
+2. **Quick start**: `docs/setup/SETUP_NEW_MACHINE.md` (streamlined version)
+3. **Environment vars**: `docs/setup/SETUP_QUICK_REFERENCE.md` (all required vars)
+4. **Secrets setup**: `docs/setup/GIT_SECRET_SETUP.md` (GPG-based encryption)
 
 ### When Working with QuickBooks
-1. **Complete reference**: `docs/QUICKBOOKS_GUIDE.md` (OAuth2, API, sync, troubleshooting)
+1. **Complete reference**: `docs/guides/QUICKBOOKS_GUIDE.md` (OAuth2, API, sync, troubleshooting)
 2. **Check auth status**: GET `/v1/quickbooks/status`
 3. **Connect if needed**: Navigate to `/v1/quickbooks/connect`
 4. **Test operations**: `scripts/testing/chat-tests/test_quickbooks_comprehensive.py`
@@ -413,34 +413,35 @@ curl http://localhost:8000/v1/quickbooks/customers -H "Authorization: Bearer $to
 ```
 
 **For comprehensive testing workflows, see:**
-- `docs/CHAT_TESTING_SOP.md` - Standard testing procedures for chat functionality
+- `docs/guides/CHAT_TESTING_SOP.md` - Standard testing procedures for chat functionality
 - `scripts/testing/chat-tests/` - Test scripts for various features
 
 ## 📚 Documentation Reference
 
 ### Essential Guides (Read These First)
-- **`docs/QUICKBOOKS_GUIDE.md`** - Complete QuickBooks OAuth2, API usage, sync features
-- **`docs/SETUP_GUIDE.md`** - Dev environment setup, GitHub Actions, secrets management
-- **`docs/CHAT_TESTING_SOP.md`** - Testing chat features, log monitoring, troubleshooting
-- **`docs/API_DOCUMENTATION.md`** - Complete API reference with examples
-- **`docs/WORKFLOW_GUIDE.md`** - Daily development workflow and git patterns
+- **`docs/guides/QUICKBOOKS_GUIDE.md`** - Complete QuickBooks OAuth2, API usage, sync features
+- **`docs/setup/SETUP_GUIDE.md`** - Dev environment setup, GitHub Actions, secrets management
+- **`docs/guides/CHAT_TESTING_SOP.md`** - Testing chat features, log monitoring, troubleshooting
+- **`docs/guides/API_DOCUMENTATION.md`** - Complete API reference with examples
+- **`docs/guides/WORKFLOW_GUIDE.md`** - Daily development workflow and git patterns
 
 ### Configuration & Setup
-- **`docs/GIT_SECRET_SETUP.md`** - GPG-based secrets encryption
-- **`docs/SETUP_NEW_MACHINE.md`** - Quick setup for new developers
-- **`docs/SETUP_QUICK_REFERENCE.md`** - Environment variables and quick commands
+- **`docs/setup/GIT_SECRET_SETUP.md`** - GPG-based secrets encryption
+- **`docs/setup/SETUP_NEW_MACHINE.md`** - Quick setup for new developers
+- **`docs/setup/SETUP_QUICK_REFERENCE.md`** - Environment variables and quick commands
 
 ### Deployment & Operations
-- **`docs/DEPLOYMENT.md`** - Render and Cloudflare deployment process
-- **`docs/RENDER_API_DEPLOYMENT_GUIDE.md`** - Programmatic deployments via Render API
-- **`docs/RENDER_LOGS_GUIDE.md`** - Log access and monitoring
-- **`docs/LOGGING_SECURITY.md`** - Security logging patterns and monitoring
+- **`docs/deployment/DEPLOYMENT.md`** - Render and Cloudflare deployment process
+- **`docs/deployment/RENDER_API_DEPLOYMENT_GUIDE.md`** - Programmatic deployments via Render API
+- **`docs/deployment/RENDER_LOGS_GUIDE.md`** - Log access and monitoring
+- **`docs/technical/LOGGING_SECURITY.md`** - Security logging patterns and monitoring
 
 ### Reference & Troubleshooting
-- **`docs/TROUBLESHOOTING.md`** - Common issues and solutions
-- **`docs/FIELD_MAPPING.md`** - Google Sheets column mappings
-- **`docs/PROJECT_STATUS.md`** - Current project status and roadmap
-- **`docs/BASELINE_METRICS.md`** - Performance benchmarks
+- **`docs/guides/TROUBLESHOOTING.md`** - Common issues and solutions
+- **`docs/guides/FIELD_MAPPING.md`** - Google Sheets column mappings
+- **`docs/technical/GOOGLE_SHEETS_STRUCTURE.md`** - Sheets structure and field definitions
+- **`docs/technical/GOOGLE_SHEETS_API_ACCESS.md`** - API access patterns and best practices
+- **`docs/technical/BASELINE_METRICS.md`** - Performance benchmarks
 
 ### Scripts Organization
 - **`scripts/testing/chat-tests/`** - All chat and integration tests
