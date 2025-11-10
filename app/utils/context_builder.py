@@ -170,14 +170,16 @@ async def build_sheets_context(google_service) -> Dict[str, Any]:
 
 async def build_quickbooks_context(qb_service) -> Dict[str, Any]:
     """
-    Build context from QuickBooks data.
+    Build context from QuickBooks data (GC Compliance customers only).
     
-    Fetches and summarizes:
-    - Invoices (limited to recent 10, with summary stats)
-    - Customers (full list)
+    Filters customers and invoices to CustomerTypeRef = 510823 (GC Compliance).
+    Reduces token usage by ~60-70% while keeping data relevant for AI.
+    
+    NOTE: Handlers that need ALL customers (e.g., map_clients_to_customers)
+    should call qb_service.get_customers() directly, not rely on context.
     
     Returns:
-        Dict with QB data and summaries
+        Dict with filtered QB data optimized for AI context
     """
     try:
         if not qb_service.is_authenticated():
@@ -188,38 +190,78 @@ async def build_quickbooks_context(qb_service) -> Dict[str, Any]:
                 "summary": {},
                 "error": "QuickBooks not authenticated"
             }
-        
-        # Fetch QB data
+
+        # GC Compliance Type ID (used across all client operations)
+        GC_COMPLIANCE_TYPE_ID = "510823"
+
+        # Fetch all QuickBooks data (cached for 5 minutes)
+        all_customers = await qb_service.get_customers()
         all_invoices = await qb_service.get_invoices()
-        customers = await qb_service.get_customers()
         
-        # Limit invoices to recent 10 for context (reduce tokens)
-        recent_invoices = sorted(
-            all_invoices, 
-            key=lambda x: x.get('MetaData', {}).get('CreateTime', ''), 
+        if not all_customers:
+            logger.info("[QB CONTEXT] No customers found in QuickBooks")
+            return {
+                "authenticated": True,
+                "customers": [],
+                "invoices": [],
+                "summary": {
+                    "customer_type": "GC Compliance",
+                    "total_customers": 0,
+                    "total_invoices": 0
+                }
+            }
+
+        # Filter to GC Compliance customers only
+        gc_customers = [
+            c for c in all_customers
+            if c.get("CustomerTypeRef", {}).get("value") == GC_COMPLIANCE_TYPE_ID
+        ]
+        
+        # Log filtering for transparency
+        logger.info(f"[QB CONTEXT] Filtered to {len(gc_customers)} GC Compliance customers from {len(all_customers)} total")
+
+        # Build lookup set of GC Compliance customer IDs
+        gc_customer_ids = {c.get("Id") for c in gc_customers if c.get("Id")}
+
+        # Filter invoices to only GC Compliance customers
+        gc_invoices = [
+            inv for inv in all_invoices
+            if inv.get("CustomerRef", {}).get("value") in gc_customer_ids
+        ]
+        
+        logger.info(f"[QB CONTEXT] Filtered to {len(gc_invoices)} GC Compliance invoices from {len(all_invoices)} total")
+
+        # Sort and limit to 10 most recent invoices for context
+        recent_gc_invoices = sorted(
+            gc_invoices,
+            key=lambda x: x.get("MetaData", {}).get("CreateTime", ""),
             reverse=True
         )[:10]
-        
-        # Calculate summary stats
-        total_amount = sum(float(inv.get('TotalAmt', 0)) for inv in all_invoices)
-        paid_invoices = [inv for inv in all_invoices if inv.get('Balance', 0) == 0]
-        unpaid_invoices = [inv for inv in all_invoices if inv.get('Balance', 0) > 0]
-        
+
+        # Calculate summary statistics (GC Compliance only)
+        total_amount = sum(float(inv.get("TotalAmt", 0)) for inv in gc_invoices)
+        paid_invoices = [inv for inv in gc_invoices if inv.get("Balance", 0) == 0]
+        unpaid_invoices = [inv for inv in gc_invoices if inv.get("Balance", 0) > 0]
+
         return {
             "authenticated": True,
-            "invoices": recent_invoices,  # Only recent 10
-            "customers": customers,
+            "type": "GC Compliance",  # Explicit label for AI
+            "customers": gc_customers,  # Filtered list
+            "invoices": recent_gc_invoices,  # 10 most recent
             "summary": {
-                "total_invoices": len(all_invoices),
-                "recent_invoices_shown": len(recent_invoices),
-                "total_customers": len(customers),
+                "customer_type": "GC Compliance (ID: 510823)",
+                "total_customers": len(gc_customers),
+                "total_customers_all": len(all_customers),  # For reference/debugging
+                "total_invoices": len(gc_invoices),
+                "recent_invoices_shown": len(recent_gc_invoices),
                 "total_amount": total_amount,
                 "paid_count": len(paid_invoices),
                 "unpaid_count": len(unpaid_invoices)
             }
         }
+
     except Exception as e:
-        logger.error(f"Error building QuickBooks context: {e}")
+        logger.error(f"Error building QuickBooks context: {e}", exc_info=True)
         return {
             "authenticated": False,
             "invoices": [],
