@@ -491,13 +491,13 @@ class OpenAIService:
                 },
                 {
                     "name": "create_quickbooks_customer_from_sheet",
-                    "description": "Create a new QuickBooks customer based on a client that exists in Google Sheets. Use when user asks to 'add [client name] to QuickBooks', 'create QB customer for [name]', or when a client is in Sheets but not in QB. Automatically sets CustomerTypeRef to 'GC Compliance' and updates the Sheet with the new QBO Client ID.",
+                    "description": "Create a new QuickBooks customer using data from an existing client in Google Sheets. IMPORTANT: This function automatically looks up the client's information (email, phone, address, company, role) from the Sheets - you do NOT need to ask the user for these details. Use when user asks to 'add [client name] to QuickBooks', 'create QB customer for [name]', or when a client exists in Sheets but not in QB. The function will extract all available client details from the Sheet automatically and create the QB customer. Automatically sets CustomerTypeRef to 'GC Compliance' and updates the Sheet with the new QBO Client ID.",
                     "parameters": {
                         "type": "object",
                         "properties": {
                             "client_name": {
                                 "type": "string",
-                                "description": "The name of the client from Google Sheets (e.g., 'Javier', 'ABC Company')"
+                                "description": "The name of the client from Google Sheets (e.g., 'Javier Martinez', 'ABC Company')"
                             },
                             "client_id": {
                                 "type": "string",
