@@ -1326,6 +1326,17 @@ async def handle_map_clients_to_customers(
         qb_customers = await quickbooks_service.get_customers()
         logger.info(f"[CLIENT MAPPING] Found {len(qb_customers)} customers in QuickBooks")
         
+        # DEBUG: Log sample client data
+        if clients_data:
+            sample_client = clients_data[0]
+            logger.info(f"[DEBUG] Sample Sheet client keys: {list(sample_client.keys())}")
+            logger.info(f"[DEBUG] Sample Sheet client: Name='{sample_client.get('Full Name') or sample_client.get('Client Name')}', Email='{sample_client.get('Email')}', QBO ID='{sample_client.get('QBO Client ID')}'")
+        
+        # DEBUG: Log sample QB customer data
+        if qb_customers:
+            sample_qb = qb_customers[0]
+            logger.info(f"[DEBUG] Sample QB customer: ID={sample_qb.get('Id')}, Name='{sample_qb.get('DisplayName')}', Email={sample_qb.get('PrimaryEmailAddr')}")
+        
         # Build QB lookup maps for efficient matching
         qb_by_id = {}
         qb_by_name = {}
@@ -1344,6 +1355,11 @@ async def handle_map_clients_to_customers(
             if email:
                 qb_by_email[email] = customer
         
+        # DEBUG: Log QB lookup maps
+        logger.info(f"[DEBUG] QB lookup maps built: {len(qb_by_id)} IDs, {len(qb_by_name)} names, {len(qb_by_email)} emails")
+        logger.info(f"[DEBUG] Sample QB names in map: {list(qb_by_name.keys())[:5]}")
+        logger.info(f"[DEBUG] Sample QB emails in map: {list(qb_by_email.keys())[:5]}")
+        
         # Track mapping results
         matched = []
         already_mapped = []
@@ -1358,7 +1374,11 @@ async def handle_map_clients_to_customers(
             client_email = client.get('Email', '').strip().lower()
             existing_qbo_id = str(client.get('QBO Client ID', '')).strip()
             
+            # DEBUG: Log each client being processed
+            logger.info(f"[DEBUG] Processing client: ID={client_id}, Name='{client_name}', Email='{client_email}', Existing QBO ID='{existing_qbo_id}'")
+            
             if not client_name:
+                logger.info(f"[DEBUG] Skipping client with no name: {client}")
                 continue
             
             matched_customer = None
@@ -1368,6 +1388,7 @@ async def handle_map_clients_to_customers(
             if existing_qbo_id and existing_qbo_id in qb_by_id:
                 matched_customer = qb_by_id[existing_qbo_id]
                 match_method = "existing_qbo_id"
+                logger.info(f"[DEBUG] ✓ Matched by existing QBO ID: {client_name} -> {matched_customer.get('DisplayName')}")
                 already_mapped.append({
                     "client_name": client_name,
                     "client_id": client_id,
@@ -1380,11 +1401,18 @@ async def handle_map_clients_to_customers(
             if client_email and client_email in qb_by_email:
                 matched_customer = qb_by_email[client_email]
                 match_method = "email"
+                logger.info(f"[DEBUG] ✓ Matched by email: {client_name} ({client_email}) -> {matched_customer.get('DisplayName')}")
             
             # Method 3: Match by name (exact match, case-insensitive)
             elif client_name.lower() in qb_by_name:
                 matched_customer = qb_by_name[client_name.lower()]
                 match_method = "name"
+                logger.info(f"[DEBUG] ✓ Matched by name: {client_name} -> {matched_customer.get('DisplayName')}")
+            else:
+                logger.info(f"[DEBUG] ✗ No match found for: {client_name} (email: {client_email or 'none'})")
+                logger.info(f"[DEBUG]   - Name '{client_name.lower()}' in qb_by_name: {client_name.lower() in qb_by_name}")
+                if client_email:
+                    logger.info(f"[DEBUG]   - Email '{client_email}' in qb_by_email: {client_email in qb_by_email}")
             
             # If matched, update Sheet with QBO ID
             if matched_customer:
