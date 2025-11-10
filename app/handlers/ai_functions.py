@@ -1489,23 +1489,37 @@ async def handle_map_clients_to_customers(
                 "newly_matched": len(matched),
                 "updates_made": updates_made,
                 "unmapped_clients": len(unmapped_clients),
-                "orphaned_qb_customers": len(orphaned_customers)
+                "orphaned_qb_customers": len(orphaned_customers),
+                "mapping_complete": len(already_mapped) + len(matched) == len(clients_data)
             },
-            "already_mapped": already_mapped[:10],  # Show first 10
-            "newly_matched": matched,
-            "unmapped_clients": unmapped_clients,
-            "orphaned_customers": orphaned_customers[:20]  # Show first 20
+            "already_mapped": already_mapped[:20] if len(already_mapped) > 0 else [],  # Show first 20
+            "newly_matched": matched[:20] if len(matched) > 0 else [],  # Show first 20
+            "unmapped_clients": unmapped_clients[:10] if len(unmapped_clients) > 0 else [],  # Show first 10
+            "orphaned_customers": orphaned_customers[:10] if len(orphaned_customers) > 0 else []  # Show first 10
         }
         
         # Store in session memory
         memory_manager.set(session_id, "last_client_mapping", {
-            "matched": len(matched),
+            "already_mapped": len(already_mapped),
+            "newly_matched": len(matched),
             "unmapped": len(unmapped_clients),
             "orphaned": len(orphaned_customers),
             "updates_made": updates_made
         })
         
-        logger.info(f"[CLIENT MAPPING] Complete: {len(matched)} matched, {len(unmapped_clients)} unmapped, {updates_made} updates")
+        logger.info(f"[CLIENT MAPPING] Complete: {len(already_mapped)} already mapped, {len(matched)} newly matched, {len(unmapped_clients)} unmapped, {updates_made} updates made")
+        
+        # Add human-readable message
+        if len(already_mapped) + len(matched) == len(clients_data) and len(unmapped_clients) == 0:
+            result["message"] = f"✅ Perfect! All {len(clients_data)} clients are mapped to QuickBooks customers."
+        elif len(matched) > 0:
+            result["message"] = f"✅ Successfully matched {len(matched)} new clients! {len(already_mapped)} were already mapped."
+        elif len(already_mapped) > 0 and len(unmapped_clients) > 0:
+            result["message"] = f"⚠️ {len(already_mapped)} clients already mapped, but {len(unmapped_clients)} clients need attention."
+        elif len(unmapped_clients) > 0:
+            result["message"] = f"⚠️ {len(unmapped_clients)} clients couldn't be matched to QuickBooks customers."
+        else:
+            result["message"] = f"ℹ️ No clients found in Google Sheets."
         
         return result
         
