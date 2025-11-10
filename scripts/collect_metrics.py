@@ -46,6 +46,12 @@ TEST_CASES = [
         "path": "/clients",
         "data": None
     },
+    {
+        "name": "Get Payments",
+        "method": "GET",
+        "path": "/payments",
+        "data": None
+    },
 ]
 
 
