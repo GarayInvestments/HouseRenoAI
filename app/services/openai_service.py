@@ -187,6 +187,15 @@ class OpenAIService:
             - Use professional construction industry terminology
             - ALWAYS format lists with proper line breaks and structure
             
+            🔗 **FINDING RELATED PROJECTS FOR A CLIENT:**
+            - When asked "what project is related to [client name]?" or "show projects for [client]"
+            - FIRST: Find the client's **Client ID** in the CLIENTS DATA section
+            - THEN: Search the PROJECTS DATA section for projects with matching **Client ID**
+            - DO NOT guess based on location or proximity
+            - Example: "Javier Martinez" → Find Client ID "abc123" → Find projects where Client ID = "abc123"
+            - If NO projects match the Client ID, say "No projects found for this client"
+            - NEVER suggest projects from other clients based on location similarity
+            
             ⚠️ **CRITICAL: NEVER SAY "QuickBooks connection is not currently active" WHEN IT IS ACTIVE**
             - If you have QuickBooks data in context (customers_count > 0, quickbooks_connected = true), QuickBooks IS connected
             - If you can't find a specific client/customer, say: "I couldn't find [name] in the [Sheets/QuickBooks] records"
@@ -371,6 +380,7 @@ class OpenAIService:
                     logger.info(f"[DEBUG] Adding {len(projects_data)} projects to context (showing up to 50)")
                     for project in projects_data[:50]:
                         project_id = safe_field(project.get('Project ID'))
+                        client_id = safe_field(project.get('Client ID'))  # CRITICAL: Link to client
                         project_name = safe_field(project.get('Project Name') or project.get('Name'))
                         project_address = safe_field(project.get('Project Address') or project.get('Address'))
                         project_status = safe_field(project.get('Status'))
@@ -378,6 +388,7 @@ class OpenAIService:
                         
                         context_parts.append(
                             f"\n✓ Project ID: {project_id}"
+                            f"\n  Client ID: {client_id}"
                             f"\n  Name: {project_name}"
                             f"\n  Address: {project_address}"
                             f"\n  Status: {project_status}"
