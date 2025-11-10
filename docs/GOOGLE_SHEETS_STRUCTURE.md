@@ -4,6 +4,7 @@
 Complete structure of all tabs/sheets in the House Renovators Google Sheets database. This document serves as the single source of truth for column names, data types, and usage across all sheets.
 
 **Last Updated:** November 10, 2025  
+**Verification Status:** ✅ Clients & Projects verified via API | ⚠️ Other sheets inferred from code  
 **Sheet ID:** (Stored in `SHEET_ID` environment variable)
 
 ---
@@ -47,31 +48,36 @@ These may appear in extracted data but aren't standard columns:
 
 ---
 
-## 👥 Clients Sheet
+## 👥 Clients Sheet (10 Columns) ✅ VERIFIED
 
-**Range:** `Clients!A1:Z`  
+**Range:** `Clients!A1:J`  
 **Purpose:** Store client/contractor contact information
 
 | Col # | Column Name | Data Type | Required | Notes |
 |-------|------------|-----------|----------|-------|
-| 1 | Client ID | String (8-char hex) | ✅ Yes | Unique identifier, format varies |
+| 1 | Client ID | String (8-char hex) | ✅ Yes | Unique identifier (e.g., `08833ef5`, `6dd00ad4`) |
 | 2 | Full Name | String | ✅ Yes | Client's full legal name |
-| 3 | Company Name | String | ⚠️ Optional | Business name if applicable |
-| 4 | Role | String | ⚠️ Optional | e.g., "General Contractor", "Developer" |
-| 5 | Status | String | ✅ Yes | e.g., "Active", "Inactive" |
-| 6 | **Email** | String (email) | ⚠️ Optional | **CRITICAL: Used for invoice delivery** |
-| 7 | Phone | String (phone) | ⚠️ Optional | Contact phone number |
-| 8 | Address | String | ⚠️ Optional | Mailing/business address |
+| 3 | Address | String | ⚠️ Optional | Mailing/business address with full formatting |
+| 4 | Status | String | ✅ Yes | e.g., "5. Active", "3. Intake Completed", "4. GCPC Completed" |
+| 5 | Role | String | ⚠️ Optional | e.g., "Owner", "Project Manager" |
+| 6 | Company Name | String | ⚠️ Optional | Business name if applicable |
+| 7 | Phone | String (phone) | ⚠️ Optional | Contact phone number (no formatting) |
+| 8 | **Email** | String (email) | ⚠️ Optional | **CRITICAL: Used for invoice delivery** |
+| 9 | Notes | String (long) | ❌ No | Additional client notes |
+| 10 | File Upload | String (URL) | ❌ No | Link to uploaded files |
+| 11 | QBO Client ID | String | ⚠️ Optional | QuickBooks Online customer ID for sync |
 
 ### Validation Rules:
-- **Client ID**: Should be 8-character hex (e.g., `abc12345`) for proper format
+- **Client ID**: 8-character hex format (e.g., `08833ef5`)
 - **Full Name**: Must not contain address markers (St, Ave, Dr, Ln, Rd)
 - **Email**: Used for QuickBooks BillEmail field in invoices
+- **Status**: Includes numeric prefix for sorting (e.g., "5. Active", "3. Intake Completed")
 
 ### Critical Usage Notes:
-- **Email Column**: Pulled for invoice creation to enable QuickBooks email delivery
-- **Client ID**: Links to Projects sheet Column 2
-- **Full Name**: Used for invoice customer name if QB customer not found
+- **Column 8 (Email)**: Pulled for invoice creation to enable QuickBooks email delivery
+- **Column 1 (Client ID)**: Links to Projects sheet Column 2
+- **Column 2 (Full Name)**: Used for invoice customer name if QB customer not found
+- **Column 11 (QBO Client ID)**: Links to QuickBooks customer records for sync operations
 
 ---
 
@@ -191,6 +197,7 @@ Users (Email) ←→ Sessions (User Email)
 ### QuickBooks Integration
 ```
 Clients (Client ID) → Find QB Customer by name/email
+Clients (QBO Client ID) → Direct QuickBooks customer link
 Projects (HR PC Service Fee) → QuickBooks Invoice (Amount)
 Projects (Project Address) → QuickBooks Invoice (DocNumber)
 Clients (Email) → QuickBooks Invoice (BillEmail)
@@ -202,8 +209,8 @@ Clients (Email) → QuickBooks Invoice (BillEmail)
 
 ### Creating Invoice from Project
 1. Get Project → Read Columns 2 (Client ID), 4 (Address), 11 (HR PC Service Fee)
-2. Get Client → Read Columns 6 (Email) using Client ID from step 1
-3. Find QB Customer → Match Client name to QuickBooks customer list
+2. Get Client → Read Columns 8 (Email) and optionally 11 (QBO Client ID) using Client ID from step 1
+3. Find QB Customer → Match Client name to QuickBooks customer list OR use QBO Client ID
 4. Create Invoice → Use QB Customer ID, HR PC Service Fee, Email, Address
 
 ### Project-Client Lookup
@@ -291,11 +298,15 @@ Clients (Email) → QuickBooks Invoice (BillEmail)
 
 ## 📝 Change Log
 
-### November 10, 2025
+### November 10, 2025 - VERIFIED WITH API
+- ✅ Verified Clients sheet: 11 columns (added QBO Client ID, Notes, File Upload)
+- ✅ Verified Projects sheet: 17 columns confirmed
+- ✅ Corrected column order for Clients (Address is col 3, not col 8)
+- ✅ Added actual Status format examples ("5. Active", "3. Intake Completed")
+- ✅ Confirmed Client ID format (8-char hex without hyphens)
 - Added HR PC Service Fee to Projects context
 - Documented Email column usage for invoicing
 - Added QuickBooks invoice integration fields
-- Documented all 17 Projects columns with critical usage notes
 
 ### Previous
 - Initial structure documented in FIELD_MAPPING.md
