@@ -324,9 +324,7 @@ async def handle_create_quickbooks_invoice(
             invoice_data["DueDate"] = due_date
         
         # Add SalesTermRef for "Due on Receipt"
-        # Note: QuickBooks term ID for "Due on Receipt" is typically "1"
-        # This will need to be verified with your specific QuickBooks setup
-        invoice_data["SalesTermRef"] = {"value": "1"}  # Due on Receipt
+        invoice_data["SalesTermRef"] = {"value": "5", "name": "Due on receipt"}  # Due on Receipt
         
         # Add BillEmail if client email is provided
         if client_email and client_email.strip():
