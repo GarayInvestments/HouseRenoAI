@@ -641,6 +641,240 @@ class QuickBooksService:
         
         return invoice
     
+    # ==================== PAYMENT OPERATIONS ====================
+    
+    async def get_payments(
+        self,
+        customer_id: Optional[str] = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Retrieve payments from QuickBooks with optional filters.
+        
+        Args:
+            customer_id: Filter by QB customer ID
+            start_date: Filter payments after this date (YYYY-MM-DD)
+            end_date: Filter payments before this date (YYYY-MM-DD)
+        
+        Returns:
+            List of payment records
+        
+        Example:
+            payments = await qb_service.get_payments(start_date="2025-01-01")
+        """
+        self._check_authentication()
+        
+        # Build query
+        query = "SELECT * FROM Payment"
+        conditions = []
+        
+        if customer_id:
+            conditions.append(f"CustomerRef = '{customer_id}'")
+        if start_date:
+            conditions.append(f"TxnDate >= '{start_date}'")
+        if end_date:
+            conditions.append(f"TxnDate <= '{end_date}'")
+        
+        if conditions:
+            query += " WHERE " + " AND ".join(conditions)
+        
+        query += " MAXRESULTS 1000"
+        
+        response = await self._make_request(
+            method="GET",
+            endpoint="/query",
+            params={"query": query}
+        )
+        
+        payments = response.get("QueryResponse", {}).get("Payment", [])
+        logger.info(f"Retrieved {len(payments)} payments from QB API")
+        
+        return payments
+    
+    async def get_payment_by_id(self, payment_id: str) -> Dict[str, Any]:
+        """
+        Get a specific payment by QB Payment ID.
+        
+        Args:
+            payment_id: QuickBooks Payment ID
+        
+        Returns:
+            Payment record
+        """
+        self._check_authentication()
+        
+        response = await self._make_request(
+            method="GET",
+            endpoint=f"/payment/{payment_id}",
+            params={"minorversion": "73"}
+        )
+        
+        return response.get("Payment", {})
+    
+    async def sync_payments_to_sheets(
+        self,
+        google_service,
+        days_back: int = 90
+    ) -> Dict[str, Any]:
+        """
+        Sync QuickBooks payments to Google Sheets Payments tab.
+        
+        Args:
+            google_service: Google Sheets service instance
+            days_back: How many days back to sync (default 90)
+        
+        Returns:
+            Sync summary with counts
+        
+        Example:
+            result = await qb_service.sync_payments_to_sheets(google_service, days_back=30)
+            # Returns: {"status": "success", "synced": 5, "new": 3, "updated": 2}
+        """
+        from datetime import datetime, timedelta
+        import uuid
+        
+        start_date = (datetime.now() - timedelta(days=days_back)).strftime('%Y-%m-%d')
+        
+        logger.info(f"Starting payment sync from {start_date}")
+        
+        # Get QB payments
+        qb_payments = await self.get_payments(start_date=start_date)
+        logger.info(f"Retrieved {len(qb_payments)} payments from QuickBooks")
+        
+        # Get existing payments from Sheets
+        existing_payments = await google_service.get_sheet_data('Payments')
+        existing_qb_ids = {p.get('QB Payment ID') for p in existing_payments if p.get('QB Payment ID')}
+        
+        logger.info(f"Found {len(existing_qb_ids)} existing payments in Sheets")
+        
+        synced_count = 0
+        new_count = 0
+        updated_count = 0
+        errors = []
+        
+        for qb_payment in qb_payments:
+            try:
+                payment_id = qb_payment.get('Id')
+                
+                # Map QB payment to Sheets structure
+                sheet_payment = await self._map_qb_payment_to_sheet(qb_payment, google_service)
+                
+                if payment_id in existing_qb_ids:
+                    # Update existing - find row by QB Payment ID
+                    row_index = None
+                    for idx, p in enumerate(existing_payments):
+                        if p.get('QB Payment ID') == payment_id:
+                            row_index = idx + 2  # +2 for header row and 0-indexing
+                            break
+                    
+                    if row_index:
+                        # Update the row
+                        values = [list(sheet_payment.values())]
+                        await google_service.update_range(
+                            sheet_name='Payments',
+                            range_name=f'A{row_index}:K{row_index}',
+                            values=values
+                        )
+                        updated_count += 1
+                        logger.info(f"Updated payment: {payment_id}")
+                else:
+                    # Insert new payment
+                    await google_service.append_row('Payments', list(sheet_payment.values()))
+                    new_count += 1
+                    logger.info(f"Added new payment: {payment_id}")
+                
+                synced_count += 1
+                
+            except Exception as e:
+                error_msg = f"Error syncing payment {qb_payment.get('Id')}: {str(e)}"
+                logger.error(error_msg)
+                errors.append(error_msg)
+        
+        result = {
+            "status": "success" if not errors else "partial",
+            "synced": synced_count,
+            "new": new_count,
+            "updated": updated_count,
+            "errors": errors if errors else None
+        }
+        
+        logger.info(f"Payment sync complete: {result}")
+        return result
+    
+    async def _map_qb_payment_to_sheet(
+        self,
+        qb_payment: Dict[str, Any],
+        google_service
+    ) -> Dict[str, Any]:
+        """
+        Map QuickBooks Payment entity to Sheets Payments row.
+        
+        Args:
+            qb_payment: QB Payment entity
+            google_service: Google service for client lookup
+        
+        Returns:
+            Dictionary with Sheets column values
+        """
+        import uuid
+        
+        # Extract QB fields
+        qb_id = qb_payment.get('Id', '')
+        customer_ref = qb_payment.get('CustomerRef', {}).get('value', '')
+        total_amt = qb_payment.get('TotalAmt', 0)
+        txn_date = qb_payment.get('TxnDate', '')
+        payment_method_ref = qb_payment.get('PaymentMethodRef', {})
+        payment_method = payment_method_ref.get('name', 'Unknown') if payment_method_ref else 'Unknown'
+        
+        # Extract linked invoice ID
+        invoice_id = ''
+        lines = qb_payment.get('Line', [])
+        for line in lines:
+            linked_txns = line.get('LinkedTxn', [])
+            for txn in linked_txns:
+                if txn.get('TxnType') == 'Invoice':
+                    invoice_id = txn.get('TxnId', '')
+                    break
+            if invoice_id:
+                break
+        
+        # Resolve Client ID from QB Customer ID
+        # Look up in Clients sheet for matching QBO Client ID
+        clients = await google_service.get_sheet_data('Clients')
+        client_id = ''
+        for client in clients:
+            if str(client.get('QBO Client ID', '')).strip() == str(customer_ref).strip():
+                client_id = client.get('Client ID', '')
+                break
+        
+        # Generate Payment ID if this is a new payment
+        payment_id = f"PAY-{uuid.uuid4().hex[:8]}"
+        
+        # Map payment method names
+        method_mapping = {
+            'Cash': 'Cash',
+            'Check': 'Check',
+            'Credit Card': 'Credit Card',
+            'Bank Transfer': 'ACH',
+            'Other': 'Other'
+        }
+        mapped_method = method_mapping.get(payment_method, 'Other')
+        
+        return {
+            'Payment ID': payment_id,
+            'Invoice ID': invoice_id,
+            'Project ID': '',  # Will be filled later if we link invoice to project
+            'Client ID': client_id,
+            'Amount': total_amt,
+            'Payment Date': txn_date,
+            'Payment Method': mapped_method,
+            'Status': 'Completed',  # QB payments are completed
+            'QB Payment ID': qb_id,
+            'Transaction ID': '',
+            'Notes': f'Synced from QuickBooks on {datetime.now().strftime("%Y-%m-%d %H:%M")}'
+        }
+    
     # ==================== ESTIMATE OPERATIONS ====================
     
     async def create_estimate(self, estimate_data: Dict[str, Any]) -> Dict[str, Any]:

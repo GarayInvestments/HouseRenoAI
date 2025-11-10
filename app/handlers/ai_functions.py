@@ -1624,6 +1624,138 @@ async def handle_map_clients_to_customers(
         }
 
 
+async def handle_sync_payments(
+    args: Dict[str, Any],
+    google_service,
+    quickbooks_service,
+    memory_manager,
+    session_id: str
+) -> Dict[str, Any]:
+    """
+    Sync payments from QuickBooks to Google Sheets
+    
+    Args:
+        args: Function arguments containing optional days_back
+        google_service: Google Sheets service instance
+        quickbooks_service: QuickBooks service instance
+        memory_manager: Session memory manager
+        session_id: Current session ID
+        
+    Returns:
+        Dictionary with sync results
+    """
+    try:
+        days_back = int(args.get('days_back', 90))
+        
+        logger.info(f"AI executing: Sync payments from QuickBooks (days_back={days_back})")
+        
+        # Execute the sync
+        result = await quickbooks_service.sync_payments_to_sheets(google_service, days_back)
+        
+        if result.get('status') == 'success':
+            # Remember this in session memory
+            memory_manager.set(session_id, "last_action", "synced_payments")
+            memory_manager.set(session_id, "last_payments_synced", result.get('synced', 0))
+            
+            logger.info(f"AI executed: Synced {result['synced']} payments ({result['new']} new, {result['updated']} updated)")
+            
+            return {
+                "status": "success",
+                "message": f"✅ Synced {result['synced']} payments from QuickBooks",
+                "details": f"{result['new']} new payments added, {result['updated']} existing payments updated",
+                "data": result,
+                "action_taken": f"Synced {result['synced']} payments from last {days_back} days",
+                "data_updated": True
+            }
+        else:
+            return {
+                "status": "failed",
+                "error": result.get('error', 'Unknown error during sync')
+            }
+            
+    except Exception as e:
+        logger.error(f"Error syncing payments: {e}", exc_info=True)
+        return {
+            "status": "failed",
+            "error": f"Payment sync failed: {str(e)}"
+        }
+
+
+async def handle_get_client_payments(
+    args: Dict[str, Any],
+    google_service,
+    memory_manager,
+    session_id: str
+) -> Dict[str, Any]:
+    """
+    Get all payments for a specific client
+    
+    Args:
+        args: Function arguments containing client_id
+        google_service: Google Sheets service instance
+        memory_manager: Session memory manager
+        session_id: Current session ID
+        
+    Returns:
+        Dictionary with client payments
+    """
+    try:
+        client_id = args.get('client_id')
+        if not client_id:
+            return {
+                "status": "failed",
+                "error": "client_id is required"
+            }
+        
+        logger.info(f"AI executing: Get payments for client {client_id}")
+        
+        # Get all payments from Sheets
+        payments = await google_service.get_all_sheet_data('Payments')
+        
+        # Filter by client ID
+        client_payments = [p for p in payments if p.get('Client ID') == client_id]
+        
+        # Remember this in session memory
+        memory_manager.set(session_id, "last_client_id", client_id)
+        memory_manager.set(session_id, "last_action", "viewed_client_payments")
+        
+        if not client_payments:
+            logger.info(f"No payments found for client {client_id}")
+            return {
+                "status": "success",
+                "message": f"ℹ️ No payments found for client {client_id}",
+                "payments": [],
+                "count": 0
+            }
+        
+        # Calculate totals
+        total_amount = sum(float(p.get('Amount', 0) or 0) for p in client_payments)
+        completed = [p for p in client_payments if p.get('Status') == 'Completed']
+        pending = [p for p in client_payments if p.get('Status') == 'Pending']
+        
+        logger.info(f"Found {len(client_payments)} payments for client {client_id}")
+        
+        return {
+            "status": "success",
+            "message": f"Found {len(client_payments)} payments for client {client_id}",
+            "payments": client_payments,
+            "count": len(client_payments),
+            "summary": {
+                "total_amount": total_amount,
+                "completed_count": len(completed),
+                "pending_count": len(pending)
+            },
+            "action_taken": f"Retrieved {len(client_payments)} payments for client {client_id}"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting client payments: {e}", exc_info=True)
+        return {
+            "status": "failed",
+            "error": f"Failed to get client payments: {str(e)}"
+        }
+
+
 # Handler registry - maps function names to handler functions
 FUNCTION_HANDLERS = {
     "update_project_status": handle_update_project_status,
@@ -1639,4 +1771,6 @@ FUNCTION_HANDLERS = {
     "create_quickbooks_customer_from_sheet": handle_create_quickbooks_customer_from_sheet,
     "sync_gc_compliance_payments": handle_sync_gc_compliance_payments,
     "sync_quickbooks_customer_types": handle_sync_quickbooks_customer_types,
+    "sync_quickbooks_payments": handle_sync_payments,
+    "get_client_payments": handle_get_client_payments,
 }

@@ -13,6 +13,7 @@ from app.routes.projects import router as projects_router
 from app.routes.clients import router as clients_router
 from app.routes.documents import router as documents_router
 from app.routes.quickbooks import router as quickbooks_router
+from app.routes.payments import router as payments_router
 from app.routes.auth import router as auth_router
 from app.middleware.auth_middleware import JWTAuthMiddleware
 
@@ -172,6 +173,7 @@ app.include_router(projects_router, prefix=f"/{settings.API_VERSION}/projects", 
 app.include_router(clients_router, prefix=f"/{settings.API_VERSION}/clients", tags=["clients"])
 app.include_router(documents_router, prefix=f"/{settings.API_VERSION}/documents", tags=["documents"])
 app.include_router(quickbooks_router, prefix=f"/{settings.API_VERSION}/quickbooks", tags=["quickbooks"])
+app.include_router(payments_router, prefix=f"/{settings.API_VERSION}/payments", tags=["payments"])
 
 @app.get("/")
 async def root():

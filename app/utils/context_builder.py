@@ -41,6 +41,14 @@ def get_required_contexts(message: str, session_memory: Optional[Dict[str, Any]]
         'customer', 'vendor', 'expense'
     ]
     
+    # Payment keywords (specific to Payments sheet tracking)
+    payment_keywords = [
+        'payment', 'paid', 'unpaid', 'pay', 'paying',
+        'invoice paid', 'payment status', 'zelle', 'check', 'cash',
+        'payment method', 'payment history', 'received payment',
+        'credit card', 'ach', 'transaction'
+    ]
+    
     # Google Sheets keywords (projects, permits, clients, data)
     sheets_keywords = [
         'project', 'permit', 'client', 'customer', 'contractor',
@@ -100,6 +108,13 @@ def get_required_contexts(message: str, session_memory: Optional[Dict[str, Any]]
         if any(keyword in message_lower for keyword in ['client', 'project', 'customer']):
             contexts.add('sheets')
     
+    # Check payment keywords (load both Sheets payments and optionally QB)
+    if any(keyword in message_lower for keyword in payment_keywords):
+        contexts.add('sheets')  # Always need Sheets for Payments data
+        # If asking about QB sync or QB-specific payment operations
+        if 'quickbook' in message_lower or 'qb' in message_lower or 'sync' in message_lower:
+            contexts.add('quickbooks')
+    
     # Check Google Sheets keywords
     if any(keyword in message_lower for keyword in sheets_keywords):
         contexts.add('sheets')
@@ -128,6 +143,7 @@ async def build_sheets_context(google_service) -> Dict[str, Any]:
         projects = await google_service.get_projects_data()
         permits = await google_service.get_permits_data()
         clients = await google_service.get_clients_data()
+        payments = await google_service.get_all_sheet_data('Payments')
         
         # Summarize project statuses
         project_statuses = {}
@@ -141,10 +157,17 @@ async def build_sheets_context(google_service) -> Dict[str, Any]:
             status = permit.get('Status', 'Unknown')
             permit_statuses[status] = permit_statuses.get(status, 0) + 1
         
+        # Summarize payment statuses
+        payment_statuses = {}
+        for payment in payments:
+            status = payment.get('Status', 'Unknown')
+            payment_statuses[status] = payment_statuses.get(status, 0) + 1
+        
         return {
             "projects": projects,
             "permits": permits,
             "clients": clients,
+            "payments": payments,
             # Add aliases that OpenAI service expects
             "all_projects": projects,
             "all_permits": permits,
@@ -154,7 +177,9 @@ async def build_sheets_context(google_service) -> Dict[str, Any]:
                 "project_statuses": project_statuses,
                 "total_permits": len(permits),
                 "permit_statuses": permit_statuses,
-                "total_clients": len(clients)
+                "total_clients": len(clients),
+                "total_payments": len(payments),
+                "payment_statuses": payment_statuses
             }
         }
     except Exception as e:
@@ -163,6 +188,7 @@ async def build_sheets_context(google_service) -> Dict[str, Any]:
             "projects": [],
             "permits": [],
             "clients": [],
+            "payments": [],
             "summary": {},
             "error": str(e)
         }

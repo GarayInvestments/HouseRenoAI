@@ -472,6 +472,33 @@ class OpenAIService:
                             f"\n  Approved: {approval_date}"
                         )
                 
+                # Add payments data with safe_field sanitization
+                payments_data = context.get('payments', [])
+                if payments_data:
+                    context_parts.append("\n\n=== PAYMENTS DATA ===")
+                    context_parts.append("💰 PAYMENT RECORDS (from QuickBooks sync):")
+                    logger.info(f"[DEBUG] Adding {len(payments_data)} payments to context (showing up to 30)")
+                    for payment in payments_data[:30]:  # Limit to 30 most recent
+                        payment_id = safe_field(payment.get('Payment ID'))
+                        client_id = safe_field(payment.get('Client ID'))
+                        invoice_id = safe_field(payment.get('Invoice ID'))
+                        amount = safe_field(payment.get('Amount'))
+                        payment_date = safe_field(payment.get('Payment Date'))
+                        method = safe_field(payment.get('Payment Method'))
+                        status = safe_field(payment.get('Status'))
+                        qb_payment_id = safe_field(payment.get('QB Payment ID'))
+                        
+                        context_parts.append(
+                            f"\n✓ Payment ID: {payment_id}"
+                            f"\n  Client ID: {client_id}"
+                            f"\n  Invoice ID: {invoice_id}"
+                            f"\n  Amount: ${amount}"
+                            f"\n  Date: {payment_date}"
+                            f"\n  Method: {method}"
+                            f"\n  Status: {status}"
+                            f"\n  QB Payment ID: {qb_payment_id}"
+                        )
+                
                 context_message = "\n".join(context_parts)
                 logger.info(f"[DEBUG] Context message length: {len(context_message)} chars, ~{len(context_message)//4} tokens")
                 messages.insert(1, {"role": "system", "content": f"DATA CONTEXT:\n{context_message}"})
@@ -805,7 +832,41 @@ class OpenAIService:
                                 "required": []
                             }
                         }
+                    },
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "sync_quickbooks_payments",
+                        "description": "Sync payment records from QuickBooks to Google Sheets. Retrieves payments from QuickBooks Payment API, matches them to clients, updates existing payments or creates new ones. Use when user asks to 'sync payments', 'update payments from QuickBooks', 'check for new QB payments', or 'refresh payment data'.",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "days_back": {
+                                    "type": "integer",
+                                    "description": "Number of days back to sync payments from QuickBooks (default: 90 days)"
+                                }
+                            },
+                            "required": []
+                        }
                     }
+                },
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "get_client_payments",
+                        "description": "Get all payment records for a specific client from Google Sheets. Returns payment history with amounts, dates, methods, and status. Use when user asks about client payment history, payment status, 'has [client] paid', 'show payments for [client]', or 'payment details for [client]'.",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "client_id": {
+                                    "type": "string",
+                                    "description": "The 8-character Client ID to get payments for (e.g., '12b59b62')"
+                                }
+                            },
+                            "required": ["client_id"]
+                        }
+                    }
+                }
             ]
             
             response = self.client.chat.completions.create(

@@ -255,6 +255,10 @@ VITE_API_URL=https://houserenoai.onrender.com
 - **State management**: `frontend/src/stores/appStore.js` (navigation + global state)
 - **Component patterns**: `frontend/src/pages/ClientDetails.jsx` (shows field fallbacks + data handling)
 
+### Google Sheets API Access
+- **Backend Service** (`google_service`): Use in API routes, chat functions (requires FastAPI context)
+- **Direct API Access**: Use in standalone scripts (`scripts/setup_*.py`, migrations, admin tools)
+- **Complete Guide**: `docs/GOOGLE_SHEETS_API_ACCESS.md` (when to use each approach, patterns, troubleshooting)
 ### Available Routes
 - `/v1/auth/*` - Login, register, token refresh, user info
 - `/v1/chat` - AI chat with smart context loading
@@ -263,6 +267,7 @@ VITE_API_URL=https://houserenoai.onrender.com
 - `/v1/permits` - Permit tracking
 - `/v1/documents` - Document upload/management
 - `/v1/quickbooks/*` - OAuth flow, customers, invoices, estimates, bills
+- `/v1/payments` - Payment tracking and QB sync (NEW: Nov 10, 2025)
 
 ## 🔐 Secrets Management
 
