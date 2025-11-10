@@ -71,15 +71,16 @@ async def process_chat_message(chat_data: Dict[str, Any]):
             google_service = get_google_service()
             
             # Use smart context builder to determine what data to load
-            context = await build_context(
+            # IMPORTANT: Pass the session_memory we just loaded (not from context)
+            smart_context = await build_context(
                 message=message,
                 google_service=google_service,
                 qb_service=qb_service,
-                session_memory=context.get("session_memory", {})
+                session_memory=session_memory  # Use the session_memory we loaded earlier
             )
             
-            # Re-add conversation history (build_context overwrites)
-            context["conversation_history"] = conversation_history[-10:]
+            # Merge smart context with existing context (preserves conversation_history)
+            context.update(smart_context)
             
             timer.stop("context_build")
             
