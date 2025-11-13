@@ -14,7 +14,17 @@ Welcome to the House Renovators AI documentation. This guide will help you navig
 - **[QuickBooks Guide](guides/QUICKBOOKS_GUIDE.md)** - OAuth2, API usage, sync features
 - **[Workflow Guide](guides/WORKFLOW_GUIDE.md)** - Daily development workflow and git patterns
 
-## 📁 Documentation Structure
+## �️ Project Planning
+
+**[PROJECT_ROADMAP.md](PROJECT_ROADMAP.md)** - Complete development roadmap and future plans
+- **Phase 0-2 Status** - All completed phases with achievements
+- **Phase 3 Plan** - Performance optimization (QB caching, Sheets batching, context truncation)
+- **Phase 4 Plan** - Advanced features (document intelligence, emails, PWA, reporting)
+- **Phase 5 Plan** - Infrastructure improvements (monitoring, database migration)
+- **Timeline & Priorities** - Recommended schedule and success metrics
+- **Technical Debt Tracking** - Known issues and improvement opportunities
+
+## �📁 Documentation Structure
 
 ### 📖 [Guides](guides/)
 Comprehensive guides for using and maintaining the platform:
@@ -116,6 +126,6 @@ When adding new documentation:
 
 ---
 
-**Last Updated**: November 10, 2025, 3:00 PM PST  
-**Documentation Version**: 2.0 (Organized Structure)  
-**Latest Changes**: Metrics collection complete, performance improvements validated (19.3% faster overall)
+**Last Updated**: November 12, 2025  
+**Documentation Version**: 2.1 (Added Project Roadmap)  
+**Latest Changes**: Created comprehensive development roadmap with Phase 3-5 plans
