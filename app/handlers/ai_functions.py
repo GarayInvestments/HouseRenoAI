@@ -879,9 +879,14 @@ async def handle_create_quickbooks_customer_from_sheet(
                 }
         
         # Build customer data for QuickBooks
+        # Get GC Compliance CustomerType ID
+        gc_type_id = await quickbooks_service._get_customer_type_id("GC Compliance")
+        
         customer_data = {
-            "DisplayName": client_name
-            # CustomerTypeRef removed - no longer categorizing customers
+            "DisplayName": client_name,
+            "CustomerTypeRef": {
+                "value": gc_type_id
+            }
         }
         
         # Split name into GivenName and FamilyName

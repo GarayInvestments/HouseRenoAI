@@ -206,25 +206,36 @@ async def get_company_info():
 # ==================== CUSTOMER OPERATIONS ====================
 
 @router.get("/customers")
-async def get_customers(active_only: bool = Query(default=True)):
+async def get_customers(
+    active_only: bool = Query(default=True),
+    customer_type: Optional[str] = Query(default="GC Compliance", description="Filter by CustomerType. Default: 'GC Compliance' for permit clients. Pass empty string '' or 'none' to disable filtering.")
+):
     """
     Get all customers from QuickBooks.
     
     Query Parameters:
         active_only: Only return active customers (default: true)
+        customer_type: Filter by CustomerType name (default: "GC Compliance" - permit clients only)
     
     Returns:
         List of customer records
     
     Example:
-        GET /v1/quickbooks/customers
-        GET /v1/quickbooks/customers?active_only=false
+        GET /v1/quickbooks/customers  (returns only GC Compliance customers)
+        GET /v1/quickbooks/customers?customer_type=  (returns all customers)
+        GET /v1/quickbooks/customers?customer_type=GC%20Compliance
     """
     try:
         if not quickbooks_service.is_authenticated():
             raise HTTPException(status_code=401, detail="Not authenticated with QuickBooks")
         
-        customers = await quickbooks_service.get_customers(active_only=active_only)
+        # Convert empty string to None for "no filter"
+        filter_type = None if customer_type == "" else customer_type
+        
+        customers = await quickbooks_service.get_customers(
+            active_only=active_only,
+            customer_type=filter_type
+        )
         
         return {
             "success": True,
@@ -620,6 +631,40 @@ async def get_items(item_type: Optional[str] = Query(default=None)):
     except Exception as e:
         logger.error(f"Failed to get items: {e}")
         raise HTTPException(status_code=500, detail=f"Item retrieval failed: {str(e)}")
+
+
+# ==================== CUSTOMER TYPE OPERATIONS ====================
+
+@router.get("/customer-types")
+async def get_customer_types():
+    """
+    Get all CustomerType entities from QuickBooks.
+    
+    Returns:
+        List of CustomerType records with ID and Name
+    
+    Example:
+        GET /v1/quickbooks/customer-types
+    """
+    try:
+        if not quickbooks_service.is_authenticated():
+            raise HTTPException(status_code=401, detail="Not authenticated with QuickBooks")
+        
+        query = "SELECT * FROM CustomerType"
+        response = await quickbooks_service._make_request("GET", "query", params={"query": query})
+        types = response.get("QueryResponse", {}).get("CustomerType", [])
+        
+        return {
+            "success": True,
+            "count": len(types),
+            "customer_types": types
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get customer types: {e}")
+        raise HTTPException(status_code=500, detail=f"Customer type retrieval failed: {str(e)}")
 
 
 # ==================== SYNC OPERATIONS ====================

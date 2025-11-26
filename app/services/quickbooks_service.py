@@ -427,7 +427,39 @@ class QuickBooksService:
     
     # ==================== CUSTOMER OPERATIONS ====================
     
-    async def get_customers(self, active_only: bool = True) -> List[Dict[str, Any]]:
+    async def _get_customer_type_id(self, type_name: str) -> Optional[str]:
+        """
+        Get CustomerType ID by name.
+        
+        Args:
+            type_name: Name of the CustomerType (e.g., "GC Compliance")
+        
+        Returns:
+            CustomerType ID or None if not found
+        """
+        cache_key = f"customer_type_{type_name}"
+        cached = self._get_cache(cache_key)
+        if cached is not None:
+            return cached
+        
+        query = f"SELECT * FROM CustomerType WHERE Name = '{type_name}'"
+        try:
+            response = await self._make_request("GET", "query", params={"query": query})
+            types = response.get("QueryResponse", {}).get("CustomerType", [])
+            
+            if types:
+                type_id = types[0].get("Id")
+                self._set_cache(cache_key, type_id)
+                logger.info(f"CustomerType '{type_name}' resolved to ID: {type_id}")
+                return type_id
+            else:
+                logger.warning(f"CustomerType '{type_name}' not found in QuickBooks")
+                return None
+        except Exception as e:
+            logger.error(f"Failed to query CustomerType: {e}")
+            return None
+    
+    async def get_customers(self, active_only: bool = True, customer_type: Optional[str] = "GC Compliance") -> List[Dict[str, Any]]:
         """
         Retrieve all customers from QuickBooks with caching.
         
@@ -435,20 +467,30 @@ class QuickBooksService:
         
         Args:
             active_only: Only return active customers
+            customer_type: Filter by CustomerType name (default: "GC Compliance" for permit clients). Set to None for all customers.
         
         Returns:
             List of customer records
         
         Example:
-            customers = await qb_service.get_customers()
+            customers = await qb_service.get_customers()  # Returns only GC Compliance customers
+            all_customers = await qb_service.get_customers(customer_type=None)  # Returns all customers
         """
         # Build cache key from filters
-        cache_key = f"customers_{active_only}"
+        cache_key = f"customers_{active_only}_{customer_type}"
         
         # Check cache first
         cached = self._get_cache(cache_key)
         if cached is not None:
             return cached
+        
+        # Resolve CustomerType name to ID if filtering
+        customer_type_id = None
+        if customer_type:
+            customer_type_id = await self._get_customer_type_id(customer_type)
+            if not customer_type_id:
+                logger.warning(f"CustomerType '{customer_type}' not found - returning empty list")
+                return []
         
         # Cache miss - fetch from API
         query = "SELECT * FROM Customer"
@@ -460,7 +502,15 @@ class QuickBooksService:
         response = await self._make_request("GET", "query", params=params)
         customers = response.get("QueryResponse", {}).get("Customer", [])
         
-        logger.info(f"Retrieved {len(customers)} customers from QB API")
+        # Post-filter by CustomerType ID (QB API doesn't support WHERE on CustomerTypeRef)
+        if customer_type_id:
+            customers = [
+                c for c in customers 
+                if c.get('CustomerTypeRef', {}).get('value') == customer_type_id
+            ]
+            logger.info(f"Retrieved {len(customers)} customers (filtered to CustomerType: {customer_type} [ID: {customer_type_id}])")
+        else:
+            logger.info(f"Retrieved {len(customers)} customers from QB API")
         
         # Store in cache
         self._set_cache(cache_key, customers)
@@ -507,7 +557,8 @@ class QuickBooksService:
         self, 
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
-        customer_id: Optional[str] = None
+        customer_id: Optional[str] = None,
+        customer_type: Optional[str] = "GC Compliance"
     ) -> List[Dict[str, Any]]:
         """
         Retrieve invoices from QuickBooks with caching.
@@ -519,6 +570,8 @@ class QuickBooksService:
             start_date: Filter by TxnDate >= start_date (YYYY-MM-DD)
             end_date: Filter by TxnDate <= end_date (YYYY-MM-DD)
             customer_id: Filter by specific customer
+            customer_type: Filter by CustomerType (default: "GC Compliance" to show only permit clients)
+                          Set to None to retrieve all invoices regardless of customer type
         
         Returns:
             List of invoice records
@@ -527,7 +580,7 @@ class QuickBooksService:
             invoices = await qb_service.get_invoices(customer_id="123")
         """
         # Build cache key from filters
-        cache_key = f"invoices_{start_date}_{end_date}_{customer_id}"
+        cache_key = f"invoices_{start_date}_{end_date}_{customer_id}_{customer_type}"
         
         # Check cache first
         cached = self._get_cache(cache_key)
@@ -554,12 +607,24 @@ class QuickBooksService:
         response = await self._make_request("GET", "query", params=params)
         invoices = response.get("QueryResponse", {}).get("Invoice", [])
         
-        logger.info(f"Retrieved {len(invoices)} invoices from QB API")
+        # Post-filter by CustomerType if specified
+        if customer_type:
+            # Get GC Compliance customer IDs for filtering
+            gc_customers = await self.get_customers(customer_type=customer_type)
+            gc_customer_ids = set(str(c.get('Id')) for c in gc_customers)
+            
+            # Filter invoices to only GC Compliance customers
+            invoices = [
+                inv for inv in invoices
+                if str(inv.get('CustomerRef', {}).get('value', '')) in gc_customer_ids
+            ]
+            logger.info(f"Retrieved {len(invoices)} invoices (filtered to CustomerType: {customer_type})")
+        else:
+            logger.info(f"Retrieved {len(invoices)} invoices from QB API")
         
         # Store in cache
         self._set_cache(cache_key, invoices)
         
-        return invoices
         return invoices
     
     async def create_invoice(self, invoice_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -1034,8 +1099,8 @@ class QuickBooksService:
             clients_data = await google_service.get_clients_data()
             logger.info(f"[QB TYPE SYNC] Found {len(clients_data)} clients in Google Sheets")
             
-            # Get all QB customers
-            qb_customers = await self.get_customers()
+            # Get ALL QB customers (no filter for sync operation)
+            qb_customers = await self.get_customers(customer_type=None)
             logger.info(f"[QB TYPE SYNC] Found {len(qb_customers)} customers in QuickBooks")
             
             # Build lookup maps for efficient matching
@@ -1098,19 +1163,23 @@ class QuickBooksService:
                 
                 # Check current CustomerTypeRef
                 current_type_ref = qb_customer.get('CustomerTypeRef', {})
-                current_type_name = current_type_ref.get('name', '').strip()
+                current_type_id = current_type_ref.get('value', '').strip()
+                
+                # Get GC Compliance type ID for comparison
+                gc_type_id = await self._get_customer_type_id("GC Compliance")
                 
                 match_info = {
                     "client_name": client_name,
                     "qb_id": qb_customer.get('Id'),
                     "qb_name": qb_customer.get('DisplayName'),
                     "match_method": match_method,
-                    "current_type": current_type_name
+                    "current_type_id": current_type_id,
+                    "already_gc": current_type_id == gc_type_id
                 }
                 
-                if current_type_name == "GC Compliance":
+                if current_type_id == gc_type_id:
                     skipped.append(match_info)
-                    logger.debug(f"[QB TYPE SYNC] Skipping {client_name} - already GC Compliance")
+                    logger.debug(f"[QB TYPE SYNC] Skipping {client_name} - already GC Compliance (ID: {gc_type_id})")
                     continue
                 
                 matched.append(match_info)
@@ -1129,17 +1198,18 @@ class QuickBooksService:
                             })
                             continue
                         
-                        # Update with CustomerTypeRef
+                        # Update with CustomerTypeRef (use ID, not name)
                         update_data = {
                             "CustomerTypeRef": {
-                                "name": "GC Compliance"
+                                "value": gc_type_id
                             }
                         }
                         
                         updated_customer = await self.update_customer(
                             customer_id=qb_customer['Id'],
                             customer_data=update_data,
-                            sync_token=sync_token
+                            sync_token=sync_token,
+                            existing_customer=qb_customer
                         )
                         
                         updated.append({

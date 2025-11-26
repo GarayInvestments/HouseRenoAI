@@ -1021,13 +1021,157 @@ export default function AIAssistant() {
           )}
         </div>
 
-        {/* Input Area - Simplified, no file upload for now */}
+        {/* Input Area with File Upload */}
         <div style={{
           borderTop: '1px solid #E2E8F0',
           backgroundColor: '#FFFFFF',
           padding: '20px 32px',
           boxShadow: '0 -1px 3px 0 rgba(0, 0, 0, 0.05)'
         }}>
+          {/* Upload Options Modal */}
+          {showUploadOptions && uploadedFile && (
+            <div style={{
+              maxWidth: '900px',
+              margin: '0 auto 16px auto',
+              padding: '16px',
+              backgroundColor: '#F8FAFC',
+              border: '1px solid #E2E8F0',
+              borderRadius: '12px'
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: '12px'
+              }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  {uploadedFile.type.includes('pdf') ? (
+                    <FileText size={20} style={{ color: '#2563EB' }} />
+                  ) : (
+                    <ImageIcon size={20} style={{ color: '#10B981' }} />
+                  )}
+                  <span style={{
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#1E293B'
+                  }}>
+                    {uploadedFile.name}
+                  </span>
+                </div>
+                <button
+                  onClick={handleRemoveFile}
+                  style={{
+                    padding: '4px',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: '#64748B',
+                    borderRadius: '4px'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#FEF2F2';
+                    e.currentTarget.style.color = '#DC2626';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = '#64748B';
+                  }}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              
+              {uploadProgress ? (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '12px',
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '8px'
+                }}>
+                  {uploadProgress.status === 'complete' ? (
+                    <CheckCircle2 size={20} style={{ color: '#10B981' }} />
+                  ) : (
+                    <Loader2 size={20} style={{ color: '#2563EB', animation: 'spin 1s linear infinite' }} />
+                  )}
+                  <span style={{ fontSize: '13px', color: '#64748B' }}>
+                    {uploadProgress.message}
+                  </span>
+                </div>
+              ) : (
+                <>
+                  <p style={{
+                    fontSize: '13px',
+                    color: '#64748B',
+                    marginBottom: '12px'
+                  }}>
+                    What type of document is this?
+                  </p>
+                  <div style={{
+                    display: 'flex',
+                    gap: '8px'
+                  }}>
+                    <button
+                      onClick={() => handleUploadDocument('project')}
+                      style={{
+                        flex: 1,
+                        padding: '10px 16px',
+                        backgroundColor: '#FFFFFF',
+                        border: '1px solid #E2E8F0',
+                        borderRadius: '8px',
+                        fontSize: '13px',
+                        fontWeight: '500',
+                        color: '#2563EB',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#EFF6FF';
+                        e.currentTarget.style.borderColor = '#2563EB';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#FFFFFF';
+                        e.currentTarget.style.borderColor = '#E2E8F0';
+                      }}
+                    >
+                      📋 Project Document
+                    </button>
+                    <button
+                      onClick={() => handleUploadDocument('permit')}
+                      style={{
+                        flex: 1,
+                        padding: '10px 16px',
+                        backgroundColor: '#FFFFFF',
+                        border: '1px solid #E2E8F0',
+                        borderRadius: '8px',
+                        fontSize: '13px',
+                        fontWeight: '500',
+                        color: '#10B981',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#F0FDF4';
+                        e.currentTarget.style.borderColor = '#10B981';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#FFFFFF';
+                        e.currentTarget.style.borderColor = '#E2E8F0';
+                      }}
+                    >
+                      📝 Permit Document
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+          
           <div style={{
             maxWidth: '900px',
             margin: '0 auto',
@@ -1035,6 +1179,49 @@ export default function AIAssistant() {
             alignItems: 'center',
             gap: '12px'
           }}>
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp"
+              onChange={handleFileSelect}
+              style={{ display: 'none' }}
+            />
+            
+            {/* File attachment button */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isLoading}
+              style={{
+                padding: '12px',
+                backgroundColor: uploadedFile ? '#EFF6FF' : 'transparent',
+                border: uploadedFile ? '1px solid #2563EB' : '1px solid #E2E8F0',
+                borderRadius: '10px',
+                cursor: isLoading ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s ease',
+                color: uploadedFile ? '#2563EB' : '#64748B'
+              }}
+              onMouseEnter={(e) => {
+                if (!isLoading) {
+                  e.currentTarget.style.backgroundColor = uploadedFile ? '#DBEAFE' : '#F8FAFC';
+                  e.currentTarget.style.borderColor = '#2563EB';
+                  e.currentTarget.style.color = '#2563EB';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isLoading) {
+                  e.currentTarget.style.backgroundColor = uploadedFile ? '#EFF6FF' : 'transparent';
+                  e.currentTarget.style.borderColor = uploadedFile ? '#2563EB' : '#E2E8F0';
+                  e.currentTarget.style.color = uploadedFile ? '#2563EB' : '#64748B';
+                }
+              }}
+            >
+              <Paperclip size={18} />
+            </button>
+            
             <input
               type="text"
               value={input}

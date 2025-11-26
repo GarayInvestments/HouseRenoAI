@@ -1,0 +1,1166 @@
+{
+  "success": true,
+  "count": 25,
+  "customers": [
+    {
+      "Taxable": true,
+      "BillAddr": {
+        "Id": "720",
+        "Line1": "7156 Weddington Rd",
+        "Line2": "Ste 150",
+        "City": "Concord",
+        "CountrySubDivisionCode": "NC",
+        "PostalCode": "28027"
+      },
+      "ShipAddr": {
+        "Id": "720",
+        "Line1": "7156 Weddington Rd",
+        "Line2": "Ste 150",
+        "City": "Concord",
+        "CountrySubDivisionCode": "NC",
+        "PostalCode": "28027"
+      },
+      "Job": false,
+      "BillWithParent": false,
+      "CustomerTypeRef": {
+        "value": "698682"
+      },
+      "Balance": 8800.0,
+      "BalanceWithJobs": 8800.0,
+      "CurrencyRef": {
+        "value": "USD",
+        "name": "United States Dollar"
+      },
+      "PreferredDeliveryMethod": "Print",
+      "IsProject": false,
+      "ClientEntityId": "0",
+      "domain": "QBO",
+      "sparse": false,
+      "Id": "164",
+      "SyncToken": "4",
+      "MetaData": {
+        "CreateTime": "2025-05-27T13:22:48-04:00",
+        "LastUpdatedTime": "2025-11-26T08:50:52-05:00"
+      },
+      "GivenName": "Ajay",
+      "FamilyName": "Nair",
+      "FullyQualifiedName": "Ajay Nair",
+      "DisplayName": "Ajay Nair",
+      "PrintOnCheckName": "Ajay Nair",
+      "Active": true,
+      "V4IDPseudonym": "00206011ede628b2ac46479e76fbb34160cf42",
+      "PrimaryPhone": {
+        "FreeFormNumber": "(704) 706-4549"
+      },
+      "PrimaryEmailAddr": {
+        "Address": "ajay@2statescarolinas.com"
+      }
+    },
+    {
+      "Taxable": true,
+      "BillAddr": {
+        "Id": "308",
+        "Line1": "215 W G St",
+        "City": "Newton",
+        "CountrySubDivisionCode": "NC",
+        "PostalCode": "28658"
+      },
+      "ShipAddr": {
+        "Id": "308",
+        "Line1": "215 W G St",
+        "City": "Newton",
+        "CountrySubDivisionCode": "NC",
+        "PostalCode": "28658"
+      },
+      "Job": false,
+      "BillWithParent": false,
+      "CustomerTypeRef": {
+        "value": "510823"
+      },
+      "Balance": 0,
+      "BalanceWithJobs": 0,
+      "CurrencyRef": {
+        "value": "USD",
+        "name": "United States Dollar"
+      },
+      "PreferredDeliveryMethod": "Print",
+      "IsProject": false,
+      "ClientEntityId": "0",
+      "domain": "QBO",
+      "sparse": false,
+      "Id": "124",
+      "SyncToken": "0",
+      "MetaData": {
+        "CreateTime": "2024-03-12T08:18:25-04:00",
+        "LastUpdatedTime": "2024-03-12T08:18:25-04:00"
+      },
+      "GivenName": "Erica",
+      "FamilyName": "Person",
+      "FullyQualifiedName": "Erica Person",
+      "DisplayName": "Erica Person",
+      "PrintOnCheckName": "Erica Person",
+      "Active": true,
+      "V4IDPseudonym": "0020606ffa24a4277244bf8766fa4a0710bad3"
+    },
+    {
+      "Taxable": false,
+      "BillAddr": {
+        "Id": "51",
+        "Line1": "343 S Ashe Ave",
+        "City": "Newton",
+        "CountrySubDivisionCode": "NC",
+        "PostalCode": "28658"
+      },
+      "ShipAddr": {
+        "Id": "51",
+        "Line1": "343 S Ashe Ave",
+        "City": "Newton",
+        "CountrySubDivisionCode": "NC",
+        "PostalCode": "28658"
+      },
+      "Job": false,
+      "BillWithParent": false,
+      "Balance": 11264.09,
+      "BalanceWithJobs": 4965.61,
+      "CurrencyRef": {
+        "value": "USD",
+        "name": "United States Dollar"
+      },
+      "PreferredDeliveryMethod": "Print",
+      "IsProject": false,
+      "ClientEntityId": "0",
+      "domain": "QBO",
+      "sparse": false,
+      "Id": "2",
+      "SyncToken": "2",
+      "MetaData": {
+        "CreateTime": "2021-02-01T19:30:02-05:00",
+        "LastUpdatedTime": "2025-11-18T12:36:00-05:00"
+      },
+      "FullyQualifiedName": "Garay Investments",
+      "CompanyName": "Garay Investments",
+      "DisplayName": "Garay Investments",
+      "PrintOnCheckName": "Garay Investments",
+      "Active": true,
+      "V4IDPseudonym": "002060289d5026adfd4c928a786ceb582c45c1",
+      "PrimaryEmailAddr": {
+        "Address": "steve@houserenovatorsllc.com"
+      }
+    },
+    {
+      "Taxable": false,
+      "BillAddr": {
+        "Id": "235",
+        "Line1": "343 S Ashe Ave",
+        "City": "Newton",
+        "CountrySubDivisionCode": "NC",
+        "PostalCode": "28658"
+      },
+      "ShipAddr": {
+        "Id": "236",
+        "Line1": "343 S Ashe Ave",
+        "City": "Newton",
+        "CountrySubDivisionCode": "NC",
+        "PostalCode": "28658"
+      },
+      "Job": true,
+      "BillWithParent": true,
+      "ParentRef": {
+        "value": "2"
+      },
+      "Level": 1,
+      "Balance": 8351.52,
+      "BalanceWithJobs": 8351.52,
+      "CurrencyRef": {
+        "value": "USD",
+        "name": "United States Dollar"
+      },
+      "PreferredDeliveryMethod": "Print",
+      "IsProject": false,
+      "ClientEntityId": "0",
+      "domain": "QBO",
+      "sparse": false,
+      "Id": "118",
+      "SyncToken": "0",
+      "MetaData": {
+        "CreateTime": "2024-02-11T03:30:49-05:00",
+        "LastUpdatedTime": "2024-08-08T12:08:07-04:00"
+      },
+      "FullyQualifiedName": "Garay Investments:1604 Hedrick",
+      "CompanyName": "Garay Investments",
+      "DisplayName": "1604 Hedrick",
+      "PrintOnCheckName": "Garay Investments",
+      "Active": true,
+      "V4IDPseudonym": "002060e998cfb584f24f1989a982ef47e5395e",
+      "PrimaryEmailAddr": {
+        "Address": "steve@houserenovatorsllc.com"
+      }
+    },
+    {
+      "Taxable": true,
+      "BillAddr": {
+        "Id": "457",
+        "Line1": "343 S Ashe Ave",
+        "City": "Newton",
+        "CountrySubDivisionCode": "NC",
+        "PostalCode": "28658"
+      },
+      "ShipAddr": {
+        "Id": "457",
+        "Line1": "343 S Ashe Ave",
+        "City": "Newton",
+        "CountrySubDivisionCode": "NC",
+        "PostalCode": "28658"
+      },
+      "Job": true,
+      "BillWithParent": true,
+      "ParentRef": {
+        "value": "2"
+      },
+      "Level": 1,
+      "Balance": -14650.0,
+      "BalanceWithJobs": -14650.0,
+      "CurrencyRef": {
+        "value": "USD",
+        "name": "United States Dollar"
+      },
+      "PreferredDeliveryMethod": "Print",
+      "IsProject": true,
+      "ClientEntityId": "0",
+      "domain": "QBO",
+      "sparse": false,
+      "Id": "146",
+      "SyncToken": "4",
+      "MetaData": {
+        "CreateTime": "2024-07-17T16:45:46-04:00",
+        "LastUpdatedTime": "2025-06-05T08:07:52-04:00"
+      },
+      "FullyQualifiedName": "Garay Investments:1820 N Hewitt Ave",
+      "CompanyName": "1820 N Hewitt Ave",
+      "DisplayName": "1820 N Hewitt Ave",
+      "PrintOnCheckName": "1820 N Hewitt Ave",
+      "Active": true,
+      "V4IDPseudonym": "00206091f516df25c24d90adadbdc89455c2ce",
+      "PrimaryEmailAddr": {
+        "Address": "steve@garayinvestments.com"
+      }
+    },
+    {
+      "Taxable": false,
+      "BillAddr": {
+        "Id": "239"
+      },
+      "ShipAddr": {
+        "Id": "239"
+      },
+      "Job": true,
+      "BillWithParent": true,
+      "ParentRef": {
+        "value": "2"
+      },
+      "Level": 1,
+      "Balance": 0,
+      "BalanceWithJobs": 0,
+      "CurrencyRef": {
+        "value": "USD",
+        "name": "United States Dollar"
+      },
+      "PreferredDeliveryMethod": "Print",
+      "IsProject": false,
+      "ClientEntityId": "0",
+      "domain": "QBO",
+      "sparse": false,
+      "Id": "73",
+      "SyncToken": "2",
+      "MetaData": {
+        "CreateTime": "2022-05-01T12:25:55-04:00",
+        "LastUpdatedTime": "2024-02-11T10:20:32-05:00"
+      },
+      "FullyQualifiedName": "Garay Investments:2052 N College",
+      "CompanyName": "Garay Investments",
+      "DisplayName": "2052 N College",
+      "PrintOnCheckName": "Garay Investments",
+      "Active": true,
+      "V4IDPseudonym": "002060a10aa7c4e28945c9becd59e42a7a70e5",
+      "PrimaryEmailAddr": {
+        "Address": "sgaray85@gmail.com"
+      }
+    },
+    {
+      "Taxable": false,
+      "BillAddr": {
+        "Id": "240",
+        "Line1": "343 S Ashe Ave",
+        "City": "Newton",
+        "CountrySubDivisionCode": "NC",
+        "PostalCode": "28658"
+      },
+      "ShipAddr": {
+        "Id": "240",
+        "Line1": "343 S Ashe Ave",
+        "City": "Newton",
+        "CountrySubDivisionCode": "NC",
+        "PostalCode": "28658"
+      },
+      "Job": true,
+      "BillWithParent": false,
+      "ParentRef": {
+        "value": "2"
+      },
+      "Level": 1,
+      "Balance": 0,
+      "BalanceWithJobs": 0,
+      "CurrencyRef": {
+        "value": "USD",
+        "name": "United States Dollar"
+      },
+      "PreferredDeliveryMethod": "Print",
+      "IsProject": false,
+      "ClientEntityId": "0",
+      "domain": "QBO",
+      "sparse": false,
+      "Id": "72",
+      "SyncToken": "3",
+      "MetaData": {
+        "CreateTime": "2022-05-01T12:25:24-04:00",
+        "LastUpdatedTime": "2024-02-11T10:20:54-05:00"
+      },
+      "FullyQualifiedName": "Garay Investments:206 W G St",
+      "CompanyName": "Garay Investments",
+      "DisplayName": "206 W G St",
+      "PrintOnCheckName": "Garay Investments",
+      "Active": true,
+      "V4IDPseudonym": "00206096a7ffbedb854b55ba5aeff4038e8db7",
+      "PrimaryEmailAddr": {
+        "Address": "steve@houserenovatorsll.com"
+      }
+    },
+    {
+      "Taxable": false,
+      "BillAddr": {
+        "Id": "11",
+        "Line1": "124 S Davis Ave",
+        "City": "Newton",
+        "CountrySubDivisionCode": "NC",
+        "PostalCode": "28658"
+      },
+      "ShipAddr": {
+        "Id": "11",
+        "Line1": "124 S Davis Ave",
+        "City": "Newton",
+        "CountrySubDivisionCode": "NC",
+        "PostalCode": "28658"
+      },
+      "Job": true,
+      "BillWithParent": true,
+      "ParentRef": {
+        "value": "2"
+      },
+      "Level": 1,
+      "Balance": 0,
+      "BalanceWithJobs": 0,
+      "CurrencyRef": {
+        "value": "USD",
+        "name": "United States Dollar"
+      },
+      "PreferredDeliveryMethod": "Print",
+      "IsProject": false,
+      "ClientEntityId": "0",
+      "domain": "QBO",
+      "sparse": false,
+      "Id": "9",
+      "SyncToken": "0",
+      "MetaData": {
+        "CreateTime": "2021-02-01T19:30:03-05:00",
+        "LastUpdatedTime": "2021-02-01T19:30:03-05:00"
+      },
+      "GivenName": "Roberto",
+      "FamilyName": "Garay",
+      "FullyQualifiedName": "Garay Investments:35 11th Ave",
+      "CompanyName": "Garay Investments",
+      "DisplayName": "35 11th Ave",
+      "PrintOnCheckName": "Garay Investments",
+      "Active": true,
+      "V4IDPseudonym": "0020600044b98dd8764642bdc6e7d9fbae700b",
+      "PrimaryEmailAddr": {
+        "Address": "rogar1430@gmail.com"
+      }
+    },
+    {
+      "Taxable": false,
+      "BillAddr": {
+        "Id": "12",
+        "Line1": "124 S Davis Ave",
+        "City": "Newton",
+        "CountrySubDivisionCode": "NC",
+        "PostalCode": "28658"
+      },
+      "ShipAddr": {
+        "Id": "12",
+        "Line1": "124 S Davis Ave",
+        "City": "Newton",
+        "CountrySubDivisionCode": "NC",
+        "PostalCode": "28658"
+      },
+      "Job": true,
+      "BillWithParent": true,
+      "ParentRef": {
+        "value": "2"
+      },
+      "Level": 1,
+      "Balance": 0,
+      "BalanceWithJobs": 0,
+      "CurrencyRef": {
+        "value": "USD",
+        "name": "United States Dollar"
+      },
+      "PreferredDeliveryMethod": "Print",
+      "IsProject": false,
+      "ClientEntityId": "0",
+      "domain": "QBO",
+      "sparse": false,
+      "Id": "10",
+      "SyncToken": "0",
+      "MetaData": {
+        "CreateTime": "2021-02-01T19:30:03-05:00",
+        "LastUpdatedTime": "2022-12-15T11:16:31-05:00"
+      },
+      "GivenName": "Roberto",
+      "FamilyName": "Garay",
+      "FullyQualifiedName": "Garay Investments:608 East E",
+      "CompanyName": "Garay Investments",
+      "DisplayName": "608 East E",
+      "PrintOnCheckName": "Garay Investments",
+      "Active": true,
+      "V4IDPseudonym": "0020608cbfe953ad764078853f24a83c8f17a5",
+      "PrimaryEmailAddr": {
+        "Address": "rogar1430@gmail.com"
+      }
+    },
+    {
+      "Taxable": true,
+      "BillAddr": {
+        "Id": "241",
+        "Line1": "343 S Ashe Ave",
+        "City": "Newton",
+        "CountrySubDivisionCode": "NC",
+        "PostalCode": "28658"
+      },
+      "ShipAddr": {
+        "Id": "241",
+        "Line1": "343 S Ashe Ave",
+        "City": "Newton",
+        "CountrySubDivisionCode": "NC",
+        "PostalCode": "28658"
+      },
+      "Job": true,
+      "BillWithParent": true,
+      "ParentRef": {
+        "value": "2"
+      },
+      "Level": 1,
+      "Balance": 0,
+      "BalanceWithJobs": 0,
+      "CurrencyRef": {
+        "value": "USD",
+        "name": "United States Dollar"
+      },
+      "PreferredDeliveryMethod": "Print",
+      "IsProject": false,
+      "ClientEntityId": "0",
+      "domain": "QBO",
+      "sparse": false,
+      "Id": "119",
+      "SyncToken": "1",
+      "MetaData": {
+        "CreateTime": "2024-02-11T09:56:43-05:00",
+        "LastUpdatedTime": "2024-02-11T10:21:33-05:00"
+      },
+      "FullyQualifiedName": "Garay Investments:6653 Mountain Grove",
+      "CompanyName": "Garay Investments",
+      "DisplayName": "6653 Mountain Grove",
+      "PrintOnCheckName": "Garay Investments",
+      "Active": true,
+      "V4IDPseudonym": "002060d9a1b6a5d9464a61be50fecaaa467fe4",
+      "PrimaryEmailAddr": {
+        "Address": "steve@houserenovatorsllc.com"
+      }
+    },
+    {
+      "Taxable": false,
+      "Job": true,
+      "BillWithParent": true,
+      "ParentRef": {
+        "value": "2"
+      },
+      "Level": 1,
+      "Balance": 0,
+      "BalanceWithJobs": 0,
+      "CurrencyRef": {
+        "value": "USD",
+        "name": "United States Dollar"
+      },
+      "PreferredDeliveryMethod": "Print",
+      "IsProject": false,
+      "ClientEntityId": "0",
+      "domain": "QBO",
+      "sparse": false,
+      "Id": "8",
+      "SyncToken": "0",
+      "MetaData": {
+        "CreateTime": "2021-02-01T19:30:03-05:00",
+        "LastUpdatedTime": "2021-02-01T19:30:03-05:00"
+      },
+      "GivenName": "Roberto",
+      "FamilyName": "Garay",
+      "FullyQualifiedName": "Garay Investments:Duplex Rental",
+      "CompanyName": "Garay Investments",
+      "DisplayName": "Duplex Rental",
+      "PrintOnCheckName": "Garay Investments",
+      "Active": true,
+      "V4IDPseudonym": "002060db322a8befd94b9a87e6a5eec2c75a90",
+      "PrimaryEmailAddr": {
+        "Address": "sgaray85@gmail.com"
+      }
+    },
+    {
+      "Taxable": true,
+      "BillAddr": {
+        "Id": "681"
+      },
+      "ShipAddr": {
+        "Id": "681"
+      },
+      "Job": false,
+      "BillWithParent": false,
+      "CustomerTypeRef": {
+        "value": "698682"
+      },
+      "Balance": 1500.0,
+      "BalanceWithJobs": 1500.0,
+      "CurrencyRef": {
+        "value": "USD",
+        "name": "United States Dollar"
+      },
+      "PreferredDeliveryMethod": "Print",
+      "IsProject": false,
+      "ClientEntityId": "0",
+      "domain": "QBO",
+      "sparse": false,
+      "Id": "161",
+      "SyncToken": "1",
+      "MetaData": {
+        "CreateTime": "2025-05-21T12:59:33-04:00",
+        "LastUpdatedTime": "2025-11-26T08:56:26-05:00"
+      },
+      "GivenName": "Gustavo",
+      "FamilyName": "Roldan",
+      "FullyQualifiedName": "Gustavo Roldan",
+      "DisplayName": "Gustavo Roldan",
+      "PrintOnCheckName": "Gustavo Roldan",
+      "Active": true,
+      "V4IDPseudonym": "0020606112c8a4d6c4487da810e5c2eb9e5675",
+      "PrimaryPhone": {
+        "FreeFormNumber": "(305) 984-4577"
+      },
+      "PrimaryEmailAddr": {
+        "Address": "groldan1@yahoo.com"
+      }
+    },
+    {
+      "Taxable": true,
+      "BillAddr": {
+        "Id": "683"
+      },
+      "ShipAddr": {
+        "Id": "683"
+      },
+      "Job": false,
+      "BillWithParent": false,
+      "Balance": 0,
+      "BalanceWithJobs": 0,
+      "CurrencyRef": {
+        "value": "USD",
+        "name": "United States Dollar"
+      },
+      "PreferredDeliveryMethod": "Print",
+      "IsProject": false,
+      "ClientEntityId": "0",
+      "domain": "QBO",
+      "sparse": false,
+      "Id": "162",
+      "SyncToken": "0",
+      "MetaData": {
+        "CreateTime": "2025-05-21T13:23:23-04:00",
+        "LastUpdatedTime": "2025-06-05T08:04:20-04:00"
+      },
+      "GivenName": "Howard",
+      "MiddleName": "C.",
+      "FamilyName": "Nording",
+      "FullyQualifiedName": "Howard C. Nording",
+      "DisplayName": "Howard C. Nording",
+      "PrintOnCheckName": "Howard C. Nording",
+      "Active": true,
+      "V4IDPseudonym": "0020603aca17e9334a4bc79460466bde9d2fa6",
+      "PrimaryPhone": {
+        "FreeFormNumber": "(631) 433-6322"
+      },
+      "PrimaryEmailAddr": {
+        "Address": "dialaglass@hotmail.com"
+      }
+    },
+    {
+      "Taxable": false,
+      "BillAddr": {
+        "Id": "377",
+        "Line1": "608 E E St",
+        "City": "Newton",
+        "CountrySubDivisionCode": "NC",
+        "PostalCode": "28658"
+      },
+      "ShipAddr": {
+        "Id": "377",
+        "Line1": "608 E E St",
+        "City": "Newton",
+        "CountrySubDivisionCode": "NC",
+        "PostalCode": "28658"
+      },
+      "Job": false,
+      "BillWithParent": false,
+      "Balance": 0,
+      "BalanceWithJobs": 0,
+      "CurrencyRef": {
+        "value": "USD",
+        "name": "United States Dollar"
+      },
+      "PreferredDeliveryMethod": "Print",
+      "IsProject": false,
+      "ClientEntityId": "0",
+      "domain": "QBO",
+      "sparse": false,
+      "Id": "5",
+      "SyncToken": "4",
+      "MetaData": {
+        "CreateTime": "2021-02-01T19:30:03-05:00",
+        "LastUpdatedTime": "2024-07-23T07:04:57-04:00"
+      },
+      "GivenName": "Ismael",
+      "FamilyName": "Chaverin",
+      "FullyQualifiedName": "Ismael Chaverin",
+      "DisplayName": "Ismael Chaverin",
+      "PrintOnCheckName": "Ismael Chaverin",
+      "Active": true,
+      "V4IDPseudonym": "0020603677b93c6ccb4c069780271fe50a48f6",
+      "PrimaryPhone": {
+        "FreeFormNumber": "(980) 258-2281"
+      },
+      "PrimaryEmailAddr": {
+        "Address": "ismaelc414@gmail.com"
+      }
+    },
+    {
+      "Taxable": true,
+      "Job": false,
+      "BillWithParent": false,
+      "CustomerTypeRef": {
+        "value": "510823"
+      },
+      "Balance": 0,
+      "BalanceWithJobs": 0,
+      "CurrencyRef": {
+        "value": "USD",
+        "name": "United States Dollar"
+      },
+      "PreferredDeliveryMethod": "Print",
+      "IsProject": false,
+      "ClientEntityId": "0",
+      "domain": "QBO",
+      "sparse": false,
+      "Id": "174",
+      "SyncToken": "0",
+      "MetaData": {
+        "CreateTime": "2025-11-10T16:54:10-05:00",
+        "LastUpdatedTime": "2025-11-10T16:54:10-05:00"
+      },
+      "GivenName": "Javier",
+      "FamilyName": "Martinez",
+      "FullyQualifiedName": "Javier Martinez",
+      "CompanyName": "TG Building & Remodeling LLC",
+      "DisplayName": "Javier Martinez",
+      "PrintOnCheckName": "TG Building & Remodeling LLC",
+      "Active": true,
+      "V4IDPseudonym": "00206047e46a6ad8864bfcaaec89a74dd44709",
+      "PrimaryPhone": {
+        "FreeFormNumber": "828-721-0611"
+      },
+      "PrimaryEmailAddr": {
+        "Address": "tgbuilding6@gmail.com"
+      }
+    },
+    {
+      "Taxable": true,
+      "BillAddr": {
+        "Id": "406",
+        "Line1": "219 W G St",
+        "City": "Newton",
+        "Country": "United States",
+        "CountrySubDivisionCode": "NC",
+        "PostalCode": "28658"
+      },
+      "ShipAddr": {
+        "Id": "406",
+        "Line1": "219 W G St",
+        "City": "Newton",
+        "Country": "United States",
+        "CountrySubDivisionCode": "NC",
+        "PostalCode": "28658"
+      },
+      "Job": false,
+      "BillWithParent": false,
+      "Balance": 0,
+      "BalanceWithJobs": 0,
+      "CurrencyRef": {
+        "value": "USD",
+        "name": "United States Dollar"
+      },
+      "PreferredDeliveryMethod": "Print",
+      "IsProject": false,
+      "ClientEntityId": "0",
+      "domain": "QBO",
+      "sparse": false,
+      "Id": "136",
+      "SyncToken": "0",
+      "MetaData": {
+        "CreateTime": "2024-04-18T08:35:46-04:00",
+        "LastUpdatedTime": "2024-05-14T11:37:40-04:00"
+      },
+      "GivenName": "Jenni",
+      "FamilyName": "Brenes",
+      "FullyQualifiedName": "Jenni Brenes",
+      "DisplayName": "Jenni Brenes",
+      "PrintOnCheckName": "Steve Garay",
+      "Active": true,
+      "V4IDPseudonym": "002060f6ea5f817a0f430a9aa23fe468e3b988",
+      "PrimaryEmailAddr": {
+        "Address": "jbrenes1217@gmail.com"
+      }
+    },
+    {
+      "Taxable": true,
+      "BillAddr": {
+        "Id": "212"
+      },
+      "ShipAddr": {
+        "Id": "212"
+      },
+      "Job": false,
+      "BillWithParent": false,
+      "Balance": 0,
+      "BalanceWithJobs": 0,
+      "CurrencyRef": {
+        "value": "USD",
+        "name": "United States Dollar"
+      },
+      "PreferredDeliveryMethod": "Print",
+      "IsProject": false,
+      "ClientEntityId": "0",
+      "domain": "QBO",
+      "sparse": false,
+      "Id": "115",
+      "SyncToken": "2",
+      "MetaData": {
+        "CreateTime": "2024-01-31T14:53:45-05:00",
+        "LastUpdatedTime": "2024-07-23T07:05:24-04:00"
+      },
+      "GivenName": "Markeatha",
+      "FamilyName": "Murphy",
+      "FullyQualifiedName": "Markeatha Murphy",
+      "DisplayName": "Markeatha Murphy",
+      "PrintOnCheckName": "Markeatha Murphy",
+      "Active": true,
+      "V4IDPseudonym": "002060e6a447cb57f04d26a2ee4887ac8a45e6",
+      "PrimaryPhone": {
+        "FreeFormNumber": "(704) 625-6078"
+      },
+      "PrimaryEmailAddr": {
+        "Address": "mmurphy@solution4u.com"
+      }
+    },
+    {
+      "Taxable": false,
+      "BillAddr": {
+        "Id": "747"
+      },
+      "ShipAddr": {
+        "Id": "747"
+      },
+      "Job": false,
+      "BillWithParent": false,
+      "CustomerTypeRef": {
+        "value": "698682"
+      },
+      "Balance": 1067.37,
+      "BalanceWithJobs": 1067.37,
+      "CurrencyRef": {
+        "value": "USD",
+        "name": "United States Dollar"
+      },
+      "PreferredDeliveryMethod": "Print",
+      "IsProject": false,
+      "ClientEntityId": "0",
+      "domain": "QBO",
+      "sparse": false,
+      "Id": "167",
+      "SyncToken": "2",
+      "MetaData": {
+        "CreateTime": "2025-07-07T18:49:39-04:00",
+        "LastUpdatedTime": "2025-11-09T13:35:13-05:00"
+      },
+      "GivenName": "Marta",
+      "FamilyName": "Alder",
+      "FullyQualifiedName": "Marta Alder",
+      "DisplayName": "Marta Alder",
+      "PrintOnCheckName": "Marta Alder",
+      "Active": true,
+      "V4IDPseudonym": "0020602b4a7b19378e4ae0b2c8a125950294c3",
+      "PrimaryPhone": {
+        "FreeFormNumber": "704-564-9741"
+      },
+      "Mobile": {
+        "FreeFormNumber": "704-564-9741"
+      },
+      "PrimaryEmailAddr": {
+        "Address": "marta@roccacapitalservices.com"
+      }
+    },
+    {
+      "Taxable": true,
+      "BillAddr": {
+        "Id": "712",
+        "Line1": "850 Chancellor Pard Dr  Unit B",
+        "City": "Charlotte",
+        "Country": "United States",
+        "CountrySubDivisionCode": "NC",
+        "PostalCode": "28213"
+      },
+      "ShipAddr": {
+        "Id": "712",
+        "Line1": "850 Chancellor Pard Dr  Unit B",
+        "City": "Charlotte",
+        "Country": "United States",
+        "CountrySubDivisionCode": "NC",
+        "PostalCode": "28213"
+      },
+      "Job": false,
+      "BillWithParent": false,
+      "Balance": 0,
+      "BalanceWithJobs": 0,
+      "CurrencyRef": {
+        "value": "USD",
+        "name": "United States Dollar"
+      },
+      "PreferredDeliveryMethod": "Print",
+      "IsProject": false,
+      "ClientEntityId": "0",
+      "domain": "QBO",
+      "sparse": false,
+      "Id": "170",
+      "SyncToken": "0",
+      "MetaData": {
+        "CreateTime": "2025-08-22T12:26:05-04:00",
+        "LastUpdatedTime": "2025-11-25T17:30:56-05:00"
+      },
+      "GivenName": "Mohamed",
+      "FamilyName": "Ali",
+      "FullyQualifiedName": "Mohamed Ali",
+      "DisplayName": "Mohamed Ali",
+      "PrintOnCheckName": "Mohamed Ali",
+      "Active": true,
+      "V4IDPseudonym": "0020608559ea315545432884c503b8849f4ddb",
+      "PrimaryPhone": {
+        "FreeFormNumber": "(313) 690-7366"
+      },
+      "PrimaryEmailAddr": {
+        "Address": "hubaishi6@gmail.com"
+      }
+    },
+    {
+      "Taxable": true,
+      "BillAddr": {
+        "Id": "709",
+        "Line1": "5393 Roosevelt Blvd",
+        "Line2": "Unit 18",
+        "City": "Jacksonville",
+        "CountrySubDivisionCode": "FL",
+        "PostalCode": "32210"
+      },
+      "ShipAddr": {
+        "Id": "709",
+        "Line1": "5393 Roosevelt Blvd",
+        "Line2": "Unit 18",
+        "City": "Jacksonville",
+        "CountrySubDivisionCode": "FL",
+        "PostalCode": "32210"
+      },
+      "Job": false,
+      "BillWithParent": false,
+      "Balance": 0,
+      "BalanceWithJobs": 0,
+      "CurrencyRef": {
+        "value": "USD",
+        "name": "United States Dollar"
+      },
+      "PreferredDeliveryMethod": "Print",
+      "IsProject": false,
+      "ClientEntityId": "0",
+      "domain": "QBO",
+      "sparse": false,
+      "Id": "169",
+      "SyncToken": "0",
+      "MetaData": {
+        "CreateTime": "2025-08-21T17:16:44-04:00",
+        "LastUpdatedTime": "2025-09-21T22:21:20-04:00"
+      },
+      "FullyQualifiedName": "Premier Roofing of Jacksonville",
+      "CompanyName": "Premier Roofing of Jacksonville",
+      "DisplayName": "Premier Roofing of Jacksonville",
+      "PrintOnCheckName": "Premier Roofing of Jacksonville",
+      "Active": true,
+      "V4IDPseudonym": "002060b90b809da7d140dca769ba6749a0c12e",
+      "PrimaryPhone": {
+        "FreeFormNumber": "(904) 894-6065"
+      },
+      "PrimaryEmailAddr": {
+        "Address": "info@premierroofingfl.com"
+      }
+    },
+    {
+      "Taxable": true,
+      "BillAddr": {
+        "Id": "674"
+      },
+      "ShipAddr": {
+        "Id": "674"
+      },
+      "Job": false,
+      "BillWithParent": false,
+      "Balance": 50.0,
+      "BalanceWithJobs": 50.0,
+      "CurrencyRef": {
+        "value": "USD",
+        "name": "United States Dollar"
+      },
+      "PreferredDeliveryMethod": "Print",
+      "IsProject": false,
+      "ClientEntityId": "0",
+      "domain": "QBO",
+      "sparse": false,
+      "Id": "155",
+      "SyncToken": "0",
+      "MetaData": {
+        "CreateTime": "2024-10-07T16:21:12-04:00",
+        "LastUpdatedTime": "2024-10-14T11:39:33-04:00"
+      },
+      "GivenName": "Rebecca",
+      "FamilyName": "Dycus",
+      "FullyQualifiedName": "Rebecca Dycus",
+      "DisplayName": "Rebecca Dycus",
+      "PrintOnCheckName": "Rebecca Dycus",
+      "Active": true,
+      "V4IDPseudonym": "002060b80c539387a54adb955214a05f6a5b4e",
+      "PrimaryPhone": {
+        "FreeFormNumber": "(828) 234-5797"
+      },
+      "PrimaryEmailAddr": {
+        "Address": "Rebeccadycus@att.net"
+      }
+    },
+    {
+      "Taxable": true,
+      "BillAddr": {
+        "Id": "678",
+        "Line1": "4894 Forest Ridge Dr.",
+        "City": "Hickory",
+        "CountrySubDivisionCode": "NC",
+        "PostalCode": "28602"
+      },
+      "ShipAddr": {
+        "Id": "678",
+        "Line1": "4894 Forest Ridge Dr.",
+        "City": "Hickory",
+        "CountrySubDivisionCode": "NC",
+        "PostalCode": "28602"
+      },
+      "Job": false,
+      "BillWithParent": false,
+      "Balance": 0,
+      "BalanceWithJobs": 0,
+      "CurrencyRef": {
+        "value": "USD",
+        "name": "United States Dollar"
+      },
+      "PreferredDeliveryMethod": "Print",
+      "IsProject": false,
+      "ClientEntityId": "0",
+      "domain": "QBO",
+      "sparse": false,
+      "Id": "160",
+      "SyncToken": "0",
+      "MetaData": {
+        "CreateTime": "2025-05-14T10:34:16-04:00",
+        "LastUpdatedTime": "2025-05-14T10:34:16-04:00"
+      },
+      "GivenName": "Rick",
+      "FamilyName": "Hartford",
+      "FullyQualifiedName": "Rick Hartford",
+      "DisplayName": "Rick Hartford",
+      "PrintOnCheckName": "Rick Hartford",
+      "Active": true,
+      "V4IDPseudonym": "002060b7d663ff8a9c49b2924c01edbc3f7b22",
+      "PrimaryPhone": {
+        "FreeFormNumber": "(704) 562-0831"
+      },
+      "PrimaryEmailAddr": {
+        "Address": "rickdhartford@gmail.com"
+      }
+    },
+    {
+      "Taxable": false,
+      "BillAddr": {
+        "Id": "234",
+        "Line1": "219 W G St",
+        "City": "Newton",
+        "CountrySubDivisionCode": "NC",
+        "PostalCode": "28658"
+      },
+      "ShipAddr": {
+        "Id": "234",
+        "Line1": "219 W G St",
+        "City": "Newton",
+        "CountrySubDivisionCode": "NC",
+        "PostalCode": "28658"
+      },
+      "Job": false,
+      "BillWithParent": false,
+      "SalesTermRef": {
+        "value": "17",
+        "name": "Net 10"
+      },
+      "PaymentMethodRef": {
+        "value": "5"
+      },
+      "Balance": 0,
+      "BalanceWithJobs": 0,
+      "CurrencyRef": {
+        "value": "USD",
+        "name": "United States Dollar"
+      },
+      "PreferredDeliveryMethod": "Print",
+      "IsProject": false,
+      "ClientEntityId": "0",
+      "domain": "QBO",
+      "sparse": false,
+      "Id": "100",
+      "SyncToken": "7",
+      "MetaData": {
+        "CreateTime": "2023-11-16T10:46:36-05:00",
+        "LastUpdatedTime": "2025-11-18T12:50:52-05:00"
+      },
+      "GivenName": "Sharon",
+      "FamilyName": "Rashidi",
+      "FullyQualifiedName": "Sharon Rashidi",
+      "DisplayName": "Sharon Rashidi",
+      "PrintOnCheckName": "Sharon Rashidi",
+      "Active": true,
+      "V4IDPseudonym": "0020603a1197f203fb483a96e80f9bea17e958",
+      "PrimaryEmailAddr": {
+        "Address": "jbrenes1217@gmail.com,shay410@charter.net"
+      }
+    },
+    {
+      "Taxable": true,
+      "BillAddr": {
+        "Id": "695"
+      },
+      "ShipAddr": {
+        "Id": "695"
+      },
+      "Job": false,
+      "BillWithParent": false,
+      "Balance": 0,
+      "BalanceWithJobs": 0,
+      "CurrencyRef": {
+        "value": "USD",
+        "name": "United States Dollar"
+      },
+      "PreferredDeliveryMethod": "Print",
+      "IsProject": false,
+      "ClientEntityId": "0",
+      "domain": "QBO",
+      "sparse": false,
+      "Id": "165",
+      "SyncToken": "0",
+      "MetaData": {
+        "CreateTime": "2025-05-27T13:42:51-04:00",
+        "LastUpdatedTime": "2025-06-05T08:07:51-04:00"
+      },
+      "GivenName": "Steve",
+      "FamilyName": "Jones",
+      "FullyQualifiedName": "Steve Jones",
+      "DisplayName": "Steve Jones",
+      "PrintOnCheckName": "Steve Jones",
+      "Active": true,
+      "V4IDPseudonym": "002060d169258b52a742248c329efc8e18c8b0",
+      "PrimaryPhone": {
+        "FreeFormNumber": "(980) 202-0972"
+      },
+      "PrimaryEmailAddr": {
+        "Address": "propweb247@gmail.com"
+      }
+    },
+    {
+      "Taxable": true,
+      "BillAddr": {
+        "Id": "430",
+        "Line1": "507 S Cline Ave",
+        "City": "Newton",
+        "CountrySubDivisionCode": "NC"
+      },
+      "ShipAddr": {
+        "Id": "430",
+        "Line1": "507 S Cline Ave",
+        "City": "Newton",
+        "CountrySubDivisionCode": "NC"
+      },
+      "Job": false,
+      "BillWithParent": false,
+      "Balance": 0,
+      "BalanceWithJobs": 0,
+      "CurrencyRef": {
+        "value": "USD",
+        "name": "United States Dollar"
+      },
+      "PreferredDeliveryMethod": "Print",
+      "IsProject": false,
+      "ClientEntityId": "0",
+      "domain": "QBO",
+      "sparse": false,
+      "Id": "138",
+      "SyncToken": "2",
+      "MetaData": {
+        "CreateTime": "2024-04-26T15:24:08-04:00",
+        "LastUpdatedTime": "2024-07-23T07:05:35-04:00"
+      },
+      "GivenName": "Tracy",
+      "FamilyName": "Gilbert",
+      "FullyQualifiedName": "Tracy Gilbert",
+      "DisplayName": "Tracy Gilbert",
+      "PrintOnCheckName": "Tracy Gilbert",
+      "Active": true,
+      "V4IDPseudonym": "002060a8f46277a2324ffe816a17c2c5767504",
+      "Mobile": {
+        "FreeFormNumber": "(828) 244-1766"
+      }
+    }
+  ]
+}
