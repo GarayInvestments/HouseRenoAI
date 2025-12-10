@@ -14,7 +14,7 @@ Key design decisions:
 from datetime import datetime
 from typing import Any, Dict
 from sqlalchemy import String, Text, DateTime, Boolean, Numeric, Index, text
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -32,8 +32,8 @@ class Client(Base):
     """
     __tablename__ = "clients"
     
-    # Primary key - matches 8-char hex ID from Sheets
-    client_id: Mapped[str] = mapped_column(String(16), primary_key=True)
+    # Primary key - UUID for unique identification
+    client_id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, server_default=text("gen_random_uuid()"))
     
     # Business ID - human-friendly immutable ID (CL-00001, CL-00002, etc.)
     business_id: Mapped[str | None] = mapped_column(String(20), unique=True, index=True)
@@ -87,13 +87,14 @@ class Project(Base):
     """
     __tablename__ = "projects"
     
-    project_id: Mapped[str] = mapped_column(String(16), primary_key=True)
+    # Primary key - UUID for unique identification
+    project_id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, server_default=text("gen_random_uuid()"))
     
     # Business ID - human-friendly immutable ID (PRJ-00001, PRJ-00002, etc.)
     business_id: Mapped[str | None] = mapped_column(String(20), unique=True, index=True)
     
     # Foreign key to client
-    client_id: Mapped[str | None] = mapped_column(String(16), index=True)
+    client_id: Mapped[str | None] = mapped_column(UUID(as_uuid=False), index=True)
     
     # Core fields
     project_name: Mapped[str | None] = mapped_column(String(255))
@@ -144,14 +145,15 @@ class Permit(Base):
     """
     __tablename__ = "permits"
     
-    permit_id: Mapped[str] = mapped_column(String(16), primary_key=True)
+    # Primary key - UUID for unique identification
+    permit_id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, server_default=text("gen_random_uuid()"))
     
     # Business ID - human-friendly immutable ID (PRM-00001, PRM-00002, etc.)
     business_id: Mapped[str | None] = mapped_column(String(20), unique=True, index=True)
     
     # Foreign keys
-    project_id: Mapped[str | None] = mapped_column(String(16), index=True)
-    client_id: Mapped[str | None] = mapped_column(String(16), index=True)
+    project_id: Mapped[str | None] = mapped_column(UUID(as_uuid=False), index=True)
+    client_id: Mapped[str | None] = mapped_column(UUID(as_uuid=False), index=True)
     
     # Permit details
     permit_number: Mapped[str | None] = mapped_column(String(100), unique=True, index=True)
@@ -193,14 +195,15 @@ class Payment(Base):
     """
     __tablename__ = "payments"
     
-    payment_id: Mapped[str] = mapped_column(String(16), primary_key=True)
+    # Primary key - UUID for unique identification
+    payment_id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, server_default=text("gen_random_uuid()"))
     
     # Business ID - human-friendly immutable ID (PAY-00001, PAY-00002, etc.)
     business_id: Mapped[str | None] = mapped_column(String(20), unique=True, index=True)
     
     # Foreign keys
-    client_id: Mapped[str | None] = mapped_column(String(16), index=True)
-    project_id: Mapped[str | None] = mapped_column(String(16), index=True)
+    client_id: Mapped[str | None] = mapped_column(UUID(as_uuid=False), index=True)
+    project_id: Mapped[str | None] = mapped_column(UUID(as_uuid=False), index=True)
     
     # Payment details
     amount: Mapped[float | None] = mapped_column(Numeric(12, 2))
@@ -246,7 +249,8 @@ class User(Base):
     """
     __tablename__ = "users"
     
-    user_id: Mapped[str] = mapped_column(String(16), primary_key=True)
+    # Primary key - UUID for unique identification
+    user_id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, server_default=text("gen_random_uuid()"))
     
     # Auth fields
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
@@ -317,6 +321,7 @@ class QuickBooksCustomerCache(Base):
     """
     __tablename__ = "quickbooks_customers_cache"
     
+    # QuickBooks customer ID as primary key
     qb_customer_id: Mapped[str] = mapped_column(String(50), primary_key=True)
     
     # QB data snapshot
@@ -348,6 +353,7 @@ class QuickBooksInvoiceCache(Base):
     """
     __tablename__ = "quickbooks_invoices_cache"
     
+    # QuickBooks invoice ID as primary key
     qb_invoice_id: Mapped[str] = mapped_column(String(50), primary_key=True)
     
     # Invoice summary
