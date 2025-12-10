@@ -12,15 +12,25 @@ Tests cover:
 8. NULL handling
 
 Run with: pytest tests/test_business_ids.py -v
+
+NOTE: These tests require PostgreSQL with business_id schema (sequences, triggers).
+They will be skipped when running against SQLite or other databases.
 """
 
 import pytest
 import asyncio
+import os
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from app.db.models import Client, Project, Permit, Payment
 from app.config import settings
+
+# Skip all tests in this module if not using PostgreSQL
+pytestmark = pytest.mark.skipif(
+    "postgresql" not in settings.DATABASE_URL,
+    reason="Business ID tests require PostgreSQL with triggers/sequences"
+)
 
 # Test database engine
 engine = create_async_engine(
