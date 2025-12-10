@@ -2,24 +2,14 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/index.py",
+      "src": "vercel_app.py",
       "use": "@vercel/python"
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "api/index.py"
+      "dest": "vercel_app.py"
     }
-  ],
-  "env": {
-    "PYTHON_VERSION": "3.13"
-  },
-  "regions": ["iad1"],
-  "functions": {
-    "api/index.py": {
-      "memory": 1024,
-      "maxDuration": 60
-    }
-  }
+  ]
 }
