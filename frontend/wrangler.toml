@@ -6,6 +6,6 @@ pages_build_output_dir = "dist"
 name = "house-renovators-ai-portal"
 
 [env.production.vars]
-VITE_API_URL = "https://houserenoai.onrender.com"
+VITE_API_URL = "https://houserenovators-api.fly.dev"
 VITE_ENV = "production"
 VITE_ENABLE_DEBUG = "false"
