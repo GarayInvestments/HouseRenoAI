@@ -3,26 +3,19 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 import logging
 
-import app.services.google_service as google_service_module
+from app.services.db_service import db_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-def get_google_service():
-    """Helper function to get Google service with proper error handling"""
-    if not hasattr(google_service_module, 'google_service') or google_service_module.google_service is None:
-        raise HTTPException(status_code=503, detail="Google service not initialized")
-    return google_service_module.google_service
-
 @router.get("/")
 async def get_all_projects():
     """
-    Get all projects from Google Sheets
+    Get all projects from PostgreSQL database
     """
     try:
-        google_service = get_google_service()
-        projects = await google_service.get_projects_data()
-        logger.info(f"Retrieved {len(projects)} projects")
+        projects = await db_service.get_projects_data()
+        logger.info(f"Retrieved {len(projects)} projects from database")
         return projects
         
     except Exception as e:
@@ -35,15 +28,7 @@ async def get_project(project_id: str):
     Get a specific project by ID
     """
     try:
-        google_service = get_google_service()
-        projects = await google_service.get_projects_data()
-        
-        # Find project by ID
-        project = None
-        for p in projects:
-            if p.get('Project ID') == project_id:
-                project = p
-                break
+        project = await db_service.get_project_by_id(project_id)
         
         if not project:
             raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
@@ -63,7 +48,7 @@ async def get_project(project_id: str):
 @router.put("/{project_id}")
 async def update_project(project_id: str, update_data: Dict[str, Any]):
     """
-    Update a specific project in Google Sheets
+    Update a specific project
     """
     try:
         updates = update_data.get("updates", {})
@@ -72,43 +57,14 @@ async def update_project(project_id: str, update_data: Dict[str, Any]):
         if not updates:
             raise HTTPException(status_code=400, detail="No updates provided")
         
-        google_service = get_google_service()
-        
         # Verify project exists first
-        projects = await google_service.get_projects_data()
-        project = None
-        for p in projects:
-            if p.get('Project ID') == project_id:
-                project = p
-                break
+        project = await db_service.get_project_by_id(project_id)
         
         if not project:
             raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
         
-        # Update the project in Google Sheets
-        success = await google_service.update_record_by_id(
-            sheet_name='Projects',
-            id_field='Project ID',
-            record_id=project_id,
-            updates=updates
-        )
-        
-        if not success:
-            raise HTTPException(status_code=500, detail="Failed to update project in Google Sheets")
-        
-        # Send notification if requested
-        if notify_team:
-            project_name = project.get('Project Name', project_id)
-            message = f"✅ Project '{project_name}' updated: {', '.join([f'{k}={v}' for k, v in updates.items()])}"
-            await google_service.notify_chat(message)
-        
-        logger.info(f"Successfully updated project {project_id} in Google Sheets")
-        return {
-            "status": "success", 
-            "message": f"Project {project_id} updated successfully",
-            "updated_fields": list(updates.keys()),
-            "project_name": project.get('Project Name', project_id)
-        }
+        # TODO: Implement update in db_service
+        raise HTTPException(status_code=501, detail="Update project not yet implemented for database backend")
         
     except HTTPException:
         raise
@@ -126,8 +82,7 @@ async def search_projects(
     Search projects with various filters
     """
     try:
-        google_service = get_google_service()
-        projects = await google_service.get_projects_data()
+        projects = await db_service.get_projects_data()
         
         # Apply filters
         filtered_projects = projects
