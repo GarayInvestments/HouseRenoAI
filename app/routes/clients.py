@@ -264,3 +264,24 @@ async def update_client(client_id: str, updates: Dict[str, Any]):
     except Exception as e:
         logger.error(f"Failed to update client {client_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to update client: {str(e)}")
+
+@router.get("/by-business-id/{business_id}")
+async def get_client_by_business_id(business_id: str):
+    """
+    Get a specific client by business ID (e.g., CL-00001)
+    """
+    try:
+        from app.services.db_service import db_service
+        
+        client = await db_service.get_client_by_business_id(business_id)
+        
+        if not client:
+            raise HTTPException(status_code=404, detail=f"Client with business ID {business_id} not found")
+        
+        return client
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get client by business ID {business_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve client: {str(e)}")

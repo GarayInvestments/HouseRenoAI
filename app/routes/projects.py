@@ -144,3 +144,27 @@ async def search_projects(
     except Exception as e:
         logger.error(f"Failed to search projects: {e}")
         raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
+
+@router.get("/by-business-id/{business_id}")
+async def get_project_by_business_id(business_id: str):
+    """
+    Get a specific project by business ID (e.g., PRJ-00001)
+    """
+    try:
+        from app.services.db_service import db_service
+        
+        project = await db_service.get_project_by_business_id(business_id)
+        
+        if not project:
+            raise HTTPException(status_code=404, detail=f"Project with business ID {business_id} not found")
+        
+        return {
+            "business_id": business_id,
+            "data": project
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get project by business ID {business_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve project: {str(e)}")

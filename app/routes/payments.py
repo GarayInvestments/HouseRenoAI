@@ -214,3 +214,24 @@ async def record_payment(
     except Exception as e:
         logger.error(f"Failed to record payment: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to record payment: {str(e)}")
+
+@router.get("/by-business-id/{business_id}")
+async def get_payment_by_business_id(business_id: str):
+    """
+    Get a specific payment by business ID (e.g., PAY-00001)
+    """
+    try:
+        from app.services.db_service import db_service
+        
+        payment = await db_service.get_payment_by_business_id(business_id)
+        
+        if not payment:
+            raise HTTPException(status_code=404, detail=f"Payment with business ID {business_id} not found")
+        
+        return payment
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get payment by business ID {business_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve payment: {str(e)}")

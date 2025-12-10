@@ -184,3 +184,24 @@ async def analyze_permits():
     except Exception as e:
         logger.error(f"Failed to analyze permits: {e}")
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+
+@router.get("/by-business-id/{business_id}")
+async def get_permit_by_business_id(business_id: str):
+    """
+    Get a specific permit by business ID (e.g., PRM-00001)
+    """
+    try:
+        from app.services.db_service import db_service
+        
+        permit = await db_service.get_permit_by_business_id(business_id)
+        
+        if not permit:
+            raise HTTPException(status_code=404, detail=f"Permit with business ID {business_id} not found")
+        
+        return permit
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get permit by business ID {business_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve permit: {str(e)}")
