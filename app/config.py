@@ -30,6 +30,9 @@ class Settings:
         self.OPENAI_PROMPT_STYLE: str = os.getenv("OPENAI_PROMPT_STYLE", "conversational")  # conversational, technical, concise
         self.AI_STRICT_MODE: bool = os.getenv("AI_STRICT_MODE", "false").lower() == "true"  # Strict function calling validation
         
+        # API Configuration
+        self.API_VERSION: str = "v1"
+        self.DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
         self.ENVIRONMENT: str = os.getenv("ENVIRONMENT", "production")  # development, staging, production
         
         # CORS Settings - Allow all Cloudflare Pages deployments
