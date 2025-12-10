@@ -2,70 +2,27 @@ from fastapi import APIRouter, HTTPException, Query
 from typing import List, Dict, Any, Optional
 import logging
 
-import app.services.google_service as google_service_module
+from app.services.db_service import db_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-def get_google_service():
-    """Helper function to get Google service with proper error handling"""
-    if not hasattr(google_service_module, 'google_service') or google_service_module.google_service is None:
-        raise HTTPException(status_code=503, detail="Google service not initialized")
-    return google_service_module.google_service
-
 @router.get("/")
 async def get_all_clients():
     """
-    Get all clients from Google Sheets
+    Get all clients from PostgreSQL database
     """
     try:
-        google_service = get_google_service()
+        logger.info("Fetching clients from database")
+        clients = await db_service.get_clients_data()
+        logger.info(f"Retrieved {len(clients)} clients from database")
         
-        # Try to get clients data from the Clients sheet
-        try:
-            logger.info("Attempting to fetch clients from Clients sheet")
-            clients = await google_service.get_clients_data()
-            logger.info(f"Retrieved {len(clients)} clients from get_clients_data()")
-            
-            if clients and len(clients) > 0:
-                # Log first client structure to help debug
-                if clients:
-                    first_keys = list(clients[0].keys())
-                    logger.info(f"First client keys: {first_keys}")
-                    logger.info(f"First client sample: Client ID={clients[0].get('Client ID', 'N/A')}, Name={clients[0].get('Client Name', clients[0].get('Full Name', 'N/A'))}")
-                
-                logger.info(f"Successfully retrieved {len(clients)} clients from Clients sheet")
-                return clients
-        except Exception as sheet_error:
-            logger.warning(f"Could not read Clients sheet: {sheet_error}", exc_info=True)
+        if clients and len(clients) > 0:
+            # Log first client structure to help debug
+            first_keys = list(clients[0].keys())
+            logger.info(f"First client keys: {first_keys}")
+            logger.info(f"First client sample: Client ID={clients[0].get('Client ID', 'N/A')}, Name={clients[0].get('Client Name', clients[0].get('Full Name', 'N/A'))}")
         
-        # Fallback: If Clients sheet doesn't exist or is empty, derive from Projects
-        logger.info("Falling back to deriving clients from Projects data")
-        projects = await google_service.get_projects_data()
-        
-        # Extract unique clients from projects
-        clients_dict = {}
-        for project in projects:
-            client_id = project.get('Client ID', '')
-            if client_id and client_id not in clients_dict:
-                clients_dict[client_id] = {
-                    'Client ID': client_id,
-                    'Client Name': project.get('Owner Name (PM\'s Client)', 'Unknown Client'),
-                    'Active Projects': '1',
-                    'Email': '',
-                    'Phone': '',
-                    'Address': '',
-                    'City': '',
-                    'State': '',
-                    'Notes': f'Derived from project: {project.get("Project Name", "")}'
-                }
-            elif client_id and client_id in clients_dict:
-                # Increment project count
-                current_count = int(clients_dict[client_id].get('Active Projects', '0'))
-                clients_dict[client_id]['Active Projects'] = str(current_count + 1)
-        
-        clients = list(clients_dict.values())
-        logger.info(f"Derived {len(clients)} clients from projects data")
         return clients
         
     except Exception as e:
@@ -85,8 +42,7 @@ async def lookup_client(
         if not name and not email:
             raise HTTPException(status_code=400, detail="Must provide name or email parameter")
         
-        google_service = get_google_service()
-        clients = await google_service.get_clients_data()
+        clients = await db_service.get_clients_data()
         
         best_match = None
         best_score = 0
@@ -192,15 +148,7 @@ async def get_client(client_id: str):
     Get a specific client by ID
     """
     try:
-        google_service = get_google_service()
-        clients = await google_service.get_clients_data()
-        
-        # Find client by ID - try both 'Client ID' and 'ID' fields
-        client = None
-        for c in clients:
-            if c.get('Client ID') == client_id or c.get('ID') == client_id:
-                client = c
-                break
+        client = await db_service.get_client_by_id(client_id)
         
         if not client:
             raise HTTPException(status_code=404, detail=f"Client {client_id} not found")
@@ -220,44 +168,14 @@ async def update_client(client_id: str, updates: Dict[str, Any]):
     Update a specific client by ID
     """
     try:
-        google_service = get_google_service()
-        
         # Verify client exists first
-        clients = await google_service.get_clients_data()
-        client = None
-        for c in clients:
-            if c.get('Client ID') == client_id or c.get('ID') == client_id:
-                client = c
-                break
+        client = await db_service.get_client_by_id(client_id)
         
         if not client:
             raise HTTPException(status_code=404, detail=f"Client {client_id} not found")
         
-        # Update the client in Google Sheets
-        success = await google_service.update_record_by_id(
-            sheet_name='Clients',
-            id_field='Client ID',
-            record_id=client_id,
-            updates=updates
-        )
-        
-        if not success:
-            raise HTTPException(status_code=500, detail="Failed to update client in Google Sheets")
-        
-        # Return updated client data
-        updated_clients = await google_service.get_clients_data()
-        for c in updated_clients:
-            if c.get('Client ID') == client_id or c.get('ID') == client_id:
-                return {
-                    'success': True,
-                    'message': f'Client {client_id} updated successfully',
-                    'client': c
-                }
-        
-        return {
-            'success': True,
-            'message': f'Client {client_id} updated successfully'
-        }
+        # TODO: Implement update in db_service
+        raise HTTPException(status_code=501, detail="Update client not yet implemented for database backend")
         
     except HTTPException:
         raise
