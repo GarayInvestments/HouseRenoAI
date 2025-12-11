@@ -19,6 +19,10 @@
 ehthumbs.db
 Thumbs.db
 
+# PostgreSQL password file (contains credentials)
+pgpass.conf
+**/pgpass.conf
+
 # ===== BACKEND (Python/FastAPI) =====
 # Python cache files - root level (new structure)
 app/__pycache__/

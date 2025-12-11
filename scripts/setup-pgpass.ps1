@@ -3,12 +3,31 @@
 
 Write-Host "Setting up pgpass.conf for Supabase PostgreSQL..." -ForegroundColor Cyan
 
-# Database connection details from .env
-$pgHost = 'db.dtfjzjhxtojkgfofrmrr.supabase.co'
-$pgPort = '5432'
-$pgDb = 'postgres'
-$pgUser = 'postgres'
-$pgPass = '***REMOVED***'  # From DATABASE_URL
+# Read DATABASE_URL from .env file
+$envFile = Join-Path $PSScriptRoot '..\' '.env'
+if (-not (Test-Path $envFile)) {
+    Write-Host "❌ Error: .env file not found at $envFile" -ForegroundColor Red
+    exit 1
+}
+
+$databaseUrl = Get-Content $envFile | Where-Object { $_ -match '^DATABASE_URL=' } | ForEach-Object { $_ -replace '^DATABASE_URL=', '' }
+
+if (-not $databaseUrl) {
+    Write-Host "❌ Error: DATABASE_URL not found in .env file" -ForegroundColor Red
+    exit 1
+}
+
+# Parse DATABASE_URL: postgresql+asyncpg://user:pass@host:port/db
+if ($databaseUrl -match 'postgresql\+?asyncpg?://([^:]+):([^@]+)@([^:]+):([^/]+)/(.+)') {
+    $pgUser = $matches[1]
+    $pgPass = $matches[2]
+    $pgHost = $matches[3]
+    $pgPort = $matches[4]
+    $pgDb = $matches[5]
+} else {
+    Write-Host "❌ Error: Could not parse DATABASE_URL format" -ForegroundColor Red
+    exit 1
+}
 
 # Create pgpass directory and file
 $pgpassDir = Join-Path $env:APPDATA 'postgresql'

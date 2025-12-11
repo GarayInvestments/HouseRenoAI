@@ -207,6 +207,45 @@ npm run dev
 VITE_API_URL=https://houserenoai.onrender.com
 ```
 
+### PostgreSQL Access (REQUIRED for Database Work)
+
+**Setup pgpass.conf (one-time setup):**
+```powershell
+# Run setup script to enable password-less psql access
+.\scripts\setup-pgpass.ps1
+
+# Verify it works (no password prompt should appear)
+psql "postgresql://postgres@db.dtfjzjhxtojkgfofrmrr.supabase.co:5432/postgres" -c "\dt"
+```
+
+**What pgpass.conf does:**
+- Stores PostgreSQL credentials locally in `%APPDATA%\postgresql\pgpass.conf`
+- Eliminates interactive password prompts for all psql commands
+- Required for: database introspection, migrations, testing, debugging
+- File permissions automatically restricted to current user only
+
+**Daily database workflow:**
+```powershell
+# Inspect table structures
+psql "postgresql://postgres@db.dtfjzjhxtojkgfofrmrr.supabase.co:5432/postgres" -c "\d permits"
+
+# Run queries
+psql "postgresql://postgres@db.dtfjzjhxtojkgfofrmrr.supabase.co:5432/postgres" -c "SELECT business_id, status FROM permits LIMIT 5"
+
+# Check column defaults
+psql "postgresql://postgres@db.dtfjzjhxtojkgfofrmrr.supabase.co:5432/postgres" -c "SELECT column_name, column_default FROM information_schema.columns WHERE table_name = 'permits'"
+
+# Interactive mode
+psql "postgresql://postgres@db.dtfjzjhxtojkgfofrmrr.supabase.co:5432/postgres"
+```
+
+**When to use psql:**
+- Before creating migrations (inspect current schema)
+- After applying migrations (verify changes applied)
+- Debugging SQLAlchemy issues (check actual vs expected schema)
+- Testing business ID triggers
+- Verifying data after service operations
+
 **⚠️ CRITICAL: Server Terminal Management**
 - **Backend and Frontend servers MUST run in DEDICATED terminals**
 - **NEVER run other commands in a terminal that's running a server**
