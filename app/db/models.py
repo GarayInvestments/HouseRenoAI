@@ -172,6 +172,11 @@ class Permit(Base):
     inspector_name: Mapped[str | None] = mapped_column(String(255))
     notes: Mapped[str | None] = mapped_column(Text)
     
+    # Workflow columns (added in migration 7efbcd4142a3)
+    status_history: Mapped[Dict[str, Any] | None] = mapped_column(JSONB)  # Track status changes
+    approved_by: Mapped[str | None] = mapped_column(String(255))  # Who approved
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))  # When approved
+    
     # Dynamic fields
     extra: Mapped[Dict[str, Any] | None] = mapped_column(JSONB)
     
