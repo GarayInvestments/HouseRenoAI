@@ -1,4 +1,4 @@
-# add_server_defaults_to_primary_keys
+"""add_server_defaults_to_primary_keys
 
 Revision ID: 9ac01f737adf
 Revises: 62e3354db1d9
@@ -19,8 +19,41 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    pass
+    """Add DEFAULT gen_random_uuid() to all UUID primary key columns."""
+    
+    # Enable the uuid-ossp extension if not already enabled
+    op.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";')
+    
+    # Add DEFAULT to all UUID primary key columns
+    # These were defined in models with server_default=text("gen_random_uuid()")
+    # but the database columns were created without DEFAULT clauses
+    
+    tables_and_pk_columns = [
+        ('clients', 'client_id'),
+        ('projects', 'project_id'),
+        ('permits', 'permit_id'),
+        ('inspections', 'inspection_id'),
+        ('invoices', 'invoice_id'),
+        ('payments', 'payment_id'),
+        ('site_visits', 'visit_id'),  # Note: column is visit_id, not site_visit_id
+    ]
+    
+    for table, column in tables_and_pk_columns:
+        op.execute(f'ALTER TABLE {table} ALTER COLUMN {column} SET DEFAULT gen_random_uuid();')
 
 
 def downgrade() -> None:
-    pass
+    """Remove DEFAULT from UUID primary key columns."""
+    
+    tables_and_pk_columns = [
+        ('clients', 'client_id'),
+        ('projects', 'project_id'),
+        ('permits', 'permit_id'),
+        ('inspections', 'inspection_id'),
+        ('invoices', 'invoice_id'),
+        ('payments', 'payment_id'),
+        ('site_visits', 'visit_id'),  # Note: column is visit_id, not site_visit_id
+    ]
+    
+    for table, column in tables_and_pk_columns:
+        op.execute(f'ALTER TABLE {table} ALTER COLUMN {column} DROP DEFAULT;')
