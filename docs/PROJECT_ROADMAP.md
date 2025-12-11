@@ -100,6 +100,9 @@ Human-readable IDs for all core entities:
 - Fee catalog: Special Housing (SH), Trade-Ups (TU), IBA, etc.
 - `id`, `code`, `name`, `fee_amount`, `description`
 
+**site_visits**
+- `id` (UUID PK), `business_id` (SV-00001), `project_id` FK, `visit_type` (Pre-Construction, Progress, Final Walkthrough, Punch List, Client Meeting), `status` (Scheduled, In-Progress, Completed, Cancelled), `scheduled_date`, `start_time`, `end_time`, `attendees` JSONB (array of {name, role, email}), `gps_location` (lat/lon), `photos` JSONB (array of {url, gps, timestamp, uploaded_by}), `notes` TEXT, `deficiencies` JSONB (array of {description, severity, photo_refs}), `follow_up_actions` JSONB (array of {type, status, created_entity_id}), `created_by`, `extra` JSONB
+
 **schedule_items**
 - `id`, `project_id` FK, `inspection_id` FK (nullable), `title`, `scheduled_date`, `assigned_to`, `status`, `notes`
 
@@ -189,7 +192,21 @@ POST   /v1/inspections/{inspection_id}/photos    # Upload photos with GPS/timest
 GET    /v1/projects/{project_id}/inspections     # All inspections for project
 ```
 
-### 4.4 Invoices & Payments
+### 4.4 Site Visits
+
+```
+POST   /v1/projects/{project_id}/site-visits     # Schedule site visit
+GET    /v1/projects/{project_id}/site-visits     # List project site visits
+GET    /v1/site-visits/{id}                      # Site visit details
+GET    /v1/site-visits/by-business-id/{business_id}  # Lookup by SV-00001
+PUT    /v1/site-visits/{id}/start                # Start visit (check-in with GPS)
+PUT    /v1/site-visits/{id}/complete             # Complete visit (check-out, add notes/deficiencies)
+POST   /v1/site-visits/{id}/photos               # Upload photos with GPS + timestamp
+POST   /v1/site-visits/{id}/follow-ups           # Create follow-up actions (inspection/change_order/punchlist)
+DELETE /v1/site-visits/{id}                      # Cancel visit (soft delete)
+```
+
+### 4.5 Invoices & Payments
 
 ```
 POST   /v1/projects/{project_id}/invoices        # Create invoice
@@ -1038,6 +1055,31 @@ async def reconcile_schedules_and_inspections():
 - [ ] Auto-fix simple cases
 - [ ] Flag complex cases for manual review
 
+**C.4: Site Visits Feature** (8-10 hours, 🔥🔥🔥 NEW)
+- [ ] Create `site_visits` SQLAlchemy model with business_id (SV-00001)
+- [ ] Alembic migration: table, indexes, business_id sequence/trigger
+- [ ] Model fields: `project_id`, `visit_type`, `status`, `scheduled_date`, `start_time`, `end_time`, `attendees` JSONB, `gps_location`, `photos` JSONB, `notes`, `deficiencies` JSONB, `follow_up_actions` JSONB
+- [ ] API endpoints:
+  - `POST /v1/projects/{project_id}/site-visits` (schedule visit)
+  - `GET /v1/projects/{project_id}/site-visits` (list project visits)
+  - `GET /v1/site-visits/{id}` (visit details)
+  - `PUT /v1/site-visits/{id}/start` (check-in with GPS)
+  - `PUT /v1/site-visits/{id}/complete` (check-out, add notes/deficiencies)
+  - `POST /v1/site-visits/{id}/photos` (upload with GPS + timestamp)
+- [ ] Object storage integration (S3/Cloudflare R2) for photos
+- [ ] Follow-up action wiring:
+  - `create_inspection` (from deficiency requiring permit work)
+  - `create_change_order` (from scope change)
+  - `create_punchlist` (from minor deficiency)
+- [ ] Role-based auth: PM/inspector can create, client can view
+- [ ] Background job hooks:
+  - Photo AI analysis (defect detection, similarity to plans)
+  - Auto-create follow-ups from visit notes
+  - Notify stakeholders on completion
+- [ ] Unit tests: model validation, business_id generation
+- [ ] Integration tests: schedule→start→complete flow with follow-up creation
+- [ ] Idempotency tests: duplicate photo upload, double complete
+
 ### Phase D: Performance & Cost Control (1 week, 🔥🔥🔥)
 
 **D.1: DB-Centered QuickBooks Strategy** (4-5 hours)
@@ -1062,14 +1104,18 @@ async def reconcile_schedules_and_inspections():
 - [ ] `POSTGRES_MIGRATION_GUIDE.md`
 - [ ] `PERMIT_WORKFLOW.md`
 - [ ] `INSPECTOR_GUIDE.md`
-- [ ] Update `API_DOCUMENTATION.md`
+- [ ] `SITE_VISIT_GUIDE.md` (NEW: Workflow for scheduling, conducting, and completing site visits)
+- [ ] Update `API_DOCUMENTATION.md` (add site visits endpoints)
 - [ ] Update `TROUBLESHOOTING.md`
 
 **E.2: Test Coverage** (4-5 hours)
-- [ ] Unit tests for new services
+- [ ] Unit tests for new services (permits, inspections, site visits)
 - [ ] Integration tests for QB sync
 - [ ] E2E tests for permit → inspection → invoice flows
+- [ ] E2E tests for site visit → follow-up action flows
 - [ ] Contract tests for API shapes
+- [ ] Site visit tests: schedule→start→complete with photo upload and follow-up creation
+- [ ] Idempotency tests for site visit photo uploads and completion
 
 **E.3: Staging Rollout** (Ongoing monitoring)
 - [ ] Phase 1: Dual-write (1-2 weeks)
@@ -1090,19 +1136,19 @@ async def reconcile_schedules_and_inspections():
 |-------|----------|--------|----------|--------|
 | **A: Core Data & Migration** | 1-2 weeks | 15-20 hours | 🔥🔥🔥 | 🚧 In Progress |
 | **B: API & Business Flows** | 1-2 weeks | 12-16 hours | 🔥🔥🔥 | ⏳ Pending |
-| **C: Scheduling Parity** | 1 week | 9-12 hours | 🔥🔥 | ⏳ Pending |
+| **C: Scheduling Parity + Site Visits** | 1.5-2 weeks | 17-22 hours | 🔥🔥🔥 | ⏳ Pending |
 | **D: Performance & Costs** | 1 week | 8-11 hours | 🔥🔥🔥 | ⏳ Pending |
 | **E: Docs, Tests, Rollout** | Ongoing | 10-15 hours | 🔥🔥🔥 | 🚧 In Progress |
 
-**Total Estimated Effort**: 54-74 hours (6-9 weeks at 10 hrs/week)
+**Total Estimated Effort**: 62-84 hours (7-10 weeks at 10 hrs/week)
 
 ---
 
 ## Next Immediate Actions
 
-1. **Complete Phase A.1**: Finish permit/inspection table migrations with indexes
-2. **Complete Phase A.2**: Implement business ID system with sequences and triggers
-3. **Complete Phase A.3**: Build database service layer for permits/inspections
+1. **Complete Phase A.1**: Finish permit/inspection/site_visit table migrations with indexes
+2. **Complete Phase A.2**: Implement business ID system with sequences and triggers (including SV-00001)
+3. **Complete Phase A.3**: Build database service layer for permits/inspections/site visits
 4. **Complete Phase A.4**: Test migration scripts in dry-run mode on staging data
 
 **Estimated time to Phase A completion**: 1-2 weeks
