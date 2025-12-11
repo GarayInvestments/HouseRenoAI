@@ -23,6 +23,9 @@ Thumbs.db
 pgpass.conf
 **/pgpass.conf
 
+# Security incident response (may contain sensitive details)
+SECURITY_INCIDENT_RESPONSE.md
+
 # ===== BACKEND (Python/FastAPI) =====
 # Python cache files - root level (new structure)
 app/__pycache__/
