@@ -21,7 +21,6 @@ pytz==2024.1
 
 # Supabase Auth integration
 supabase==2.11.0
-gotrue==2.10.1
 
 # Database dependencies
 sqlalchemy[asyncio]==2.0.35
