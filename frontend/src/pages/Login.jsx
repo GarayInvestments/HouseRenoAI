@@ -97,6 +97,7 @@ export default function Login() {
               required
               disabled={loading}
               placeholder="you@example.com"
+              autoComplete="email"
               style={{
                 width: '100%',
                 padding: '12px',
@@ -130,6 +131,7 @@ export default function Login() {
                 required
                 disabled={loading}
                 placeholder="••••••••"
+                autoComplete="current-password"
                 style={{
                   width: '100%',
                   padding: '12px',
