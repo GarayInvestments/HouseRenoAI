@@ -1,9 +1,9 @@
-name = "house-renovators-ai-portal"
+name = "houserenoai"
 compatibility_date = "2024-11-03"
 pages_build_output_dir = "dist"
 
 [env.production]
-name = "house-renovators-ai-portal"
+name = "houserenoai"
 
 [env.production.vars]
 VITE_API_URL = "https://houserenovators-api.fly.dev"
