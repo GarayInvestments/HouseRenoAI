@@ -163,6 +163,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add middleware to fix redirect scheme behind proxy
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.datastructures import URL
+
+class HTTPSRedirectFixMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        # If request came via HTTPS proxy (Fly.io), ensure redirects use HTTPS
+        if request.headers.get("x-forwarded-proto") == "https":
+            request.scope["scheme"] = "https"
+        response = await call_next(request)
+        return response
+
+app.add_middleware(HTTPSRedirectFixMiddleware)
+
 # Add JWT authentication middleware (protects all routes except public ones)
 app.add_middleware(JWTAuthMiddleware)
 
