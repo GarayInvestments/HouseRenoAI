@@ -92,32 +92,22 @@ async def startup_event():
         elif os.path.exists(settings.GOOGLE_SERVICE_ACCOUNT_FILE):
             logger.info(f"Service account file already exists: {settings.GOOGLE_SERVICE_ACCOUNT_FILE}")
         else:
-            logger.warning("No service account credentials found in environment variables")
+            logger.info("No Google Sheets service account credentials - using database only")
             
-        # Initialize Google services after ensuring service account file exists
+        # Initialize Google Sheets service ONLY for QuickBooks token storage
+        # TODO: Migrate QB tokens to database and remove this
         if os.path.exists(settings.GOOGLE_SERVICE_ACCOUNT_FILE):
             try:
                 import app.services.google_service as gs
-                logger.info("Initializing Google services...")
+                logger.info("Initializing Google Sheets (QB tokens only)...")
                 gs.google_service = gs.GoogleService()
                 gs.google_service.initialize()
-                logger.info("Google services initialized successfully")
+                logger.info("Google Sheets initialized for QB token storage")
                 
-                # Initialize auth service and ensure Users sheet exists
-                try:
-                    from app.services.auth_service import auth_service
-                    logger.info("Ensuring Users sheet exists...")
-                    auth_service.ensure_users_sheet_exists()
-                    logger.info("Users sheet ready")
-                except Exception as auth_init_error:
-                    logger.error(f"Failed to initialize auth service: {auth_init_error}")
-                
-                # Proactively refresh QuickBooks token if needed
+                # Load QuickBooks tokens from Google Sheets
                 try:
                     from app.services.quickbooks_service import quickbooks_service
-                    
-                    # Reload tokens now that Google Sheets is initialized
-                    logger.info("Reloading QuickBooks tokens from Google Sheets...")
+                    logger.info("Loading QuickBooks tokens from Google Sheets...")
                     quickbooks_service._load_tokens_from_sheets()
                     
                     if quickbooks_service.is_authenticated():
@@ -221,36 +211,15 @@ async def health_check():
 async def debug_info():
     """Debug endpoint to check service status"""
     try:
-        from app.services.google_service import google_service
-        
         debug_info = {
-            "service_account_file_exists": os.path.exists(settings.GOOGLE_SERVICE_ACCOUNT_FILE),
-            "service_account_file_path": settings.GOOGLE_SERVICE_ACCOUNT_FILE,
-            "sheet_id": settings.SHEET_ID,
-            "google_service_initialized": {
-                "credentials": google_service.credentials is not None if google_service else False,
-                "sheets_service": google_service.sheets_service is not None if google_service else False,
-                "drive_service": google_service.drive_service is not None if google_service else False
-            }
+            "database_url_configured": bool(settings.DATABASE_URL),
+            "supabase_url_configured": bool(settings.SUPABASE_URL),
+            "quickbooks_configured": {
+                "client_id": bool(settings.QUICKBOOKS_CLIENT_ID),
+                "environment": settings.QUICKBOOKS_ENVIRONMENT
+            },
+            "google_sheets_for_qb_tokens": os.path.exists(settings.GOOGLE_SERVICE_ACCOUNT_FILE) if hasattr(settings, 'GOOGLE_SERVICE_ACCOUNT_FILE') else False
         }
-        
-        # Try to read the service account file if it exists
-        if os.path.exists(settings.GOOGLE_SERVICE_ACCOUNT_FILE):
-            try:
-                with open(settings.GOOGLE_SERVICE_ACCOUNT_FILE, 'r') as f:
-                    creds = json.load(f)
-                debug_info["service_account_info"] = {
-                    "client_email": creds.get("client_email"),
-                    "project_id": creds.get("project_id"),
-                    "private_key_length": len(creds.get("private_key", "")),
-                    "private_key_starts_correctly": creds.get("private_key", "").startswith("-----BEGIN PRIVATE KEY-----"),
-                    "private_key_ends_correctly": creds.get("private_key", "").endswith("-----END PRIVATE KEY-----\n"),
-                    "private_key_last_50_chars": repr(creds.get("private_key", "")[-50:]) if creds.get("private_key") else "",
-                    "private_key_ends_with_newline": creds.get("private_key", "").endswith("\n"),
-                    "private_key_ends_with_marker": creds.get("private_key", "").endswith("-----END PRIVATE KEY-----")
-                }
-            except Exception as e:
-                debug_info["service_account_file_error"] = str(e)
         
         return debug_info
         
@@ -261,11 +230,10 @@ async def debug_info():
 @app.get("/version")
 async def get_version():
     """Get deployed version info"""
-    import app.services.google_service as google_service_module
     return {
         "version": "1.0.0",
         "git_commit": GIT_COMMIT,
-        "has_append_record": hasattr(google_service_module.google_service, 'append_record') if google_service_module.google_service else False
+        "database": "PostgreSQL (Supabase)"
     }
 
 @app.exception_handler(Exception)

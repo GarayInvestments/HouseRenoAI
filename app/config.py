@@ -6,8 +6,12 @@ load_dotenv()
 class Settings:
     def __init__(self):
         self.OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+        
+        # Google Sheets - ONLY for QuickBooks token storage (legacy)
+        # TODO: Migrate QB tokens to database, then remove these
         self.SHEET_ID: str = os.getenv("SHEET_ID", "")
         self.GOOGLE_SERVICE_ACCOUNT_FILE: str = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", "service-account.json")
+        
         self.CHAT_WEBHOOK_URL: str = os.getenv("CHAT_WEBHOOK_URL", "")
         
         # QuickBooks Configuration

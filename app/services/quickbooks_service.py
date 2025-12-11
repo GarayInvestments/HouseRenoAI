@@ -67,7 +67,12 @@ class QuickBooksService:
         self._load_tokens_from_sheets()
     
     def _load_tokens_from_sheets(self) -> None:
-        """Load QuickBooks tokens from Google Sheets."""
+        """
+        Load QuickBooks tokens from Google Sheets.
+        
+        TODO: Migrate to database table (quickbooks_tokens)
+        This is the ONLY remaining Google Sheets usage in the app.
+        """
         try:
             from app.services.google_service import google_service
             
@@ -100,7 +105,12 @@ class QuickBooksService:
             logger.warning(f"Could not load tokens from sheets (sheet may not exist yet): {e}")
     
     def _save_tokens_to_sheets(self) -> None:
-        """Save QuickBooks tokens to Google Sheets."""
+        """
+        Save QuickBooks tokens to Google Sheets.
+        
+        TODO: Migrate to database table (quickbooks_tokens)
+        This is the ONLY remaining Google Sheets usage in the app.
+        """
         try:
             from app.services.google_service import google_service
             

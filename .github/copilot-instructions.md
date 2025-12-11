@@ -66,13 +66,20 @@
 
 ## 🏗️ Architecture Overview
 
-**Multi-Cloud Full-Stack App**: FastAPI backend (Render) + React PWA frontend (Cloudflare Pages) + Google Sheets data layer
+**Multi-Cloud Full-Stack App**: FastAPI backend (Fly.io) + React PWA frontend (Cloudflare Pages) + PostgreSQL database (Supabase)
 
 ### Key Components
 - **Backend** (`app/`): FastAPI with async routes in `routes/`, services in `services/`
 - **Frontend** (`frontend/src/`): React 19 + Vite, Zustand for state, pages in `pages/`
-- **Data Source**: Google Sheets API (not a database) - all data operations are async API calls
-- **Deployments**: Backend auto-deploys to Render, frontend to Cloudflare Pages on `main` push
+- **Database**: PostgreSQL (Supabase) - all data operations via SQLAlchemy ORM with async
+- **Auth**: Supabase Auth with JWT tokens
+- **Deployments**: Backend auto-deploys to Fly.io, frontend to Cloudflare Pages on `main` push
+
+### Data Migration Status (Dec 11, 2025)
+- ✅ **Clients, Projects, Permits, Payments**: Migrated to PostgreSQL
+- ✅ **AI Chat Context**: Uses `db_service` via `context_builder.py`
+- ⚠️ **QuickBooks Tokens**: Still in Google Sheets (TODO: migrate to database)
+- 🗑️ **Google Sheets**: No longer used for operational data (only QB token storage)
 
 ## 🔑 Critical Patterns
 
