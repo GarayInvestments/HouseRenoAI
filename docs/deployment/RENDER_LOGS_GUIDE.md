@@ -1,3 +1,9 @@
+> **⚠️ ARCHIVED**: December 11, 2025  
+> **Reason**: Backend migrated from Render to Fly.io. Use `fly logs` command instead.  
+> **Replacement**: See docs/deployment/FLY_IO_DEPLOYMENT.md for Fly.io log access.
+
+---
+
 # Render Logs Access Guide
 
 **Created**: November 9, 2025  

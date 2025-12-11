@@ -1,3 +1,9 @@
+> **⚠️ ARCHIVED**: December 11, 2025  
+> **Reason**: Backend migrated from Render to Fly.io. Render-specific API workflows no longer applicable.  
+> **Replacement**: See docs/deployment/FLY_IO_DEPLOYMENT.md for Fly.io deployment workflows.
+
+---
+
 # Render API Deployment Guide
 
 **Created**: November 6, 2025  

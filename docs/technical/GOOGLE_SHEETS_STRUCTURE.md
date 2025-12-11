@@ -1,3 +1,10 @@
+> **⚠️ ARCHIVED**: December 11, 2025  
+> **Reason**: Google Sheets no longer used as source of truth for operational data. All clients, projects, permits, and payments migrated to PostgreSQL database.  
+> **Replacement**: See docs/technical/DATABASE_SCHEMA.md for current database schema.  
+> **Legacy Use**: Google Sheets still stores QuickBooks tokens only (pending migration).
+
+---
+
 # Google Sheets Structure Reference
 
 ## Overview

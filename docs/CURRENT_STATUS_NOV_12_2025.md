@@ -1,3 +1,9 @@
+> **⚠️ ARCHIVED**: December 11, 2025  
+> **Reason**: Superseded by current status - major architecture changes (PostgreSQL migration, Fly.io deployment) completed after this document was written.  
+> **Replacement**: See docs/CURRENT_STATUS.md for post-migration status.
+
+---
+
 # Current Development Status - November 12, 2025
 
 **Last Updated**: November 12, 2025  
