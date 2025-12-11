@@ -28,6 +28,7 @@ class ApiService {
     };
 
     try {
+      console.log('[API Request] About to fetch:', url, 'Config:', JSON.stringify(config, null, 2));
       const response = await fetch(url, config);
       
       // Handle 401 Unauthorized - redirect to login
