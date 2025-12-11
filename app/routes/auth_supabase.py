@@ -16,6 +16,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
+from datetime import datetime
 
 from app.db.session import get_db
 from app.services.supabase_auth_service import supabase_auth_service
@@ -37,12 +38,15 @@ class UserResponse(BaseModel):
     role: str
     is_active: bool
     is_email_verified: bool
-    last_login_at: Optional[str] = None
+    last_login_at: Optional[datetime] = None
     app_metadata: Optional[Dict[str, Any]] = None
-    created_at: str
+    created_at: datetime
     
     class Config:
         from_attributes = True
+        json_encoders = {
+            datetime: lambda v: v.isoformat() if v else None
+        }
 
 
 class UpdateRoleRequest(BaseModel):
