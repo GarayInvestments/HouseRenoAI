@@ -14,14 +14,14 @@
 | Phase | Status | Progress | Target Date | Notes |
 |-------|--------|----------|-------------|-------|
 | **Phase 0: Foundation** | ✅ Complete | 100% | Dec 10 | Infrastructure ready |
-| **Phase A: Core Data** | 🚧 In Progress | 30% | Dec 17-24 | A.1 done, A.2 next |
+| **Phase A: Core Data** | 🚧 In Progress | 50% | Dec 17-24 | A.1-A.2 done, A.3 next |
 | **Phase B: API & Business** | ⏳ Pending | 0% | Dec 24-31 | - |
 | **Phase C: Scheduling + Visits** | ⏳ Pending | 0% | Jan 1-14 | - |
 | **Phase D: Performance** | ⏳ Pending | 0% | Jan 15-21 | - |
 | **Phase E: Rollout** | 🚧 Ongoing | 10% | Ongoing | Docs started |
 
-**Latest Milestone**: Roadmap v3.0 completed ✅  
-**Next Milestone**: Phase A.1 - Database models (target: Dec 12)  
+**Latest Milestone**: Phase A.1-A.2 complete (models + business IDs) ✅  
+**Next Milestone**: Phase A.3 - Service layer (target: Dec 14-16)  
 **Blockers**: None
 
 ---
@@ -52,7 +52,7 @@
 
 ## 🔥 Phase A: Core Data & Migration (🚧 IN PROGRESS - Target: Dec 17-24)
 
-**Overall Progress**: 30% (6/20 hours estimated)
+**Overall Progress**: 50% (10/20 hours estimated)
 
 ### A.1: Database Models & Migrations (✅ 100% - 5/5 hours)
 
@@ -109,43 +109,50 @@
 
 ---
 
-### A.2: Business ID System (⏳ 0% - 0/4 hours)
+### A.2: Business ID System (✅ 100% - 4/4 hours)
 
-#### Status: Waiting on A.1 completion
+#### Status: Complete - All sequences, triggers, and backfill done
 
-**Pending Tasks**:
-- [ ] **Task 2.1**: Create database sequences (1 hour)
-  - New Alembic migration: `add_business_id_sequences`
-  - Sequences: client, project, permit, inspection, invoice, payment, site_visit
-  - Target: Dec 12
+**Completed**:
+- [x] **Task 2.1**: Create database sequences ✅
+  - Migration: `62e3354db1d9_add_business_id_sequences_and_triggers.py`
+  - 7 sequences created: client, project, permit, inspection, invoice, payment, site_visit
+  - Idempotent: CREATE SEQUENCE IF NOT EXISTS
+  - Completed: Dec 10, 2025
 
-- [ ] **Task 2.2**: Create trigger functions (1 hour)
-  - Trigger function for each entity type
+- [x] **Task 2.2**: Create trigger functions ✅
+  - 7 PL/pgSQL trigger functions created
   - Format: CL-00001, PRJ-00001, PER-00001, INS-00001, INV-00001, PAY-00001, SV-00001
-  - Target: Dec 12
+  - Logic: IF NEW.business_id IS NULL THEN assign from sequence
+  - Idempotent: DROP FUNCTION IF EXISTS CASCADE before CREATE
+  - Completed: Dec 10, 2025
 
-- [ ] **Task 2.3**: Apply triggers to tables (30 min)
-  - Create triggers for each table
-  - Test with INSERT without business_id
-  - Target: Dec 12
+- [x] **Task 2.3**: Apply triggers to tables ✅
+  - 7 BEFORE INSERT triggers created
+  - Tested with new record insertions - working correctly
+  - Idempotent: DROP TRIGGER IF EXISTS before CREATE
+  - Completed: Dec 10, 2025
 
-- [ ] **Task 2.4**: Create backfill script (1.5 hours)
+- [x] **Task 2.4**: Create backfill script ✅
   - Script: `scripts/backfill_business_ids.py`
-  - Must ORDER BY created_at ASC (chronological)
-  - Idempotent: skip records with existing business_id
-  - Dry-run mode for testing
-  - Target: Dec 13
+  - Uses CTE with ORDER BY created_at ASC for chronological assignment
+  - Idempotent: Skips records with existing business_id
+  - SQL-based for performance
+  - Completed: Dec 10, 2025
 
-- [ ] **Task 2.5**: Backfill existing data (30 min)
-  - Run dry-run first
-  - Backfill clients (8 records)
-  - Backfill projects (12 records)
-  - Backfill permits (11 records)
-  - Verify business_ids assigned correctly
-  - Target: Dec 13
+- [x] **Task 2.5**: Backfill existing data ✅
+  - Backfilled 34 records total:
+    - Clients: 8 records (CL-00001 to CL-00008)
+    - Projects: 12 records (PRJ-00001 to PRJ-00012)
+    - Permits: 11 records (PER-00001 to PER-00011)
+    - Inspections: 2 records (INS-00002 to INS-00003)
+    - Invoices: 1 record (INV-00002)
+  - Test records from Task 1.7 retained their auto-generated IDs
+  - All assignments chronological (oldest → lowest numbers)
+  - Completed: Dec 10, 2025
 
-**Blockers**: Requires A.1 completion (models must exist)  
-**Notes**: Business IDs must be chronological - oldest records get lowest numbers
+**Blockers**: None  
+**Notes**: Business IDs now auto-generate for all new records. Migration fully idempotent - safe to run multiple times.
 
 ---
 

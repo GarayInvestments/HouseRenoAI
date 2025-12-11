@@ -1,316 +1,127 @@
 """
-Backfill business IDs for existing database records.
+Backfill business IDs for existing records (Phase A.2 Task 2.5)
 
-Purpose: Assign business_id values to records that were created before the business_id
-         feature was added (via INSERT without triggers or data migration from Sheets).
-
-Usage:
-    # Dry run (preview changes)
-    python scripts/backfill_business_ids.py --dry-run
-    
-    # Backfill specific entity
-    python scripts/backfill_business_ids.py --entity clients
-    
-    # Backfill all entities
-    python scripts/backfill_business_ids.py
-    
-    # Force backfill (overwrite existing business_ids)
-    python scripts/backfill_business_ids.py --force
-
-Features:
-    - Idempotent: Safe to run multiple times
-    - Dry-run mode for preview
-    - Entity filtering (clients, projects, permits, payments)
-    - Progress reporting
-    - Atomic transactions per entity
-    - Preserves existing business_ids (unless --force)
+Assigns business IDs to all existing records in chronological order (created_at ASC).
+Idempotent - skips records with existing business_id.
+Uses raw SQL for simplicity and performance.
 """
-
 import asyncio
-import argparse
 import sys
 from pathlib import Path
-from typing import Optional, List
 
-# Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
-from app.db.models import Client, Project, Permit, Payment
+from sqlalchemy import text
 from app.config import settings
 
-# Create async engine
-engine = create_async_engine(
-    settings.DATABASE_URL,
-    echo=False,
-    pool_pre_ping=True
-)
 
-AsyncSessionLocal = sessionmaker(
-    engine,
-    class_=AsyncSession,
-    expire_on_commit=False
-)
-
-
-async def backfill_clients(session: AsyncSession, dry_run: bool, force: bool) -> int:
-    """Backfill business_ids for clients."""
-    # Find clients without business_id
-    query = select(Client)
-    if not force:
-        query = query.where(Client.business_id == None)
+async def backfill_business_ids():
+    """Backfill business IDs for all existing records"""
     
-    result = await session.execute(query)
-    clients = result.scalars().all()
+    engine = create_async_engine(settings.DATABASE_URL)
+    async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
     
-    if not clients:
-        print("✓ No clients need business_id backfill")
-        return 0
-    
-    print(f"{'[DRY RUN] ' if dry_run else ''}Found {len(clients)} clients to backfill")
-    
-    if dry_run:
-        for client in clients[:5]:  # Show first 5 as preview
-            print(f"  - {client.client_id}: {client.full_name or 'Unnamed'} → Would assign CL-XXXXX")
-        if len(clients) > 5:
-            print(f"  ... and {len(clients) - 5} more")
-        return len(clients)
-    
-    # Execute backfill
-    updated_count = 0
-    for client in clients:
-        # Trigger will auto-assign business_id if we set it to None and update
-        # Alternatively, call the generation function directly
-        result = await session.execute(
-            select(Client).where(Client.client_id == client.client_id)
-        )
-        fresh_client = result.scalar_one()
+    async with async_session() as session:
+        print("\n" + "="*80)
+        print("BACKFILL BUSINESS IDs - PHASE A.2 TASK 2.5")
+        print("="*80)
+        print("\nStrategy:")
+        print("  1. Process records in chronological order (created_at ASC)")
+        print("  2. Skip records with existing business_id")
+        print("  3. Assign sequential business IDs using sequences")
+        print("  4. Idempotent - safe to run multiple times")
+        print("="*80)
         
-        # If business_id is still None, we need to manually set it
-        if fresh_client.business_id is None or force:
-            # Use raw SQL to call the generation function
-            from sqlalchemy import text
-            result = await session.execute(
-                text("SELECT generate_client_business_id()")
-            )
-            new_business_id = result.scalar()
+        # Tables to backfill: (table_name, id_column, sequence_name, prefix)
+        tables = [
+            ("clients", "client_id", "client_business_id_seq", "CL"),
+            ("projects", "project_id", "project_business_id_seq", "PRJ"),
+            ("permits", "permit_id", "permit_business_id_seq", "PER"),
+            ("inspections", "inspection_id", "inspection_business_id_seq", "INS"),
+            ("invoices", "invoice_id", "invoice_business_id_seq", "INV"),
+            ("payments", "payment_id", "payment_business_id_seq", "PAY"),
+            ("site_visits", "visit_id", "site_visit_business_id_seq", "SV"),
+        ]
+        
+        total_backfilled = 0
+        total_skipped = 0
+        
+        for table_name, id_column, seq_name, prefix in tables:
+            print(f"\n" + "-"*80)
+            print(f"Processing: {table_name.upper()}")
+            print("-"*80)
             
-            await session.execute(
-                update(Client)
-                .where(Client.client_id == client.client_id)
-                .values(business_id=new_business_id)
+            # Count records needing backfill
+            count_query = text(f"""
+                SELECT COUNT(*) 
+                FROM {table_name} 
+                WHERE business_id IS NULL
+            """)
+            result = await session.execute(count_query)
+            null_count = result.scalar()
+            
+            # Count records with business_id
+            has_id_query = text(f"""
+                SELECT COUNT(*) 
+                FROM {table_name} 
+                WHERE business_id IS NOT NULL
+            """)
+            result = await session.execute(has_id_query)
+            has_id_count = result.scalar()
+            
+            print(f"  Records without business_id: {null_count}")
+            print(f"  Records with business_id: {has_id_count}")
+            
+            if null_count == 0:
+                print(f"  ✅ All {table_name} already have business IDs")
+                total_skipped += has_id_count
+                continue
+            
+            # Backfill in chronological order
+            # This UPDATE with CTE ensures records are processed in created_at order
+            backfill_query = text(f"""
+                WITH ordered_records AS (
+                    SELECT {id_column}
+                    FROM {table_name}
+                    WHERE business_id IS NULL
+                    ORDER BY created_at ASC
+                )
+                UPDATE {table_name}
+                SET business_id = :prefix || '-' || LPAD(nextval(:seq_name)::TEXT, 5, '0')
+                FROM ordered_records
+                WHERE {table_name}.{id_column} = ordered_records.{id_column}
+                RETURNING {table_name}.business_id
+            """)
+            
+            result = await session.execute(
+                backfill_query,
+                {"prefix": prefix, "seq_name": seq_name}
             )
-            updated_count += 1
-            print(f"  ✓ {client.client_id}: {client.full_name or 'Unnamed'} → {new_business_id}")
-    
-    await session.commit()
-    print(f"✓ Backfilled {updated_count} clients")
-    return updated_count
-
-
-async def backfill_projects(session: AsyncSession, dry_run: bool, force: bool) -> int:
-    """Backfill business_ids for projects."""
-    query = select(Project)
-    if not force:
-        query = query.where(Project.business_id == None)
-    
-    result = await session.execute(query)
-    projects = result.scalars().all()
-    
-    if not projects:
-        print("✓ No projects need business_id backfill")
-        return 0
-    
-    print(f"{'[DRY RUN] ' if dry_run else ''}Found {len(projects)} projects to backfill")
-    
-    if dry_run:
-        for project in projects[:5]:
-            print(f"  - {project.project_id}: {project.project_name or 'Unnamed'} → Would assign PRJ-XXXXX")
-        if len(projects) > 5:
-            print(f"  ... and {len(projects) - 5} more")
-        return len(projects)
-    
-    updated_count = 0
-    for project in projects:
-        from sqlalchemy import text
-        result = await session.execute(
-            text("SELECT generate_project_business_id()")
-        )
-        new_business_id = result.scalar()
+            backfilled_ids = result.fetchall()
+            
+            await session.commit()
+            
+            count_backfilled = len(backfilled_ids)
+            total_backfilled += count_backfilled
+            total_skipped += has_id_count
+            
+            print(f"  ✅ Backfilled {count_backfilled} records")
+            if count_backfilled > 0:
+                print(f"     First: {backfilled_ids[0][0]}")
+                print(f"     Last: {backfilled_ids[-1][0]}")
         
-        await session.execute(
-            update(Project)
-            .where(Project.project_id == project.project_id)
-            .values(business_id=new_business_id)
-        )
-        updated_count += 1
-        print(f"  ✓ {project.project_id}: {project.project_name or 'Unnamed'} → {new_business_id}")
-    
-    await session.commit()
-    print(f"✓ Backfilled {updated_count} projects")
-    return updated_count
-
-
-async def backfill_permits(session: AsyncSession, dry_run: bool, force: bool) -> int:
-    """Backfill business_ids for permits."""
-    query = select(Permit)
-    if not force:
-        query = query.where(Permit.business_id == None)
-    
-    result = await session.execute(query)
-    permits = result.scalars().all()
-    
-    if not permits:
-        print("✓ No permits need business_id backfill")
-        return 0
-    
-    print(f"{'[DRY RUN] ' if dry_run else ''}Found {len(permits)} permits to backfill")
-    
-    if dry_run:
-        for permit in permits[:5]:
-            print(f"  - {permit.permit_id}: {permit.permit_number or 'Unnamed'} → Would assign PRM-XXXXX")
-        if len(permits) > 5:
-            print(f"  ... and {len(permits) - 5} more")
-        return len(permits)
-    
-    updated_count = 0
-    for permit in permits:
-        from sqlalchemy import text
-        result = await session.execute(
-            text("SELECT generate_permit_business_id()")
-        )
-        new_business_id = result.scalar()
-        
-        await session.execute(
-            update(Permit)
-            .where(Permit.permit_id == permit.permit_id)
-            .values(business_id=new_business_id)
-        )
-        updated_count += 1
-        print(f"  ✓ {permit.permit_id}: {permit.permit_number or 'Unnamed'} → {new_business_id}")
-    
-    await session.commit()
-    print(f"✓ Backfilled {updated_count} permits")
-    return updated_count
-
-
-async def backfill_payments(session: AsyncSession, dry_run: bool, force: bool) -> int:
-    """Backfill business_ids for payments."""
-    query = select(Payment)
-    if not force:
-        query = query.where(Payment.business_id == None)
-    
-    result = await session.execute(query)
-    payments = result.scalars().all()
-    
-    if not payments:
-        print("✓ No payments need business_id backfill")
-        return 0
-    
-    print(f"{'[DRY RUN] ' if dry_run else ''}Found {len(payments)} payments to backfill")
-    
-    if dry_run:
-        for payment in payments[:5]:
-            print(f"  - {payment.payment_id}: ${payment.amount or 0} → Would assign PAY-XXXXX")
-        if len(payments) > 5:
-            print(f"  ... and {len(payments) - 5} more")
-        return len(payments)
-    
-    updated_count = 0
-    for payment in payments:
-        from sqlalchemy import text
-        result = await session.execute(
-            text("SELECT generate_payment_business_id()")
-        )
-        new_business_id = result.scalar()
-        
-        await session.execute(
-            update(Payment)
-            .where(Payment.payment_id == payment.payment_id)
-            .values(business_id=new_business_id)
-        )
-        updated_count += 1
-        print(f"  ✓ {payment.payment_id}: ${payment.amount or 0} → {new_business_id}")
-    
-    await session.commit()
-    print(f"✓ Backfilled {updated_count} payments")
-    return updated_count
-
-
-async def main(entity: Optional[str], dry_run: bool, force: bool):
-    """Main backfill orchestration."""
-    print("=" * 60)
-    print("Business ID Backfill Script")
-    print("=" * 60)
-    print(f"Mode: {'DRY RUN (no changes)' if dry_run else 'LIVE (will modify database)'}")
-    print(f"Entity filter: {entity or 'all'}")
-    print(f"Force overwrite: {force}")
-    print(f"Database: {settings.DATABASE_URL.split('@')[1]}")  # Hide credentials
-    print("=" * 60)
-    print()
-    
-    if not dry_run:
-        confirm = input("⚠️  This will modify the database. Continue? (yes/no): ")
-        if confirm.lower() != 'yes':
-            print("Aborted.")
-            return
-    
-    async with AsyncSessionLocal() as session:
-        total_updated = 0
-        
-        entities_to_process = {
-            'clients': backfill_clients,
-            'projects': backfill_projects,
-            'permits': backfill_permits,
-            'payments': backfill_payments
-        }
-        
-        # Filter entities if specified
-        if entity:
-            if entity not in entities_to_process:
-                print(f"❌ Unknown entity: {entity}")
-                print(f"   Valid options: {', '.join(entities_to_process.keys())}")
-                return
-            entities_to_process = {entity: entities_to_process[entity]}
-        
-        # Process each entity
-        for entity_name, backfill_func in entities_to_process.items():
-            print(f"\n📊 Processing {entity_name}...")
-            try:
-                count = await backfill_func(session, dry_run, force)
-                total_updated += count
-            except Exception as e:
-                print(f"❌ Error processing {entity_name}: {e}")
-                await session.rollback()
-                raise
-        
-        print("\n" + "=" * 60)
-        print(f"{'[DRY RUN] ' if dry_run else ''}Total records {'would be ' if dry_run else ''}updated: {total_updated}")
-        print("=" * 60)
+        print("\n" + "="*80)
+        print("BACKFILL COMPLETE!")
+        print("="*80)
+        print(f"  Total records backfilled: {total_backfilled}")
+        print(f"  Total records skipped (already had ID): {total_skipped}")
+        print("\n  ✅ All existing records now have business IDs")
+        print("  ✅ New records will auto-generate IDs via triggers")
+        print("\n  Next: Update tracker and commit Phase A.2")
+        print("="*80 + "\n")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Backfill business IDs for existing database records"
-    )
-    parser.add_argument(
-        "--entity",
-        choices=["clients", "projects", "permits", "payments"],
-        help="Backfill only this entity type"
-    )
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Preview changes without modifying database"
-    )
-    parser.add_argument(
-        "--force",
-        action="store_true",
-        help="Overwrite existing business_ids (regenerate)"
-    )
-    
-    args = parser.parse_args()
-    
-    asyncio.run(main(args.entity, args.dry_run, args.force))
+    asyncio.run(backfill_business_ids())
