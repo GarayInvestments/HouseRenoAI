@@ -1,10 +1,18 @@
 # House Renovators AI Portal - Deployment Guide
 
-## 🚀 **PRODUCTION DEPLOYMENT - COMPLETE ✅**
+> **⚠️ PARTIALLY OUTDATED**: December 11, 2025  
+> **Status**: This doc references Render deployment. Backend now on Fly.io.  
+> **Current**: See [FLY_IO_DEPLOYMENT.md](FLY_IO_DEPLOYMENT.md) for Fly.io workflows.  
+> **Frontend**: Cloudflare Pages section still accurate.
 
-**Live URL**: https://api.houserenovatorsllc.com  
+---
+
+## 🚀 **PRODUCTION DEPLOYMENT STATUS**
+
+**Backend URL**: https://houserenovators-api.fly.dev  
+**Frontend URL**: https://portal.houserenovatorsllc.com  
 **Status**: ✅ FULLY OPERATIONAL  
-**Last Updated**: November 3, 2025
+**Last Major Update**: December 11, 2025 (Fly.io migration + PostgreSQL)
 
 ---
 

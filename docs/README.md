@@ -2,6 +2,17 @@
 
 Welcome to the House Renovators AI documentation. This guide will help you navigate all available documentation resources.
 
+## 🎯 Migration Status (December 11, 2025)
+
+**Major Update**: System migrated from Google Sheets to PostgreSQL database and from Render to Fly.io hosting.
+
+- ✅ **Data Layer**: PostgreSQL (Supabase) - All clients, projects, permits, payments migrated
+- ✅ **Backend Host**: Fly.io (houserenovators-api.fly.dev) - 2 machines, auto-deploy
+- ✅ **Authentication**: Supabase Auth with JWT verification
+- ⚠️ **Google Sheets**: Legacy status - Only QuickBooks tokens remain (pending migration)
+
+**See**: [MIGRATION_STATUS.md](MIGRATION_STATUS.md) | [CURRENT_STATUS.md](CURRENT_STATUS.md) | [DATABASE_SCHEMA.md](technical/DATABASE_SCHEMA.md)
+
 ## 🚀 Quick Start
 
 **New to the project?** Start here:
@@ -32,7 +43,7 @@ Comprehensive guides for using and maintaining the platform:
 - **[QUICKBOOKS_GUIDE.md](guides/QUICKBOOKS_GUIDE.md)** - QuickBooks OAuth2, API, sync, troubleshooting
 - **[TROUBLESHOOTING.md](guides/TROUBLESHOOTING.md)** - Common issues and solutions
 - **[CHAT_TESTING_SOP.md](guides/CHAT_TESTING_SOP.md)** - Testing chat features, log monitoring
-- **[FIELD_MAPPING.md](guides/FIELD_MAPPING.md)** - Google Sheets column mappings
+- **[FIELD_MAPPING.md](guides/FIELD_MAPPING.md)** - Field mappings *(⚠️ Needs update for database schema)*
 - **[WORKFLOW_GUIDE.md](guides/WORKFLOW_GUIDE.md)** - Daily development workflow and git patterns
 
 ### ⚙️ [Setup](setup/)
@@ -44,9 +55,10 @@ Environment setup and configuration:
 
 ### 🚀 [Deployment](deployment/)
 Deployment guides and operations:
-- **[DEPLOYMENT.md](deployment/DEPLOYMENT.md)** - Render and Cloudflare deployment process
-- **[RENDER_API_DEPLOYMENT_GUIDE.md](deployment/RENDER_API_DEPLOYMENT_GUIDE.md)** - Programmatic deployments via Render API
-- **[RENDER_LOGS_GUIDE.md](deployment/RENDER_LOGS_GUIDE.md)** - Log access and monitoring
+- **[DEPLOYMENT.md](deployment/DEPLOYMENT.md)** - Deployment process *(⚠️ Needs Fly.io update)*
+- **[FLY_IO_DEPLOYMENT.md](deployment/FLY_IO_DEPLOYMENT.md)** - Fly.io deployment guide *(⏳ Coming soon)*
+- ~~[RENDER_API_DEPLOYMENT_GUIDE.md](deployment/RENDER_API_DEPLOYMENT_GUIDE.md)~~ - *(Archived - Render migration)*
+- ~~[RENDER_LOGS_GUIDE.md](deployment/RENDER_LOGS_GUIDE.md)~~ - *(Archived - Use fly logs)*
 
 ### 🔧 [Technical](technical/)
 Technical specifications and design documents:
