@@ -20,6 +20,12 @@ class Settings:
         self.DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql+asyncpg://user:password@localhost:5432/houserenovators")
         self.REDIS_URL: str = os.getenv("REDIS_URL", "")  # Optional: redis://localhost:6379/0
         
+        # Supabase Auth Configuration
+        self.SUPABASE_URL: str = os.getenv("SUPABASE_URL", "https://dtfjzjhxtojkgfofrmrr.supabase.co")
+        self.SUPABASE_ANON_KEY: str = os.getenv("SUPABASE_ANON_KEY", "")
+        self.SUPABASE_SERVICE_ROLE_KEY: str = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+        self.SUPABASE_JWT_SECRET: str = os.getenv("SUPABASE_JWT_SECRET", "")  # For JWT verification
+        
         # Feature Flags
         self.ENABLE_DB_BACKEND: bool = os.getenv("ENABLE_DB_BACKEND", "false").lower() == "true"
         self.DB_READ_FALLBACK: bool = os.getenv("DB_READ_FALLBACK", "true").lower() == "true"  # Fallback to Sheets if DB fails
@@ -34,6 +40,10 @@ class Settings:
         self.API_VERSION: str = "v1"
         self.DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
         self.ENVIRONMENT: str = os.getenv("ENVIRONMENT", "production")  # development, staging, production
+        
+        # Auth Configuration
+        self.JWT_ACCESS_TOKEN_EXPIRE_HOURS: int = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_HOURS", "24"))
+        self.JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = int(os.getenv("JWT_REFRESH_TOKEN_EXPIRE_DAYS", "30"))
         
         # CORS Settings - Allow all Cloudflare Pages deployments
         self.ALLOWED_ORIGINS: list = [

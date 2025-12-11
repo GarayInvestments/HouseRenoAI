@@ -443,44 +443,6 @@ class SiteVisit(Base):
     )
 
 
-class User(Base):
-    """
-    User authentication from 'Users' sheet.
-    
-    Migrated to DB to improve auth performance and security.
-    """
-    __tablename__ = "users"
-    
-    # Primary key - UUID for unique identification
-    user_id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, server_default=text("gen_random_uuid()"))
-    
-    # Auth fields
-    email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
-    password_hash: Mapped[str] = mapped_column(String(255))
-    
-    # Profile
-    full_name: Mapped[str | None] = mapped_column(String(255))
-    role: Mapped[str] = mapped_column(String(50), default="user")  # admin, user, readonly
-    
-    # Status
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    last_login: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    
-    # Dynamic fields
-    extra: Mapped[Dict[str, Any] | None] = mapped_column(JSONB)
-    
-    # Audit
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), 
-        server_default=text("CURRENT_TIMESTAMP")
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=text("CURRENT_TIMESTAMP"),
-        onupdate=datetime.utcnow
-    )
-
-
 class QuickBooksToken(Base):
     """
     QuickBooks OAuth2 tokens - migrated from 'QB_Tokens' sheet.
@@ -546,6 +508,73 @@ class QuickBooksCustomerCache(Base):
     
     __table_args__ = (
         Index('ix_qb_customers_cached_at', 'cached_at'),
+    )
+
+
+class User(Base):
+    """
+    Application user table - maps to Supabase Auth users.
+    
+    Design:
+    - supabase_user_id: Links to auth.users.id (Supabase Auth table)
+    - email/full_name: Duplicated for performance (avoid joins to auth schema)
+    - role: App-specific RBAC (admin, pm, inspector, client, finance)
+    - app_metadata: Flexible JSONB for permissions, preferences, settings
+    
+    Supabase Auth handles:
+    - Password hashing, email verification, password reset
+    - JWT token generation and validation
+    - OAuth/SSO integrations
+    
+    This table handles:
+    - App-specific roles and permissions
+    - User profile data and preferences
+    - Activity tracking
+    """
+    __tablename__ = "users"
+    
+    # Primary key - internal UUID
+    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, server_default=text("gen_random_uuid()"))
+    
+    # Supabase Auth user ID - maps to auth.users.id
+    supabase_user_id: Mapped[str] = mapped_column(UUID(as_uuid=False), unique=True, index=True)
+    
+    # User profile (duplicated from auth.users for performance)
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    full_name: Mapped[str | None] = mapped_column(String(255))
+    phone: Mapped[str | None] = mapped_column(String(50))
+    
+    # Role-based access control
+    # Valid roles: admin, pm, inspector, client, finance
+    role: Mapped[str] = mapped_column(String(50), server_default="client", index=True)
+    
+    # Status flags
+    is_active: Mapped[bool] = mapped_column(Boolean, server_default="true")
+    is_email_verified: Mapped[bool] = mapped_column(Boolean, server_default="false")
+    
+    # Activity tracking
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_activity_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    
+    # App-specific metadata
+    # Example: {"permissions": ["view_permits"], "preferences": {"theme": "dark"}}
+    app_metadata: Mapped[Dict[str, Any] | None] = mapped_column(JSONB)
+    
+    # Audit fields
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), 
+        server_default=text("CURRENT_TIMESTAMP")
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=text("CURRENT_TIMESTAMP")
+    )
+    
+    __table_args__ = (
+        # GIN index for JSONB queries
+        Index('ix_users_app_metadata_gin', 'app_metadata', postgresql_using='gin'),
+        # Case-insensitive email search
+        Index('ix_users_email_lower', text('lower(email)')),
     )
 
 

@@ -67,14 +67,13 @@ class PermitSubmit(BaseModel):
 
 class PermitResponse(BaseModel):
     """Response model for permit data"""
-    id: UUID
+    permit_id: UUID  # Changed from 'id' to match database model
     business_id: str
     project_id: UUID
     client_id: Optional[UUID]
     permit_number: Optional[str]
     permit_type: str
     status: str
-    jurisdiction: Optional[str]
     application_date: Optional[datetime]
     approval_date: Optional[datetime]
     expiration_date: Optional[datetime]
@@ -83,11 +82,20 @@ class PermitResponse(BaseModel):
     notes: Optional[str]
     approved_by: Optional[str]
     approved_at: Optional[datetime]
+    extra: Optional[dict]  # JSONB field containing jurisdiction and other dynamic data
     created_at: datetime
     updated_at: datetime
 
     class Config:
         from_attributes = True
+
+
+class PermitListResponse(BaseModel):
+    """Paginated response for permit list"""
+    items: List[PermitResponse]
+    total: int
+    skip: int
+    limit: int
 
 
 class PrecheckResult(BaseModel):
@@ -116,17 +124,19 @@ async def create_permit(
     Returns the created permit with auto-generated business_id (PER-00001).
     """
     try:
-        service = PermitService(db)
-        
-        permit = await service.create_permit(
-            project_id=permit_data.project_id,
+        permit = await PermitService.create_permit(
+            db=db,
+            project_id=str(permit_data.project_id),
             permit_type=permit_data.permit_type,
-            jurisdiction=permit_data.jurisdiction,
             permit_number=permit_data.permit_number,
+            status="Draft",
             application_date=permit_data.application_date,
-            issuing_authority=permit_data.issuing_authority,
-            inspector_name=permit_data.inspector_name,
-            notes=permit_data.notes
+            extra={
+                "jurisdiction": permit_data.jurisdiction,
+                "issuing_authority": permit_data.issuing_authority,
+                "inspector_name": permit_data.inspector_name,
+                "notes": permit_data.notes
+            }
         )
         
         return permit
@@ -144,7 +154,7 @@ async def create_permit(
         )
 
 
-@router.get("", response_model=List[PermitResponse])
+@router.get("", response_model=PermitListResponse)
 async def list_permits(
     project_id: Optional[UUID] = None,
     status_filter: Optional[str] = None,
@@ -158,25 +168,24 @@ async def list_permits(
     List permits with optional filtering.
     """
     try:
-        service = PermitService(db)
+        permits = await PermitService.get_permits(
+            db=db,
+            project_id=str(project_id) if project_id else None,
+            status=status_filter,
+            skip=skip,
+            limit=limit
+        )
         
-        if project_id:
-            permits = await service.get_permits_by_project(project_id)
-        else:
-            # Get all permits
-            result = await db.execute(select(Permit).order_by(Permit.created_at.desc()))
-            permits = result.scalars().all()
-        
-        # Apply additional filters
-        if status_filter:
-            permits = [p for p in permits if p.status == status_filter]
+        # Apply jurisdiction filter if needed (stored in extra field)
         if jurisdiction:
-            permits = [p for p in permits if p.jurisdiction == jurisdiction]
+            permits = [p for p in permits if p.extra and p.extra.get('jurisdiction') == jurisdiction]
         
-        # Apply pagination
-        permits = list(permits)[skip:skip + limit]
-        
-        return permits
+        return PermitListResponse(
+            items=permits,
+            total=len(permits),
+            skip=skip,
+            limit=limit
+        )
         
     except Exception as e:
         logger.error(f"Failed to list permits: {e}")
@@ -196,8 +205,7 @@ async def get_permit_by_business_id(
     Get a permit by business ID (e.g., PER-00001).
     """
     try:
-        service = PermitService(db)
-        permit = await service.get_permit_by_business_id(business_id)
+        permit = await PermitService.get_by_business_id(db, business_id)
         
         if not permit:
             raise HTTPException(
@@ -224,13 +232,10 @@ async def get_permit(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Get a specific permit by UUID.
+    Get a permit by ID.
     """
     try:
-        result = await db.execute(
-            select(Permit).where(Permit.id == permit_id)
-        )
-        permit = result.scalar_one_or_none()
+        permit = await PermitService.get_by_id(db, str(permit_id))
         
         if not permit:
             raise HTTPException(
@@ -261,10 +266,7 @@ async def update_permit(
     Update a permit's details (does not change status).
     """
     try:
-        result = await db.execute(
-            select(Permit).where(Permit.id == permit_id)
-        )
-        permit = result.scalar_one_or_none()
+        permit = await PermitService.get_by_id(db, str(permit_id))
         
         if not permit:
             raise HTTPException(
@@ -272,10 +274,25 @@ async def update_permit(
                 detail=f"Permit {permit_id} not found"
             )
         
-        # Update fields (exclude status - use dedicated endpoint)
-        update_data = permit_data.model_dump(exclude_unset=True, exclude={'status'})
-        for field, value in update_data.items():
-            setattr(permit, field, value)
+        # Update core fields
+        if permit_data.permit_type:
+            permit.permit_type = permit_data.permit_type
+        if permit_data.permit_number:
+            permit.permit_number = permit_data.permit_number
+        if permit_data.application_date:
+            permit.application_date = permit_data.application_date
+        
+        # Update extra JSONB fields
+        extra = permit.extra or {}
+        if permit_data.jurisdiction:
+            extra['jurisdiction'] = permit_data.jurisdiction
+        if permit_data.issuing_authority:
+            extra['issuing_authority'] = permit_data.issuing_authority
+        if permit_data.inspector_name:
+            extra['inspector_name'] = permit_data.inspector_name
+        if permit_data.notes:
+            extra['notes'] = permit_data.notes
+        permit.extra = extra
         
         permit.updated_at = datetime.now(timezone.utc)
         
@@ -306,13 +323,8 @@ async def update_permit_status(
     Update a permit's status with history tracking.
     """
     try:
-        service = PermitService(db)
-        
         # Get current permit
-        result = await db.execute(
-            select(Permit).where(Permit.id == permit_id)
-        )
-        permit = result.scalar_one_or_none()
+        permit = await PermitService.get_by_id(db, str(permit_id))
         
         if not permit:
             raise HTTPException(
@@ -321,10 +333,10 @@ async def update_permit_status(
             )
         
         # Update status
-        updated_permit = await service.update_permit_status(
-            permit_id=permit_id,
+        updated_permit = await PermitService.update_status(
+            db=db,
+            permit_id=str(permit_id),
             new_status=status_data.status,
-            changed_by=current_user.get('email', 'system'),
             notes=status_data.notes
         )
         
@@ -356,13 +368,8 @@ async def submit_permit(
     Submit a permit for review (changes status from Draft to Submitted).
     """
     try:
-        service = PermitService(db)
-        
         # Get current permit
-        result = await db.execute(
-            select(Permit).where(Permit.id == permit_id)
-        )
-        permit = result.scalar_one_or_none()
+        permit = await PermitService.get_by_id(db, str(permit_id))
         
         if not permit:
             raise HTTPException(
@@ -381,12 +388,13 @@ async def submit_permit(
             permit.application_date = submit_data.application_date
         elif not permit.application_date:
             permit.application_date = datetime.now(timezone.utc)
+            await db.commit()
         
         # Update status to Submitted
-        updated_permit = await service.update_permit_status(
-            permit_id=permit_id,
+        updated_permit = await PermitService.update_status(
+            db=db,
+            permit_id=str(permit_id),
             new_status="Submitted",
-            changed_by=current_user.get('email', 'system'),
             notes=submit_data.notes or "Permit submitted for review"
         )
         
@@ -415,10 +423,7 @@ async def precheck_permit(
     Placeholder implementation - full AI precheck in Phase B.3.
     """
     try:
-        result = await db.execute(
-            select(Permit).where(Permit.id == permit_id)
-        )
-        permit = result.scalar_one_or_none()
+        permit = await PermitService.get_by_id(db, str(permit_id))
         
         if not permit:
             raise HTTPException(
@@ -475,10 +480,7 @@ async def delete_permit(
     Delete a permit (soft delete - changes status to Cancelled).
     """
     try:
-        result = await db.execute(
-            select(Permit).where(Permit.id == permit_id)
-        )
-        permit = result.scalar_one_or_none()
+        permit = await PermitService.get_by_id(db, str(permit_id))
         
         if not permit:
             raise HTTPException(
@@ -493,11 +495,10 @@ async def delete_permit(
             )
         
         # Soft delete by changing status
-        service = PermitService(db)
-        await service.update_permit_status(
-            permit_id=permit_id,
+        await PermitService.update_status(
+            db=db,
+            permit_id=str(permit_id),
             new_status="Cancelled",
-            changed_by=current_user.get('email', 'system'),
             notes="Permit cancelled by user"
         )
         

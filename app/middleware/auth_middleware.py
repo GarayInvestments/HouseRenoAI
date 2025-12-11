@@ -24,6 +24,7 @@ class JWTAuthMiddleware(BaseHTTPMiddleware):
         "/openapi.json",
         "/v1/auth/login",
         "/v1/auth/register",
+        "/v1/auth/supabase",  # All Supabase auth routes are public (they handle their own auth)
         "/privacy",
         "/terms",
     ]

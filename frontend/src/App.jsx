@@ -18,6 +18,8 @@ import Settings from './pages/Settings';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import Login from './pages/Login';
+import AuthConfirm from './pages/AuthConfirm';
+import AuthResetPassword from './pages/AuthResetPassword';
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -37,6 +39,14 @@ function App() {
         setCurrentView('terms');
         setIsLoading(false);
         return;
+      } else if (path === '/auth/confirm') {
+        setCurrentView('auth-confirm');
+        setIsLoading(false);
+        return;
+      } else if (path === '/auth/reset-password') {
+        setCurrentView('auth-reset-password');
+        setIsLoading(false);
+        return;
       }
       
       // Check if user is authenticated
@@ -53,11 +63,21 @@ function App() {
   }, [setCurrentView, checkAuth]);
 
   useEffect(() => {
-    // Update URL when view changes (for privacy/terms pages)
+    // Update URL when view changes (for privacy/terms/auth pages)
     if (currentView === 'privacy') {
       window.history.pushState({}, '', '/privacy');
     } else if (currentView === 'terms') {
       window.history.pushState({}, '', '/terms');
+    } else if (currentView === 'auth-confirm') {
+      // Keep URL with query params for auth callback
+      if (!window.location.pathname.includes('/auth/confirm')) {
+        window.history.pushState({}, '', '/auth/confirm' + window.location.search);
+      }
+    } else if (currentView === 'auth-reset-password') {
+      // Keep URL with query params for password reset
+      if (!window.location.pathname.includes('/auth/reset-password')) {
+        window.history.pushState({}, '', '/auth/reset-password' + window.location.search);
+      }
     } else if (window.location.pathname !== '/') {
       // Return to home for other views
       window.history.pushState({}, '', '/');
@@ -87,6 +107,10 @@ function App() {
     switch (currentView) {
       case 'login':
         return <Login />;
+      case 'auth-confirm':
+        return <AuthConfirm />;
+      case 'auth-reset-password':
+        return <AuthResetPassword />;
       case 'dashboard':
         return <Dashboard />;
       case 'ai-assistant':
@@ -111,7 +135,7 @@ function App() {
   };
 
   // Public pages (no sidebar/topbar)
-  const isPublicPage = ['login', 'privacy', 'terms'].includes(currentView);
+  const isPublicPage = ['login', 'privacy', 'terms', 'auth-confirm', 'auth-reset-password'].includes(currentView);
 
   if (isPublicPage) {
     return renderContent();

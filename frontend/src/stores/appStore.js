@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { supabase, signIn as supabaseSignIn, signOut, getUserProfile } from '../lib/supabase'
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://api.houserenovatorsllc.com'
 
@@ -11,32 +12,37 @@ export const useAppStore = create((set, get) => ({
   // Auth actions
   login: async (email, password) => {
     try {
-      const response = await fetch(`${API_URL}/v1/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      })
+      // Sign in with Supabase
+      const { user, session, error } = await supabaseSignIn(email, password)
       
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.detail || 'Login failed')
+      if (error) {
+        throw new Error(error.message || 'Login failed')
       }
       
-      const data = await response.json()
+      if (!user || !session) {
+        throw new Error('No session returned')
+      }
       
-      // Store token and user
-      localStorage.setItem('token', data.access_token)
-      localStorage.setItem('user', JSON.stringify(data.user))
+      // Get user profile from backend
+      const { profile, error: profileError } = await getUserProfile()
+      
+      if (profileError) {
+        throw new Error('Failed to load user profile')
+      }
+      
+      // Store session
+      localStorage.setItem('supabase_session', JSON.stringify(session))
+      localStorage.setItem('user', JSON.stringify(profile))
       
       set({
         isAuthenticated: true,
-        currentUser: data.user,
-        token: data.access_token,
+        currentUser: profile,
+        token: session.access_token,
         user: {
-          name: data.user.name,
-          initials: data.user.name.split(' ').map(n => n[0]).join(''),
-          email: data.user.email,
-          role: data.user.role
+          name: profile.full_name || profile.email,
+          initials: (profile.full_name || profile.email).split(' ').map(n => n[0]).join(''),
+          email: profile.email,
+          role: profile.role
         },
         currentView: 'dashboard'
       })
@@ -46,8 +52,11 @@ export const useAppStore = create((set, get) => ({
     }
   },
   
-  logout: () => {
-    localStorage.removeItem('token')
+  logout: async () => {
+    // Sign out from Supabase
+    await signOut()
+    
+    localStorage.removeItem('supabase_session')
     localStorage.removeItem('user')
     set({
       isAuthenticated: false,
@@ -59,38 +68,32 @@ export const useAppStore = create((set, get) => ({
   },
   
   checkAuth: async () => {
-    const token = localStorage.getItem('token')
-    const userStr = localStorage.getItem('user')
-    
-    if (!token || !userStr) {
-      set({ currentView: 'login', isAuthenticated: false })
-      return false
-    }
-    
     try {
-      // Verify token with /me endpoint
-      const response = await fetch(`${API_URL}/v1/auth/me`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
+      // Check Supabase session
+      const { data: { session }, error } = await supabase.auth.getSession()
       
-      if (!response.ok) {
-        // Token invalid, logout
+      if (error || !session) {
+        set({ currentView: 'login', isAuthenticated: false })
+        return false
+      }
+      
+      // Get user profile from backend
+      const { profile, error: profileError } = await getUserProfile()
+      
+      if (profileError || !profile) {
         get().logout()
         return false
       }
       
-      const userData = JSON.parse(userStr)
       set({
         isAuthenticated: true,
-        currentUser: userData,
-        token: token,
+        currentUser: profile,
+        token: session.access_token,
         user: {
-          name: userData.name,
-          initials: userData.name.split(' ').map(n => n[0]).join(''),
-          email: userData.email,
-          role: userData.role
+          name: profile.full_name || profile.email,
+          initials: (profile.full_name || profile.email).split(' ').map(n => n[0]).join(''),
+          email: profile.email,
+          role: profile.role
         }
       })
       return true

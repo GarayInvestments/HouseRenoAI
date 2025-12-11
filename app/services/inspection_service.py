@@ -220,6 +220,175 @@ class InspectionService:
         return inspection
     
     @staticmethod
+    async def update_inspection(
+        db: AsyncSession,
+        inspection_id: str,
+        **kwargs
+    ) -> Optional[Inspection]:
+        """
+        Update inspection fields.
+        
+        Args:
+            db: Database session
+            inspection_id: Inspection UUID
+            **kwargs: Fields to update
+            
+        Returns:
+            Updated Inspection object or None if not found
+        """
+        inspection = await InspectionService.get_by_id(db, inspection_id)
+        if not inspection:
+            return None
+        
+        # Update fields
+        for key, value in kwargs.items():
+            if hasattr(inspection, key) and value is not None:
+                setattr(inspection, key, value)
+        
+        inspection.updated_at = datetime.now(timezone.utc)
+        
+        await db.flush()
+        await db.refresh(inspection)
+        
+        logger.info(f"Updated inspection {inspection.business_id}")
+        return inspection
+    
+    @staticmethod
+    async def add_photo(
+        db: AsyncSession,
+        inspection_id: str,
+        photo_url: str,
+        uploaded_by: Optional[str] = None,
+        timestamp: Optional[datetime] = None,
+        gps: Optional[Dict[str, Any]] = None,
+        notes: Optional[str] = None
+    ) -> Optional[Inspection]:
+        """
+        Add a single photo to inspection.
+        
+        Args:
+            db: Database session
+            inspection_id: Inspection UUID
+            photo_url: URL of the photo
+            uploaded_by: User who uploaded the photo
+            timestamp: When photo was taken
+            gps: GPS coordinates dict
+            notes: Photo notes/caption
+            
+        Returns:
+            Updated Inspection object or None if not found
+        """
+        inspection = await InspectionService.get_by_id(db, inspection_id)
+        if not inspection:
+            return None
+        
+        photo_data = {
+            "url": photo_url,
+            "uploaded_by": uploaded_by,
+            "timestamp": (timestamp or datetime.now(timezone.utc)).isoformat(),
+            "gps": gps,
+            "notes": notes
+        }
+        
+        if not inspection.photos:
+            inspection.photos = {"items": []}
+        elif isinstance(inspection.photos, list):
+            inspection.photos = {"items": inspection.photos}
+        
+        if "items" not in inspection.photos:
+            inspection.photos["items"] = []
+        
+        inspection.photos["items"].append(photo_data)
+        inspection.updated_at = datetime.now(timezone.utc)
+        
+        await db.flush()
+        await db.refresh(inspection)
+        
+        logger.info(f"Added photo to inspection {inspection.business_id}")
+        return inspection
+    
+    @staticmethod
+    async def add_deficiency(
+        db: AsyncSession,
+        inspection_id: str,
+        description: str,
+        severity: str = "Medium",
+        photo_refs: Optional[List[str]] = None,
+        notes: Optional[str] = None
+    ) -> Optional[Inspection]:
+        """
+        Add a deficiency to inspection.
+        
+        Args:
+            db: Database session
+            inspection_id: Inspection UUID
+            description: Deficiency description
+            severity: Severity level (Low, Medium, High, Critical)
+            photo_refs: References to photo URLs
+            notes: Additional notes
+            
+        Returns:
+            Updated Inspection object or None if not found
+        """
+        inspection = await InspectionService.get_by_id(db, inspection_id)
+        if not inspection:
+            return None
+        
+        deficiency_data = {
+            "description": description,
+            "severity": severity,
+            "photo_refs": photo_refs or [],
+            "notes": notes,
+            "status": "Open",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        if not inspection.deficiencies:
+            inspection.deficiencies = {"items": []}
+        elif isinstance(inspection.deficiencies, list):
+            inspection.deficiencies = {"items": inspection.deficiencies}
+        
+        if "items" not in inspection.deficiencies:
+            inspection.deficiencies["items"] = []
+        
+        inspection.deficiencies["items"].append(deficiency_data)
+        inspection.updated_at = datetime.now(timezone.utc)
+        
+        await db.flush()
+        await db.refresh(inspection)
+        
+        logger.info(f"Added deficiency to inspection {inspection.business_id}")
+        return inspection
+    
+    @staticmethod
+    async def cancel_inspection(
+        db: AsyncSession,
+        inspection_id: str
+    ) -> Optional[Inspection]:
+        """
+        Cancel an inspection (soft delete).
+        
+        Args:
+            db: Database session
+            inspection_id: Inspection UUID
+            
+        Returns:
+            Updated Inspection object or None if not found
+        """
+        inspection = await InspectionService.get_by_id(db, inspection_id)
+        if not inspection:
+            return None
+        
+        inspection.status = "Cancelled"
+        inspection.updated_at = datetime.now(timezone.utc)
+        
+        await db.flush()
+        await db.refresh(inspection)
+        
+        logger.info(f"Cancelled inspection {inspection.business_id}")
+        return inspection
+    
+    @staticmethod
     async def run_precheck(
         db: AsyncSession,
         inspection_id: str,

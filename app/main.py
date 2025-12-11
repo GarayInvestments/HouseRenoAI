@@ -9,12 +9,14 @@ import json
 from app.config import settings
 from app.routes.chat import router as chat_router
 from app.routes.permits import router as permits_router
+from app.routes.inspections import router as inspections_router
 from app.routes.projects import router as projects_router
 from app.routes.clients import router as clients_router
 from app.routes.documents import router as documents_router
 from app.routes.quickbooks import router as quickbooks_router
 from app.routes.payments import router as payments_router
 from app.routes.auth import router as auth_router
+from app.routes.auth_supabase import router as auth_supabase_router
 from app.middleware.auth_middleware import JWTAuthMiddleware
 
 # Configure logging
@@ -181,9 +183,11 @@ app.add_middleware(HTTPSRedirectFixMiddleware)
 app.add_middleware(JWTAuthMiddleware)
 
 # Include routers
-app.include_router(auth_router, prefix=f"/{settings.API_VERSION}/auth", tags=["auth"])  # Auth routes - public
+app.include_router(auth_router, prefix=f"/{settings.API_VERSION}/auth", tags=["auth"])  # Old auth (Google Sheets) - will be phased out
+app.include_router(auth_supabase_router, prefix=f"/{settings.API_VERSION}/auth/supabase", tags=["auth-supabase"])  # New Supabase auth
 app.include_router(chat_router, prefix=f"/{settings.API_VERSION}/chat", tags=["chat"])
 app.include_router(permits_router, prefix=f"/{settings.API_VERSION}/permits", tags=["permits"])
+app.include_router(inspections_router, prefix=f"/{settings.API_VERSION}/inspections", tags=["inspections"])
 app.include_router(projects_router, prefix=f"/{settings.API_VERSION}/projects", tags=["projects"])
 app.include_router(clients_router, prefix=f"/{settings.API_VERSION}/clients", tags=["clients"])
 app.include_router(documents_router, prefix=f"/{settings.API_VERSION}/documents", tags=["documents"])

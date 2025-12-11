@@ -1,11 +1,14 @@
 # House Renovators AI Portal - Copilot Instructions
 
 ## ⚠️ CRITICAL: Server Terminal Management
-**Backend and Frontend servers MUST run in DEDICATED terminals that are BLOCKED from other commands**
-- **NEVER run commands in a terminal that's running a server** - it will kill the server process
-- **Always open a NEW terminal** for git, testing, logs, or any other commands
-- **Pattern**: Terminal 1 = Backend (blocked), Terminal 2 = Frontend (blocked), Terminal 3+ = Commands
-- If you only have server terminals available, open Terminal 3 before running any command
+**READ FIRST**: `docs/guides/TERMINAL_MANAGEMENT.md` - Complete guide to preventing server shutdowns
+
+**Quick Rules**:
+- **Use `isBackground: true`** for ALL commands when servers are running - forces new terminal creation
+- **Save terminal IDs** when starting servers - needed for `get_terminal_output()`
+- **Pattern**: Terminal 1 = Backend (start once, never touch), Terminal 2 = Frontend (start once), Terminal 3+ = All other commands
+- **Check server health**: `get_terminal_output(BACKEND_TERMINAL_ID)` before running tests
+- **Root cause**: `run_in_terminal` without `isBackground: true` reuses terminals, killing background processes
 
 ---
 
@@ -458,6 +461,7 @@ curl http://localhost:8000/v1/quickbooks/customers -H "Authorization: Bearer $to
 ## 📚 Documentation Reference
 
 ### Essential Guides (Read These First)
+- **`docs/guides/TERMINAL_MANAGEMENT.md`** - **CRITICAL**: How to prevent server shutdowns, terminal isolation patterns
 - **`docs/guides/QUICKBOOKS_GUIDE.md`** - Complete QuickBooks OAuth2, API usage, sync features
 - **`docs/setup/SETUP_GUIDE.md`** - Dev environment setup, GitHub Actions, secrets management
 - **`docs/guides/CHAT_TESTING_SOP.md`** - Testing chat features, log monitoring, troubleshooting
