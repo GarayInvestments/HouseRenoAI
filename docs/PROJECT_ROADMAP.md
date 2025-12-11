@@ -1,1056 +1,1090 @@
-# House Renovators AI Portal - Project Roadmap
+# House Renovators AI Portal - Implementation Roadmap v3.0
 
-**Last Updated**: December 10, 2025  
-**Current Version**: Production v2.0 (PostgreSQL + Fly.io)  
-**Status**: ✅ Phases 0-2 Complete, 🚧 Phase A (PostgreSQL Migration) In Progress
-
----
-
-## 📊 Current State (December 10, 2025)
-
-### ✅ Recently Completed
-
-#### Infrastructure Modernization (Dec 10, 2025)
-**Status**: ✅ COMPLETE  
-**Duration**: 1 day  
-**Commits**: cf795e6, 81251bc, d700d5d, 82e7d45
-
-**Achievements**:
-- ✅ **PostgreSQL Backend**: Migrated from Google Sheets to Supabase PostgreSQL with UUID primary keys
-  - 8 clients migrated
-  - 12 projects migrated  
-  - 11 permits migrated
-- ✅ **Fly.io Deployment**: Backend deployed with GitHub Actions auto-deploy
-  - 2 machines in `ord` region
-  - Auto-stop/auto-start enabled (min_machines_running = 0)
-  - Port 8000 configuration fixed
-- ✅ **HTTPS Redirect Fix**: Added `HTTPSRedirectFixMiddleware` to preserve HTTPS behind proxy
-- ✅ **Cloudflare Pages**: Frontend auto-deploy on push to main
-- ✅ **Complete CI/CD Pipeline**: Both frontend and backend auto-deploy from GitHub
-
-**Impact**: Modern infrastructure, native database support, auto-scaling deployment
+**Version**: 3.0 (Implementation Blueprint)  
+**Date**: December 10, 2025  
+**Status**: Active Development  
+**Architecture**: Buildertrend-Influenced PostgreSQL Backend
 
 ---
 
-### 🏆 Production Metrics (As of Dec 10, 2025)
+## 1. High-Level Status
 
-| Metric | Value | Target | Status |
-|--------|-------|--------|--------|
-| **Backend Uptime** | 99.9% | 99%+ | ✅ |
-| **PostgreSQL Performance** | <100ms queries | <200ms | ✅ |
-| **Fly.io Deployment** | Auto-deploy working | Active | ✅ |
-| **QuickBooks Integration** | 24 customers, 53+ invoices | Active | ✅ |
-| **Payments Tracking** | Active | Live | ✅ |
-| **HTTPS Working** | No mixed content errors | Secure | ✅ |
+Platform moved off Google Sheets toward a **PostgreSQL-backed app running on Fly.io**. Core infrastructure, clients/projects migration, CI/CD, and baseline metrics are in place.
 
----
+**Current State**:
+- ✅ Backend: Fly.io (https://houserenovators-api.fly.dev)
+- ✅ Frontend: Cloudflare Pages with custom domain
+- ✅ Database: Supabase PostgreSQL with UUID primary keys
+- ✅ Data: 8 clients + 12 projects migrated
+- ✅ CI/CD: GitHub Actions auto-deploy for both frontend/backend
+- ✅ HTTPS: Working correctly with proxy middleware
 
-## 🚀 New Strategic Direction: Buildertrend-Influenced Architecture
-
-### Vision
-Shift from Sheets-centric workflow to **project-centric + permit-driven** architecture with PostgreSQL backend, mirroring Buildertrend's structured approach to construction management.
-
-### Core Principles
-1. **Projects are first-class citizens** with permits as structured children
-2. **Inspections as first-class entities** with scheduling parity
-3. **AI-powered prechecks** before inspection scheduling
-4. **QuickBooks integration** for permit fees and optional inspection billing
-5. **Zero-downtime migration** with fallback to Sheets during transition
+**Strategic Shift**: Buildertrend-inspired architecture with **projects as top-level resources**, **permits as first-class children**, and **inspections as schedulable objects**. Core pillars: AI prechecks, QuickBooks billing, zero-downtime migration.
 
 ---
 
-## 📋 Phase A: Core Data & Migration (🔥🔥🔥 TOP PRIORITY)
+## 2. Key Design & Architecture Decisions
 
-**Timeline**: 1-2 weeks  
-**Status**: 🚧 IN PROGRESS  
-**Goal**: Complete database schema and migrate all permit/inspection data
+### 2.1 Project-Centric Model
+- **Projects are the top-level resource** for UX and billing
+- Permits are structured children of projects (not flat rows)
+- Hierarchical navigation: Client → Projects → Permits → Inspections
 
-### A.1: Database Models & Migrations
-**Priority**: 🔥🔥🔥 CRITICAL  
-**Effort**: 4-6 hours  
-**Status**: 🚧 IN PROGRESS (clients/projects done)
+### 2.2 Inspections as First-Class Objects
+- Inspections are **schedulable entities** linked to permits and projects
+- Scheduling parity: schedule items map bidirectionally to inspections
+- Inspector PWA flows: accept/decline, complete, no-access handling
 
-**Implementation Tasks**:
-- [x] Create `clients` and `projects` tables with UUIDs
-- [x] Migrate initial client/project data (8 clients, 12 projects)
-- [ ] Add `permits` table with full Buildertrend-style fields:
-  ```sql
-  CREATE TABLE permits (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    business_id VARCHAR(50) UNIQUE NOT NULL,  -- PER-00001
-    project_id UUID REFERENCES projects(id) NOT NULL,
-    permit_type VARCHAR(50) NOT NULL,  -- Building, Electrical, Plumbing, etc.
-    status VARCHAR(50) NOT NULL,  -- Draft, Submitted, Under Review, Approved, etc.
-    jurisdiction VARCHAR(100),
-    permit_number VARCHAR(100),
-    applied_date TIMESTAMP,
-    approved_date TIMESTAMP,
-    expiration_date TIMESTAMP,
-    fee_amount DECIMAL(10,2),
-    fee_paid BOOLEAN DEFAULT FALSE,
-    qb_invoice_id VARCHAR(50),
-    notes TEXT,
-    extra JSONB,  -- Flexible field for jurisdiction-specific data
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
-  );
-  CREATE INDEX idx_permits_project ON permits(project_id);
-  CREATE INDEX idx_permits_business_id ON permits(business_id);
-  CREATE INDEX idx_permits_status ON permits(status);
-  CREATE INDEX idx_permits_extra_gin ON permits USING GIN (extra);
-  ```
-- [ ] Add `inspections` table:
-  ```sql
-  CREATE TABLE inspections (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    business_id VARCHAR(50) UNIQUE NOT NULL,  -- INS-00001
-    permit_id UUID REFERENCES permits(id) NOT NULL,
-    inspection_type VARCHAR(100) NOT NULL,  -- Footing, Framing, Final, etc.
-    status VARCHAR(50) NOT NULL,  -- Scheduled, Passed, Failed, No Access
-    scheduled_date TIMESTAMP,
-    completed_date TIMESTAMP,
-    inspector_name VARCHAR(200),
-    result VARCHAR(50),  -- Pass, Fail, Partial
-    notes TEXT,
-    photos JSONB,  -- Array of photo URLs/metadata
-    deficiencies JSONB,  -- Array of issues found
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
-  );
-  CREATE INDEX idx_inspections_permit ON inspections(permit_id);
-  CREATE INDEX idx_inspections_business_id ON inspections(business_id);
-  CREATE INDEX idx_inspections_scheduled_date ON inspections(scheduled_date);
-  CREATE INDEX idx_inspections_photos_gin ON inspections USING GIN (photos);
-  ```
-- [ ] Add `permit_status_events` table for audit trail:
-  ```sql
-  CREATE TABLE permit_status_events (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    permit_id UUID REFERENCES permits(id) NOT NULL,
-    from_status VARCHAR(50),
-    to_status VARCHAR(50) NOT NULL,
-    changed_by VARCHAR(200),
-    reason TEXT,
-    metadata JSONB,
-    created_at TIMESTAMP DEFAULT NOW()
-  );
-  CREATE INDEX idx_permit_events_permit ON permit_status_events(permit_id);
-  ```
-- [ ] Add `jurisdictions` table for precheck rules:
-  ```sql
-  CREATE TABLE jurisdictions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(200) NOT NULL UNIQUE,
-    state VARCHAR(2) NOT NULL,
-    requirements JSONB,  -- Required docs, inspections, etc.
-    contact_info JSONB,
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
-  );
-  ```
-- [ ] Add `optional_inspections` configuration table
-- [ ] Create Alembic migrations for all tables
-- [ ] Add GIN indexes on JSONB columns (`extra`, `photos`, `deficiencies`)
+### 2.3 PostgreSQL + JSONB as Canonical Data Store
+- **Supabase PostgreSQL** is the source of truth
+- GIN indexes on JSONB fields for flexible schema evolution
+- Google Sheets is **transitional only** and will be fully removed
 
-**Success Criteria**:
-- ✅ `alembic upgrade head` creates all tables without errors
-- ✅ All indexes created successfully
-- ✅ Foreign key constraints working
-- ✅ JSONB columns accept valid JSON data
-
-**Files to Create/Modify**:
-- `app/db/models.py` (+300 lines)
-- `alembic/versions/003_add_permits_inspections.py` (new migration)
-- `app/db/schemas.py` (+200 lines for Pydantic models)
-
----
-
-### A.2: Business ID System
-**Priority**: 🔥🔥🔥 CRITICAL  
-**Effort**: 2-3 hours  
-**Status**: ⏳ PENDING
-
-**Problem**: UUIDs are not human-friendly. Need readable IDs for customer communication.
-
-**Solution**: Add `business_id` sequences for all entities:
+### 2.4 Business-Facing IDs
+Human-readable IDs for all core entities:
 - Clients: `CL-00001`, `CL-00002`
-- Projects: `PRJ-00001`, `PRJ-00002`  
+- Projects: `PRJ-00001`, `PRJ-00002`
 - Permits: `PER-00001`, `PER-00002`
 - Inspections: `INS-00001`, `INS-00002`
+- Invoices: `INV-00001`, `INV-00002`
+- Payments: `PAY-00001`, `PAY-00002`
 
-**Implementation Tasks**:
-- [ ] Create PostgreSQL sequences:
-  ```sql
-  CREATE SEQUENCE client_business_id_seq START 1;
-  CREATE SEQUENCE project_business_id_seq START 1;
-  CREATE SEQUENCE permit_business_id_seq START 1;
-  CREATE SEQUENCE inspection_business_id_seq START 1;
-  ```
-- [ ] Add trigger functions to auto-generate business IDs:
-  ```sql
-  CREATE OR REPLACE FUNCTION generate_client_business_id()
-  RETURNS TRIGGER AS $$
-  BEGIN
-    NEW.business_id = 'CL-' || LPAD(nextval('client_business_id_seq')::TEXT, 5, '0');
-    RETURN NEW;
-  END;
-  $$ LANGUAGE plpgsql;
-  
-  CREATE TRIGGER client_business_id_trigger
-  BEFORE INSERT ON clients
-  FOR EACH ROW
-  WHEN (NEW.business_id IS NULL)
-  EXECUTE FUNCTION generate_client_business_id();
-  ```
-- [ ] Create backfill script for existing data:
-  ```python
-  # scripts/backfill_business_ids.py
-  async def backfill_business_ids():
-      # Update existing clients with CL-00001, CL-00002, etc.
-      # Update existing projects with PRJ-00001, PRJ-00002, etc.
-      pass
-  ```
-- [ ] Update API responses to include business IDs
-- [ ] Update frontend to display business IDs instead of UUIDs
+**Implementation**: PostgreSQL sequences + triggers for atomic generation. Immutable once assigned. Exposed via API and used in UI.
 
-**Success Criteria**:
-- ✅ New entities get auto-generated business IDs
-- ✅ Existing entities backfilled with sequential IDs
-- ✅ Business IDs are unique and human-readable
-- ✅ Frontend shows business IDs in UI
+### 2.5 Supabase Auth for Authentication
+- **Supabase Auth** handles user authentication and session management
+- Frontend uses `@supabase/supabase-js` for login/signup
+- Backend verifies JWT via Supabase JWKS or Admin API
+- Backend maps `supabase_user_id` (sub claim) to internal `users` table for roles and app metadata
 
-**Files to Create/Modify**:
-- `alembic/versions/004_add_business_ids.py` (new migration)
-- `scripts/backfill_business_ids.py` (new script)
-- `app/routes/*.py` (+50 lines to include business IDs)
+**Migration Path**: Export users from Sheets → Create Supabase users via Admin API or invite links → Map to internal users table.
+
+### 2.6 QuickBooks Integration: DB-Cached Model
+- **Encrypted tokens** stored in database (use KMS or application-level encryption)
+- **Cached QuickBooks objects** in PostgreSQL (customers, invoices, payments)
+- Background sync every 5 minutes (only fetch changed records)
+- Invoice/payment helpers for creating and syncing
+- Webhook processing for real-time updates
+- Circuit breaker pattern for API resilience
+
+**Performance Target**: 90% reduction in QuickBooks API calls.
 
 ---
 
-### A.3: Database Service Layer
-**Priority**: 🔥🔥🔥 CRITICAL  
-**Effort**: 5-7 hours  
-**Status**: 🚧 IN PROGRESS (basic CRUD done for clients/projects)
+## 3. Data Model (Essential Tables)
 
-**Implementation Tasks**:
-- [x] Basic client CRUD: `get_clients()`, `get_client_by_id()`, `create_client()`
-- [x] Basic project CRUD: `get_projects()`, `get_project_by_id()`, `create_project()`
-- [ ] Permit CRUD:
-  ```python
-  async def get_permits(project_id: UUID = None) -> List[Permit]
-  async def get_permit_by_id(permit_id: UUID) -> Permit
-  async def get_permit_by_business_id(business_id: str) -> Permit
-  async def upsert_permit(permit: PermitCreate) -> Permit
-  async def update_permit_status(permit_id: UUID, status: str, reason: str)
-  ```
-- [ ] Inspection CRUD:
-  ```python
-  async def create_inspection(inspection: InspectionCreate) -> Inspection
-  async def get_inspections(permit_id: UUID) -> List[Inspection]
-  async def complete_inspection(inspection_id: UUID, result: InspectionResult)
-  async def upload_inspection_photos(inspection_id: UUID, photos: List[Photo])
-  ```
-- [ ] Precheck logic:
-  ```python
-  async def inspection_precheck(permit_id: UUID, inspection_type: str) -> PrecheckResult:
-      """
-      Validates if inspection can be scheduled:
-      - Checks required prior inspections completed
-      - Validates required documents uploaded
-      - Checks permit expiration
-      - Returns structured list of blockers
-      """
-      pass
-  ```
-- [ ] Background jobs:
-  ```python
-  async def expire_permits_job():
-      """Find permits past expiration and mark as expired"""
-      pass
-  
-  async def sync_qb_permit_fees():
-      """Sync permit fee payment status from QuickBooks"""
-      pass
-  ```
+> Full SQL schemas with all fields, constraints, and indexes in **Phase A.1 Implementation** section below.
 
-**Success Criteria**:
-- ✅ All CRUD operations work with UUID and business_id lookups
-- ✅ Precheck logic correctly identifies missing requirements
-- ✅ Status transitions trigger audit events
-- ✅ Background jobs run on schedule
+### Core Tables
 
-**Files to Create/Modify**:
-- `app/services/database_service.py` (+400 lines)
-- `app/services/precheck_service.py` (+150 lines, new file)
-- `app/jobs/permit_jobs.py` (+100 lines, new file)
+**clients**
+- `id` (UUID PK), `business_id` (CL-00001), `name`, `email`, `phone`, `qb_customer_id`
 
----
+**projects**
+- `id` (UUID PK), `business_id` (PRJ-00001), `client_id` FK, `address`, `status`, `budget`, `qb_customer_id`, `estimated_start_date`, `estimated_completion_date`, `extra` JSONB
 
-### A.4: Migration Scripts
-**Priority**: 🔥🔥 HIGH  
-**Effort**: 4-5 hours  
-**Status**: 🚧 IN PROGRESS (clients/projects done)
+**permits**
+- `id` (UUID PK), `business_id` (PER-00001), `project_id` FK, `permit_type`, `status`, `jurisdiction`, `permit_number`, applied/approved/expiration dates, `fee_amount`, `fee_paid`, `qb_invoice_id`, `notes`, `extra` JSONB
 
-**Implementation Tasks**:
-- [x] Migrate clients from Sheets to PostgreSQL (✅ 8 clients)
-- [x] Migrate projects from Sheets to PostgreSQL (✅ 12 projects)
-- [ ] Extend `scripts/migrate_sheets_to_db.py` for permits:
-  ```python
-  async def migrate_permits(dry_run=True):
-      """
-      1. Read permits from Sheets
-      2. Validate jurisdiction exists
-      3. Match to existing projects by project_id or name
-      4. Create permit records with business IDs
-      5. Log any mismatches or errors
-      """
-      pass
-  ```
-- [ ] Migrate inspections data (if exists in Sheets)
-- [ ] Add jurisdiction validation and auto-create missing jurisdictions
-- [ ] Create detailed migration report:
-  ```
-  Permit Migration Report
-  =======================
-  Total permits in Sheets: 45
-  Successfully migrated: 43
-  Skipped (no matching project): 2
-  
-  Jurisdiction Issues:
-  - "City of Charlotte" → auto-created
-  - "Concord Building Dept" → auto-created
-  
-  Warnings:
-  - Permit #12345 has no expiration date
-  - Permit #67890 references deleted project
-  ```
+**inspections**
+- `id` (UUID PK), `business_id` (INS-00001), `permit_id` FK, `project_id` FK (denormalized for query performance), `inspection_type`, `status`, `scheduled_date`, `completed_date`, `inspector`, `result`, `notes`, `photos` JSONB, `deficiencies` JSONB
 
-**Success Criteria**:
-- ✅ Dry-run mode prints clear report without making changes
-- ✅ All valid permits migrated with correct project relationships
-- ✅ Jurisdiction mismatches flagged for review
-- ✅ Migration is idempotent (can run multiple times safely)
+**permit_status_events**
+- Audit timeline for every permit status change
+- `id`, `permit_id` FK, `old_status`, `new_status`, `changed_by`, `changed_at`, `notes`, `ai_confidence`, `extra` JSONB
 
-**Files to Create/Modify**:
-- `scripts/migrate_sheets_to_db.py` (+200 lines)
-- `scripts/validate_migration.py` (+100 lines, new file)
+**jurisdictions**
+- `id`, `name`, `state`, `requirements` JSONB (rules for prechecks)
+
+**optional_inspections**
+- Fee catalog: Special Housing (SH), Trade-Ups (TU), IBA, etc.
+- `id`, `code`, `name`, `fee_amount`, `description`
+
+**schedule_items**
+- `id`, `project_id` FK, `inspection_id` FK (nullable), `title`, `scheduled_date`, `assigned_to`, `status`, `notes`
+
+### Financial Tables
+
+**invoices**
+- `id` (UUID PK), `business_id` (INV-00001), `project_id` FK, `qb_invoice_id`, `invoice_number`, `invoice_date`, `due_date`, `total_amount`, `balance`, `status`, `line_items` JSONB, `sync_status` ENUM, `sync_error`, `last_sync_attempt`
+
+**payments**
+- `id` (UUID PK), `business_id` (PAY-00001), `invoice_id` FK, `qb_payment_id`, `payment_date`, `amount`, `payment_method`, `reference_number`, `sync_status` ENUM, `sync_error`, `last_sync_attempt`
+
+### QuickBooks Cache Tables
+
+**qb_customers_cache**
+- Cached QuickBooks customer records
+- `id`, `qb_customer_id`, `display_name`, `balance`, `metadata` JSONB, `cached_at`
+
+**qb_invoices_cache**
+- Cached QuickBooks invoice records
+- `id`, `qb_invoice_id`, `customer_id`, `total_amount`, `balance`, `due_date`, `status`, `metadata` JSONB, `cached_at`
+
+**qb_payments_cache**
+- Cached QuickBooks payment records
+
+**quickbooks_tokens**
+- Encrypted OAuth tokens
+- `id`, `realm_id`, `access_token_encrypted`, `refresh_token_encrypted`, `expires_at`, `created_at`, `updated_at`
+
+**webhook_events**
+- QuickBooks webhook event log
+- `id`, `qb_event_id` (unique), `event_type`, `entity_id`, `payload` JSONB, `processed_at`, `error`
+
+### System Tables
+
+**users**
+- `id` (UUID PK), `supabase_user_id` (unique), `email`, `name`, `role` ENUM('admin', 'pm', 'inspector', 'client', 'finance'), `created_at`
+
+**business_id_aliases**
+- Handle business ID merges and retirements
+- `id`, `alias_id`, `canonical_id`, `entity_type`, `retired_at`
+
+**job_runs**
+- Background job monitoring
+- `id`, `job_name`, `status` ENUM('running', 'success', 'failed'), `started_at`, `completed_at`, `error`, `metadata` JSONB
 
 ---
 
-## 📋 Phase B: API & Business Flows (NEXT - 1-2 weeks)
+## 4. API Surface (Resource-Based Routes)
 
-**Goal**: Build REST API for permit and inspection workflows
+**Move away from root-driven routes**. Use resource-based routing under `/projects`, `/clients`, `/permits`, `/invoices`, `/payments`, `/quickbooks`.
 
-### B.1: Permit API Endpoints
-**Priority**: 🔥🔥🔥 CRITICAL  
-**Effort**: 3-4 hours
+### 4.1 Projects & Clients
 
-**Endpoints to Create**:
-```python
-POST   /v1/projects/{project_id}/permits          # Create permit
-GET    /v1/permits                                 # List all permits (with filters)
-GET    /v1/permits/{id}                            # Get permit details
-GET    /v1/permits/by-business-id/{business_id}   # Get by business ID
-PUT    /v1/permits/{id}                            # Update permit
-PUT    /v1/permits/{id}/submit                     # Submit to jurisdiction
-PUT    /v1/permits/{id}/approve                    # Mark as approved
-DELETE /v1/permits/{id}                            # Soft delete
+```
+GET    /v1/clients
+GET    /v1/clients/{id}
+GET    /v1/clients/by-business-id/{business_id}
+POST   /v1/clients
+
+GET    /v1/projects
+GET    /v1/projects/{id}
+GET    /v1/projects/by-business-id/{business_id}
+POST   /v1/projects
+PUT    /v1/projects/{id}
 ```
 
-**Features**:
-- Query params for filtering: `?status=approved&jurisdiction=Charlotte`
-- Include related inspections in response
-- Validate status transitions (can't go from Draft → Approved)
-- Return business IDs in responses for human-readable references
+### 4.2 Permits
 
-**Success Criteria**:
-- ✅ All CRUD operations working
-- ✅ Proper validation and error messages
-- ✅ Status transitions logged in audit trail
-- ✅ Integration tests pass
+```
+POST   /v1/projects/{project_id}/permits         # Create permit for project
+GET    /v1/permits                                # List all permits
+GET    /v1/permits/{permit_id}
+GET    /v1/permits/by-business-id/{business_id}
+PUT    /v1/permits/{permit_id}
+PUT    /v1/permits/{permit_id}/submit            # Submit for approval
+GET    /v1/permits/{permit_id}/precheck?type={inspection_type}  # Check before scheduling
+```
 
-**Files to Create**:
-- `app/routes/permits.py` (already exists, extend +200 lines)
-- `app/schemas/permit.py` (+100 lines, new file)
+### 4.3 Inspections
+
+```
+POST   /v1/permits/{permit_id}/inspections       # Create inspection (runs AI precheck)
+                                                   # Returns: { ok: bool, missing: [], ai_confidence: 0.85 }
+GET    /v1/inspections/{inspection_id}
+PUT    /v1/inspections/{inspection_id}/complete  # Record result/notes/photos
+POST   /v1/inspections/{inspection_id}/photos    # Upload photos with GPS/timestamp
+GET    /v1/projects/{project_id}/inspections     # All inspections for project
+```
+
+### 4.4 Invoices & Payments
+
+```
+POST   /v1/projects/{project_id}/invoices        # Create invoice
+GET    /v1/projects/{project_id}/invoices        # List project invoices
+GET    /v1/invoices/{invoice_id}
+POST   /v1/invoices/{invoice_id}/send            # Create/send and push to QuickBooks
+POST   /v1/invoices/{invoice_id}/apply-payment   # Apply payment idempotently
+
+POST   /v1/projects/{project_id}/payments        # Record payment
+GET    /v1/payments/{payment_id}
+GET    /v1/invoices/{invoice_id}/payments        # Payments for invoice
+```
+
+### 4.5 QuickBooks Integration
+
+```
+POST   /v1/quickbooks/webhook                    # Webhook receiver
+POST   /v1/quickbooks/invoices/sync              # Manual sync invoices
+POST   /v1/quickbooks/payments/sync              # Manual sync payments
+POST   /v1/quickbooks/cache/clear                # Clear cache (admin)
+GET    /v1/quickbooks/status                     # Auth status
+GET    /v1/quickbooks/connect                    # OAuth flow
+```
+
+### 4.6 Admin & Jobs
+
+```
+POST   /v1/admin/jobs/expire_permits             # Test trigger expire job
+POST   /v1/admin/jobs/sync_qb                    # Test trigger QB sync
+GET    /v1/admin/jobs                            # List recent job runs
+GET    /v1/admin/jobs/{job_id}                   # Job run details
+```
 
 ---
 
-### B.2: Inspection API Endpoints  
-**Priority**: 🔥🔥🔥 CRITICAL  
-**Effort**: 3-4 hours
+## 5. QuickBooks Invoice/Payment Sync Model
 
-**Endpoints to Create**:
+### 5.1 App → QuickBooks (Push)
+
+When an invoice is sent or payment recorded:
+1. Call QuickBooks API to create the resource
+2. Persist `qb_invoice_id` or `qb_payment_id` in database
+3. Set `sync_status = 'synced'`
+4. Background retry on transient errors (exponential backoff)
+
+### 5.2 QuickBooks → App (Pull via Webhooks)
+
+1. **Webhook receiver** persists events to `webhook_events` table
+2. **Idempotent workers** process events and update local `invoices`/`payments`
+3. Use `qb_event_id` for deduplication
+4. **Periodic incremental sync** (every 15 minutes) to reconcile missed events
+
+### 5.3 Idempotency
+
+- **Unique indexes**: `qb_invoice_id`, `qb_payment_id`, `qb_event_id`
+- **Webhook events**: Store raw payload, track processing status
+- **API requests**: Support `Idempotency-Key` header for direct create requests
+
+### 5.4 Reconciliation Job (Daily)
+
 ```python
-POST   /v1/permits/{permit_id}/inspections           # Schedule inspection
-GET    /v1/inspections                                # List all inspections
-GET    /v1/inspections/{id}                           # Get inspection details
-PUT    /v1/inspections/{id}/complete                  # Mark complete with result
-POST   /v1/inspections/{id}/photos                    # Upload photos
-PUT    /v1/inspections/{id}/no-access                 # Mark as no-access
-DELETE /v1/inspections/{id}                           # Cancel inspection
-```
-
-**Features**:
-- **Precheck before scheduling**: Automatically runs validation before allowing schedule
-- **Photo upload**: Support multiple photos with metadata (timestamp, GPS, notes)
-- **Result types**: Pass, Fail, Partial, No Access
-- **Auto status updates**: Completing inspection updates permit status
-
-**Precheck Integration**:
-```python
-@router.post("/permits/{permit_id}/inspections")
-async def schedule_inspection(permit_id: UUID, inspection: InspectionCreate):
-    # Run precheck first
-    precheck = await inspection_precheck(permit_id, inspection.inspection_type)
-    
-    if not precheck.can_schedule:
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "error": "Inspection cannot be scheduled",
-                "missing": precheck.missing,  # List of blockers
-                "suggestions": precheck.suggestions
-            }
-        )
-    
-    # If precheck passes, create inspection
-    return await create_inspection(inspection)
-```
-
-**Success Criteria**:
-- ✅ Precheck blocks scheduling when requirements not met
-- ✅ Completing inspection updates permit status correctly
-- ✅ Photo uploads work with metadata
-- ✅ No-access flow creates follow-up inspection
-
-**Files to Create/Modify**:
-- `app/routes/inspections.py` (+250 lines, new file)
-- `app/schemas/inspection.py` (+120 lines, new file)
-
----
-
-### B.3: AI Precheck & Document Extraction
-**Priority**: 🔥🔥 HIGH  
-**Effort**: 4-5 hours
-
-**Goal**: Use AI to extract permit data from PDFs and validate inspection readiness
-
-**Document Extraction**:
-```python
-async def extract_permit_data(pdf_file: bytes) -> PermitData:
+async def reconcile_qb_data():
     """
-    Extract permit details from uploaded PDF using OpenAI Vision API:
-    - Permit number
-    - Jurisdiction
-    - Permit type
-    - Expiration date
-    - Fee amount
-    - Required inspections
+    Compare app data vs QuickBooks:
+    1. Fetch recent invoices/payments from QB
+    2. Compare with local records
+    3. Flag mismatches (amounts, statuses, missing records)
+    4. Auto-correct safe cases (status updates)
+    5. Create finance tickets for complex discrepancies
     """
-    # Use GPT-4 Vision to read PDF
-    # Return structured PermitData object
-    pass
 ```
 
-**Precheck Logic**:
+### 5.5 Circuit Breaker Configuration
+
+```python
+max_failures = 5
+timeout_window = 60  # seconds (5 failures in 60s trips breaker)
+recovery_timeout = 300  # seconds (wait 5 min before retry)
+```
+
+---
+
+## 6. AI & Prechecks
+
+### 6.1 Document Extraction
+
+**Pipeline**: OCR + OpenAI Vision API
+- Extract permit fields from uploaded PDFs
+- Produce confidence scores for each field
+- Store in `permits.extra` and `permit_status_events`
+
+```python
+async def extract_permit_data(pdf_file):
+    """
+    Returns: {
+        "permit_number": {"value": "2024-BLD-12345", "confidence": 0.92},
+        "issued_date": {"value": "2024-11-15", "confidence": 0.88},
+        "expiration_date": {"value": "2025-05-15", "confidence": 0.85}
+    }
+    """
+```
+
+### 6.2 Precheck Service
+
+Validates inspection eligibility before scheduling:
+
 ```python
 async def inspection_precheck(permit_id: UUID, inspection_type: str) -> PrecheckResult:
     """
-    Returns PrecheckResult with:
-    - can_schedule: bool
-    - missing: List[str] - What's blocking
-    - suggestions: List[str] - How to fix
+    Validates:
+    - Permit status is "Approved"
+    - Required prior inspections completed and passed
+    - Required documents uploaded
+    - Permit not expired
+    - Fees paid (if required)
     
-    Checks:
-    1. Permit must be approved (not draft/pending)
-    2. Prior inspections must pass (footing → framing → rough → final)
-    3. Required documents uploaded (plans, engineering, etc.)
-    4. Permit not expired
-    5. Fees paid (if required by jurisdiction)
-    """
-    missing = []
-    
-    permit = await get_permit_by_id(permit_id)
-    
-    if permit.status != "Approved":
-        missing.append(f"Permit must be approved (current: {permit.status})")
-    
-    if permit.expiration_date < datetime.now():
-        missing.append("Permit expired - renewal required")
-    
-    # Check prerequisite inspections
-    if inspection_type == "Framing":
-        footing = await get_inspection_by_type(permit_id, "Footing")
-        if not footing or footing.result != "Pass":
-            missing.append("Footing inspection must pass first")
-    
-    # Check documents
-    required_docs = get_required_docs(permit.jurisdiction, inspection_type)
-    uploaded_docs = await get_permit_documents(permit_id)
-    missing_docs = set(required_docs) - set(uploaded_docs)
-    if missing_docs:
-        missing.extend([f"Missing document: {doc}" for doc in missing_docs])
-    
-    return PrecheckResult(
-        can_schedule=len(missing) == 0,
-        missing=missing,
-        suggestions=generate_suggestions(missing)
+    Returns: PrecheckResult(
+        can_schedule: bool,
+        missing: List[str],  # ["Footing inspection must pass first", "Permit fee unpaid"]
+        ai_confidence: float,  # 0.0-1.0
+        suggestions: List[str]
     )
+    """
 ```
 
-**Success Criteria**:
-- ✅ PDF extraction works for common permit formats
-- ✅ Precheck identifies all blockers correctly
-- ✅ Helpful suggestions guide users to fix issues
-- ✅ Integration with inspection scheduling endpoint
+**Jurisdiction Rules**: Loaded from `jurisdictions.requirements` JSONB:
 
-**Files to Create/Modify**:
-- `app/services/document_extraction.py` (+200 lines, new file)
-- `app/services/precheck_service.py` (+250 lines, new file)
-- `app/routes/documents.py` (+100 lines for upload)
-
----
-
-### B.4: QuickBooks Billing Integration
-**Priority**: 🔥🔥 HIGH  
-**Effort**: 2-3 hours
-
-**Goal**: Automate permit fee and inspection fee invoicing
-
-**Implementation**:
-```python
-async def create_permit_fee_invoice(permit_id: UUID) -> Invoice:
-    """
-    Create QB invoice for permit fees:
-    1. Get permit details
-    2. Get client QB customer ID
-    3. Create invoice with permit fee line item
-    4. Store invoice ID in permit record
-    """
-    permit = await get_permit_by_id(permit_id)
-    client = await get_client_by_id(permit.project.client_id)
-    
-    line_items = [{
-        "description": f"Permit Fee - {permit.permit_type} ({permit.business_id})",
-        "amount": permit.fee_amount,
-        "item_ref": "Permit Fees"  # QB item
-    }]
-    
-    invoice = await quickbooks_service.create_invoice(
-        customer_id=client.qb_customer_id,
-        line_items=line_items,
-        memo=f"Permit {permit.business_id} for project {permit.project.business_id}"
-    )
-    
-    # Update permit with invoice ID
-    await update_permit(permit_id, qb_invoice_id=invoice.Id)
-    
-    return invoice
-
-async def create_inspection_fee_invoice(inspection_id: UUID) -> Invoice:
-    """Optional inspection fees (re-inspections, rush fees, etc.)"""
-    # Similar logic to permit fees
-    pass
-```
-
-**Success Criteria**:
-- ✅ Permit fee invoices created automatically
-- ✅ Invoice linked to permit and project
-- ✅ Payment status synced back to permit
-- ✅ Optional inspection fees supported
-
-**Files to Create/Modify**:
-- `app/services/billing_service.py` (+150 lines, new file)
-- `app/handlers/ai_functions.py` (+80 lines for billing commands)
-
----
-
-## 📋 Phase C: Scheduling Parity & Buildertrend Mapping (NEXT - 1 week)
-
-**Goal**: Ensure scheduling system mirrors Buildertrend's inspector workflow
-
-### C.1: Schedule Items → Inspections Mapping
-**Priority**: 🔥🔥 HIGH  
-**Effort**: 3-4 hours
-
-**Problem**: Existing schedule system doesn't connect to permits/inspections
-
-**Solution**:
-```python
-# Add inspection_id foreign key to schedule_items table
-ALTER TABLE schedule_items ADD COLUMN inspection_id UUID REFERENCES inspections(id);
-
-# When inspection scheduled, create schedule item
-async def create_schedule_from_inspection(inspection: Inspection):
-    schedule_item = ScheduleItemCreate(
-        title=f"{inspection.inspection_type} Inspection",
-        project_id=inspection.permit.project_id,
-        inspection_id=inspection.id,
-        scheduled_date=inspection.scheduled_date,
-        assigned_to=inspection.inspector_name,
-        type="inspection"
-    )
-    await create_schedule_item(schedule_item)
-```
-
-**Success Criteria**:
-- ✅ Inspections appear in project schedule
-- ✅ Schedule changes update inspection dates
-- ✅ Completing inspection removes from schedule
-
-**Files to Modify**:
-- `alembic/versions/005_link_schedule_inspections.py` (new migration)
-- `app/services/schedule_service.py` (+100 lines)
-
----
-
-### C.2: Inspector Workflow
-**Priority**: 🔥🔥 HIGH  
-**Effort**: 4-5 hours
-
-**Features to Implement**:
-1. **Accept/Decline**: Inspector can accept or decline assignment
-2. **Complete**: Mark inspection complete with result (pass/fail/partial)
-3. **No Access**: Mark as no-access and auto-create follow-up
-4. **Photo Upload**: Upload photos with GPS and timestamp
-5. **Deficiency Notes**: Structured list of issues found
-
-**API Flow**:
-```python
-# Inspector accepts inspection
-PUT /v1/inspections/{id}/accept
-→ Updates status to "Accepted"
-→ Notifies project manager
-
-# Inspector arrives, finds no access
-PUT /v1/inspections/{id}/no-access
-→ Status: "No Access"
-→ Creates follow-up inspection (same type, +2 days)
-→ Notifies PM
-
-# Inspector completes with failure
-PUT /v1/inspections/{id}/complete
+```json
 {
-  "result": "Fail",
-  "deficiencies": [
-    {"item": "Missing hurricane clips", "location": "North wall"},
-    {"item": "Improper wiring", "location": "Kitchen outlet"}
-  ]
+  "inspection_sequence": {
+    "Footing": [],
+    "Foundation": ["Footing"],
+    "Framing": ["Foundation"],
+    "Final": ["Framing"]
+  },
+  "required_documents": {
+    "Framing": ["structural_plans", "energy_calcs"]
+  },
+  "expiration_rules": {
+    "permit_validity_months": 12,
+    "extension_allowed": true
+  }
 }
-→ Status: "Failed"  
-→ Permit status: "Corrections Required"
-→ Creates punchlist items
-→ Notifies PM and contractor
 ```
 
-**Success Criteria**:
-- ✅ Full inspector workflow supported
-- ✅ No-access creates automatic follow-up
-- ✅ Failures create punchlist items
-- ✅ Timeline shows all inspection events
+**AI Confidence Threshold**: If `ai_confidence < 0.70`:
+- **UX Decision**: Show warning, allow manual override by admin/PM
+- Log override in `permit_status_events` for audit
 
-**Files to Modify**:
-- `app/routes/inspections.py` (+150 lines)
-- `app/services/notification_service.py` (+100 lines, new file)
+### 6.3 Photo Analysis (Optional)
 
----
+AI-powered defect analysis:
 
-### C.3: Reconciliation Job
-**Priority**: 🔥 MEDIUM  
-**Effort**: 2-3 hours
-
-**Goal**: Detect and fix orphaned schedule items or inspections
-
-**Implementation**:
 ```python
-async def reconcile_schedule_inspections():
+async def analyze_inspection_photos(photos: List[bytes]) -> DefectAnalysis:
     """
-    Runs nightly to check:
-    1. Schedule items with no inspection → flag for review
-    2. Inspections with no schedule item → create schedule
-    3. Mismatched dates → sync inspection date to schedule
-    4. Completed inspections still in schedule → remove
+    Use OpenAI Vision API to:
+    - Summarize visible defects
+    - Suggest probable causes
+    - Generate follow-up recommendations
+    
+    Stored in: inspections.deficiencies JSONB
     """
-    orphaned_schedules = await find_orphaned_schedule_items()
-    orphaned_inspections = await find_orphaned_inspections()
-    
-    report = {
-        "orphaned_schedules": len(orphaned_schedules),
-        "orphaned_inspections": len(orphaned_inspections),
-        "auto_fixed": 0,
-        "requires_manual_review": []
-    }
-    
-    # Auto-fix simple cases
-    for inspection in orphaned_inspections:
-        await create_schedule_from_inspection(inspection)
-        report["auto_fixed"] += 1
-    
-    # Flag complex cases
-    for schedule in orphaned_schedules:
-        if schedule.type == "inspection":
-            report["requires_manual_review"].append(schedule.id)
-    
-    logger.info(f"Reconciliation complete: {report}")
-    return report
 ```
-
-**Success Criteria**:
-- ✅ Runs automatically every night
-- ✅ Auto-fixes simple mismatches
-- ✅ Flags complex cases for review
-- ✅ Provides clear reconciliation report
-
-**Files to Create**:
-- `app/jobs/reconciliation_job.py` (+200 lines, new file)
 
 ---
 
-## 📋 Phase D: Performance & Cost Control (NEXT - 1 week)
+## 7. Supabase Auth & Google Sheets Removal
 
-**Goal**: Optimize QuickBooks usage and reduce AI token costs
+### 7.1 Supabase Auth Implementation
 
-### D.1: DB-Centered QuickBooks Strategy
-**Priority**: 🔥🔥🔥 CRITICAL  
-**Effort**: 5-6 hours
+**Frontend**:
+```javascript
+import { createClient } from '@supabase/supabase-js'
 
-**Problem**: Fetching 53 invoices + 24 customers on every query is wasteful
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-**Solution**: Cache QB data in PostgreSQL + background sync
+// Login
+const { data, error } = await supabase.auth.signInWithPassword({
+  email, password
+})
 
-**Implementation**:
+// Get session token
+const { data: { session } } = await supabase.auth.getSession()
+const jwt = session.access_token  // Send to backend
+```
+
+**Backend**:
+```python
+from fastapi import Depends, HTTPException
+from supabase import create_client
+
+async def get_current_user(authorization: str = Header(...)):
+    """
+    Verify JWT via Supabase, map to internal user
+    """
+    token = authorization.replace("Bearer ", "")
+    
+    # Verify JWT via Supabase Admin API
+    supabase_user = supabase.auth.get_user(token)
+    
+    # Map to internal user
+    user = await db.users.get_by_supabase_id(supabase_user.id)
+    
+    if not user:
+        raise HTTPException(401, "User not found")
+    
+    return user  # { "id": UUID, "email": str, "role": str }
+```
+
+**JWT Refresh Strategy**:
+- Supabase tokens expire after 1 hour
+- Frontend: Implement silent refresh using `supabase.auth.refreshSession()`
+- Backend: Grace period of 5 minutes for expired tokens (allow recent tokens)
+
+### 7.2 User Migration from Google Sheets
+
+**Step 1**: Export users from Sheets
+```python
+async def export_users_from_sheets():
+    users = await google_service.get_sheet_data("Users")
+    return [{"email": u["Email"], "name": u["Name"], "role": u["Role"]} for u in users]
+```
+
+**Step 2**: Create Supabase users
+```python
+from supabase import create_client
+
+admin_supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
+for user in sheet_users:
+    # Create Supabase auth user
+    supabase_user = admin_supabase.auth.admin.create_user({
+        "email": user["email"],
+        "password": generate_temp_password(),
+        "email_confirm": True
+    })
+    
+    # Create internal user record
+    await db.users.create({
+        "supabase_user_id": supabase_user.id,
+        "email": user["email"],
+        "name": user["name"],
+        "role": user["role"]
+    })
+    
+    # Send password reset email
+    admin_supabase.auth.admin.generate_link({
+        "type": "recovery",
+        "email": user["email"]
+    })
+```
+
+### 7.3 Google Sheets Removal
+
+**Phase 1: Migrate All Domain Data**
+- ✅ Clients (done)
+- ✅ Projects (done)
+- ⏳ Permits, Inspections, Invoices, Payments (pending)
+
+**Phase 2: Dry-Run Migration**
+- Run migration scripts with `DRY_RUN=true`
+- Validate data integrity
+- Compare record counts, key fields
+
+**Phase 3: Dual-Write Mode (Safety)**
+- Write to both DB and Sheets
+- Read from DB primarily, fallback to Sheets if missing
+- Monitor for discrepancies
+
+**Phase 4: Full Cutover**
+- Set `DB_READ_FALLBACK=false`
+- Stop writing to Sheets
+- Remove `GoogleService` from codebase
+- Archive Sheets documentation
+
+---
+
+## 8. Business IDs Implementation
+
+### 8.1 PostgreSQL Sequences
+
 ```sql
--- Cache QB data in database
-CREATE TABLE qb_customers_cache (
-  qb_id VARCHAR(50) PRIMARY KEY,
-  client_id UUID REFERENCES clients(id),
-  display_name VARCHAR(200),
-  company_name VARCHAR(200),
-  email VARCHAR(200),
-  phone VARCHAR(50),
-  balance DECIMAL(10,2),
-  synced_at TIMESTAMP DEFAULT NOW(),
-  raw_data JSONB
-);
-
-CREATE TABLE qb_invoices_cache (
-  qb_id VARCHAR(50) PRIMARY KEY,
-  client_id UUID REFERENCES clients(id),
-  project_id UUID REFERENCES projects(id),
-  invoice_number VARCHAR(100),
-  txn_date DATE,
-  due_date DATE,
-  total_amount DECIMAL(10,2),
-  balance DECIMAL(10,2),
-  status VARCHAR(50),
-  synced_at TIMESTAMP DEFAULT NOW(),
-  raw_data JSONB
-);
-
-CREATE INDEX idx_qb_customers_client ON qb_customers_cache(client_id);
-CREATE INDEX idx_qb_invoices_client ON qb_invoices_cache(client_id);
-CREATE INDEX idx_qb_invoices_project ON qb_invoices_cache(project_id);
+CREATE SEQUENCE client_business_id_seq START 1;
+CREATE SEQUENCE project_business_id_seq START 1;
+CREATE SEQUENCE permit_business_id_seq START 1;
+CREATE SEQUENCE inspection_business_id_seq START 1;
+CREATE SEQUENCE invoice_business_id_seq START 1;
+CREATE SEQUENCE payment_business_id_seq START 1;
 ```
 
-**Background Sync**:
+### 8.2 Trigger Functions
+
+```sql
+CREATE OR REPLACE FUNCTION generate_client_business_id()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.business_id IS NULL THEN
+    NEW.business_id := 'CL-' || LPAD(nextval('client_business_id_seq')::TEXT, 5, '0');
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER client_business_id_trigger
+BEFORE INSERT ON clients
+FOR EACH ROW EXECUTE FUNCTION generate_client_business_id();
+```
+
+Repeat for projects, permits, inspections, invoices, payments.
+
+### 8.3 Backfill Existing Records
+
 ```python
-async def sync_qb_to_db_job():
+async def backfill_business_ids():
     """
-    Runs every 5 minutes:
-    1. Fetch changed QB records (use change data capture)
-    2. Update database cache
-    3. Keep small hot cache in memory (last 10 minutes)
+    Populate business_id for existing records.
+    MUST be ordered by created_at ASC to preserve chronology.
+    Idempotent: Skip records that already have business_id.
     """
-    # Fetch only changed records
-    since = datetime.now() - timedelta(minutes=5)
-    changed_customers = await qb_service.get_customers(changed_since=since)
-    changed_invoices = await qb_service.get_invoices(changed_since=since)
+    # Clients
+    clients = await db.query(
+        "SELECT id FROM clients WHERE business_id IS NULL ORDER BY created_at ASC"
+    )
+    for client in clients:
+        await db.execute(
+            "UPDATE clients SET business_id = 'CL-' || LPAD(nextval('client_business_id_seq')::TEXT, 5, '0') WHERE id = $1",
+            client.id
+        )
     
-    # Update DB cache
-    for customer in changed_customers:
-        await upsert_qb_customer_cache(customer)
-    
-    for invoice in changed_invoices:
-        await upsert_qb_invoice_cache(invoice)
-    
-    logger.info(f"QB sync: {len(changed_customers)} customers, {len(changed_invoices)} invoices")
+    # Repeat for projects, permits, etc.
 ```
 
-**Context Builder Update**:
-```python
-# OLD: Fetch from QB API every time
-customers = await qb_service.get_customers()  # 500ms, every request
+**Critical**: Use `ORDER BY created_at ASC` so oldest records get lowest IDs (CL-00001 is the first client).
 
-# NEW: Read from DB cache
-customers = await get_qb_customers_from_cache()  # 20ms, from DB
+### 8.4 API Exposure
+
+All API responses include `business_id`:
+
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "business_id": "CL-00001",
+  "name": "John Smith",
+  "email": "john@example.com"
+}
 ```
 
-**Success Criteria**:
-- ✅ QB API calls reduced by 90%+
-- ✅ Context building 10x faster (20ms vs 500ms)
-- ✅ Data freshness < 5 minutes
-- ✅ No stale data issues
-
-**Files to Create/Modify**:
-- `alembic/versions/006_qb_cache_tables.py` (new migration)
-- `app/services/qb_cache_service.py` (+300 lines, new file)
-- `app/jobs/qb_sync_job.py` (+150 lines, new file)
-- `app/utils/context_builder.py` (~100 lines modified)
+Frontend displays `business_id` in UI (tables, detail views, breadcrumbs).
 
 ---
 
-### D.2: Context Size Optimization
-**Priority**: 🔥🔥 HIGH  
-**Effort**: 2-3 hours
+## 9. Background Jobs & Workers
 
-**Problem**: Sending all 53 invoices costs tokens; AI only needs recent ones
+### 9.1 Job Infrastructure
 
-**Solution**: Intelligent truncation with summary stats
+**Technology**: Celery with Redis broker (or RQ for simpler setup)
 
-**Implementation**:
 ```python
-def optimize_context_size(data: dict, query: str) -> dict:
+# celery_app.py
+from celery import Celery
+
+celery = Celery('house_renovators', broker='redis://localhost:6379/0')
+
+celery.conf.task_routes = {
+    'jobs.expire_permits': {'queue': 'scheduled'},
+    'jobs.sync_qb': {'queue': 'integrations'},
+    'jobs.process_webhook': {'queue': 'webhooks'}
+}
+```
+
+### 9.2 Scheduled Jobs
+
+**Expire Permits Job** (Daily at 2 AM):
+```python
+@celery.task
+async def expire_permits_job():
     """
-    Reduce context size while maintaining usefulness:
-    1. Invoices: Return last 10 + summary stats
-    2. Customers: Filter to query-relevant only
-    3. Projects: Include only active + query-mentioned
+    Enforce 6/12 month expiration rules:
+    - Residential: 6 months
+    - Commercial: 12 months
     """
-    optimized = {}
+    expired_permits = await db.permits.find_expired()
     
-    # Invoices: Last 10 + summary
-    if 'invoices' in data:
-        all_invoices = data['invoices']
-        recent_invoices = sorted(all_invoices, key=lambda x: x['TxnDate'], reverse=True)[:10]
+    for permit in expired_permits:
+        await db.permits.update_status(permit.id, "Expired")
+        await create_status_event(
+            permit_id=permit.id,
+            old_status=permit.status,
+            new_status="Expired",
+            changed_by="system",
+            notes="Auto-expired per jurisdiction rules"
+        )
+```
+
+**QuickBooks Sync Job** (Every 5 minutes):
+```python
+@celery.task
+async def sync_qb_job():
+    """
+    Incremental sync: Only fetch records changed since last sync.
+    """
+    with redis.lock('qb_sync_lock', timeout=300):  # Prevent concurrent runs
+        last_sync = await get_last_sync_time()
         
-        optimized['invoices'] = {
-            'recent': recent_invoices,
-            'summary': {
-                'total_count': len(all_invoices),
-                'total_amount': sum(i['TotalAmt'] for i in all_invoices),
-                'unpaid_amount': sum(i['Balance'] for i in all_invoices)
-            }
-        }
+        # Fetch changed customers
+        customers = await qb_service.get_customers(changed_since=last_sync)
+        for customer in customers:
+            await db.qb_customers_cache.upsert(customer)
+        
+        # Fetch changed invoices
+        invoices = await qb_service.get_invoices(changed_since=last_sync)
+        for invoice in invoices:
+            await db.qb_invoices_cache.upsert(invoice)
+        
+        await set_last_sync_time(datetime.now())
+```
+
+**Reconciliation Job** (Daily at 3 AM):
+```python
+@celery.task
+async def reconcile_qb_job():
+    """
+    Compare app data vs QuickBooks, flag discrepancies.
+    """
+    app_invoices = await db.invoices.get_all(with_qb_id=True)
+    qb_invoices = await qb_service.get_invoices(limit=1000)
     
-    # Projects: Active only (unless query asks for all)
-    if 'projects' in data and 'all projects' not in query.lower():
-        optimized['projects'] = [
-            p for p in data['projects'] 
-            if p['status'] in ['Active', 'In Progress']
-        ]
+    mismatches = []
+    for app_inv in app_invoices:
+        qb_inv = find_by_qb_id(qb_invoices, app_inv.qb_invoice_id)
+        
+        if not qb_inv:
+            mismatches.append(f"Invoice {app_inv.business_id} missing in QB")
+        elif app_inv.total_amount != qb_inv.total_amount:
+            mismatches.append(f"Amount mismatch: {app_inv.business_id}")
     
-    return optimized
+    if mismatches:
+        await notify_finance_team(mismatches)
 ```
 
-**Success Criteria**:
-- ✅ 40-50% token reduction for list queries
-- ✅ AI can still request full data when needed
-- ✅ No functionality loss
+### 9.3 Event-Driven Jobs
 
-**Files to Modify**:
-- `app/utils/context_builder.py` (+150 lines)
-- `app/services/openai_service.py` (+50 lines for instructions)
+**Process QuickBooks Webhook**:
+```python
+@celery.task
+async def process_qb_webhook(event_id: str):
+    """
+    Idempotent processing of QB webhook events.
+    """
+    event = await db.webhook_events.get_by_qb_event_id(event_id)
+    
+    if event.processed_at:
+        return  # Already processed
+    
+    try:
+        if event.event_type == "Invoice.Create":
+            await sync_invoice_from_qb(event.entity_id)
+        elif event.event_type == "Payment.Create":
+            await sync_payment_from_qb(event.entity_id)
+        
+        await db.webhook_events.mark_processed(event.id)
+    except Exception as e:
+        await db.webhook_events.record_error(event.id, str(e))
+        raise
+```
+
+### 9.4 Job Monitoring
+
+Track all job runs in `job_runs` table:
+
+```python
+async def run_tracked_job(job_name: str, job_func):
+    """
+    Wrapper to track job execution.
+    """
+    job_run = await db.job_runs.create({
+        "job_name": job_name,
+        "status": "running",
+        "started_at": datetime.now()
+    })
+    
+    try:
+        result = await job_func()
+        await db.job_runs.update(job_run.id, {
+            "status": "success",
+            "completed_at": datetime.now(),
+            "metadata": result
+        })
+    except Exception as e:
+        await db.job_runs.update(job_run.id, {
+            "status": "failed",
+            "completed_at": datetime.now(),
+            "error": str(e)
+        })
+        raise
+```
+
+**Alerting**: If a job fails 3 times in a row, send alert to ops team.
 
 ---
 
-### D.3: Retire Sheets Heavy Optimizations  
-**Priority**: 🔥 LOW  
-**Effort**: 1-2 hours
+## 10. Tests, Acceptance & Rollout
 
-**Goal**: Remove Sheets-specific optimizations once DB cutover is complete
+### 10.1 Acceptance Criteria
 
-**Tasks**:
-- [ ] Mark Sheets batching as transitional only
-- [ ] Remove Sheets caching after full DB migration
-- [ ] Keep minimal Sheets service for historical data access
-- [ ] Update documentation to reflect DB-first approach
+**Database & Migrations**:
+- [ ] Alembic migrations create `permits`, `inspections`, `permit_status_events`, `jurisdictions`, `optional_inspections` tables
+- [ ] All tables have proper indexes (B-tree for lookups, GIN for JSONB)
+- [ ] Business ID sequences and triggers work correctly
+- [ ] Backfill script populates business IDs in chronological order
 
-**Success Criteria**:
-- ✅ Sheets code clearly marked as legacy/transitional
-- ✅ All new features use DB exclusively
-- ✅ Sheets fallback can be disabled with config flag
+**Permits & Inspections**:
+- [ ] `POST /v1/permits/{id}/inspections` runs AI precheck
+- [ ] Precheck blocks scheduling if missing required items
+- [ ] Precheck allows scheduling when all criteria met
+- [ ] `GET /v1/permits/{id}/precheck` returns eligibility status
+- [ ] Inspection completion updates permit status if needed
 
----
+**QuickBooks Integration**:
+- [ ] Invoice creation pushes to QuickBooks and stores `qb_invoice_id`
+- [ ] Payment recording pushes to QuickBooks and stores `qb_payment_id`
+- [ ] Webhook receiver processes events idempotently
+- [ ] Reconciliation job detects and flags mismatches
+- [ ] Circuit breaker trips after 5 failures in 60 seconds
 
-## 📋 Phase E: Documentation, Testing & Rollout (ONGOING)
+**Background Jobs**:
+- [ ] `expire_permits_job` enforces 6/12 month rules
+- [ ] `sync_qb_job` runs every 5 minutes and updates cache
+- [ ] `reconcile_qb_job` runs daily and reports discrepancies
+- [ ] Job runs are tracked in `job_runs` table
 
-**Goal**: Ensure safe, documented, tested migration to new architecture
+**Authentication**:
+- [ ] Supabase Auth works end-to-end (login, JWT verification)
+- [ ] `get_current_user` dependency returns user with role
+- [ ] Protected routes require valid JWT
+- [ ] Users table correctly maps `supabase_user_id` to internal user
 
-### E.1: Documentation Updates
-**Priority**: 🔥🔥 HIGH  
-**Effort**: Ongoing
+**Google Sheets Removal**:
+- [ ] No runtime reliance on Google Sheets (`DB_READ_FALLBACK=false`)
+- [ ] All domain data (clients, projects, permits, inspections, invoices, payments) in PostgreSQL
+- [ ] Migration scripts have dry-run mode and validation
+- [ ] Data integrity verified (record counts, key fields match)
 
-**Tasks**:
-- [ ] Update PROJECT_ROADMAP.md with current plan (this document)
-- [ ] Create POSTGRES_MIGRATION_GUIDE.md with step-by-step instructions
-- [ ] Document new API endpoints in API_DOCUMENTATION.md
-- [ ] Add permit/inspection workflow diagrams
-- [ ] Update TROUBLESHOOTING.md with DB-specific issues
-- [ ] Document business ID system and sequences
-- [ ] Create INSPECTOR_WORKFLOW.md for field users
+### 10.2 Testing Strategy
 
-**Files to Create/Update**:
-- `docs/PROJECT_ROADMAP.md` (✅ in progress)
-- `docs/guides/POSTGRES_MIGRATION_GUIDE.md` (new)
-- `docs/guides/PERMIT_WORKFLOW.md` (new)
-- `docs/guides/INSPECTOR_GUIDE.md` (new)
+**Unit Tests** (~100 tests):
+- Models: Field validation, business logic methods
+- Services: CRUD operations, QB sync logic, precheck validation
+- Utils: Business ID generation, JWT verification
 
----
+**Contract Tests** (~30 tests):
+- API response shapes (ensure frontend compatibility)
+- AI context structure (validate prompt templates)
+- QuickBooks webhook payload handling
 
-### E.2: Test Coverage
-**Priority**: 🔥🔥🔥 CRITICAL  
-**Effort**: Ongoing
+**Integration Tests** (~40 tests):
+- QB sync idempotency (duplicate webhook processing)
+- Invoice/payment creation and QB push
+- Precheck logic with jurisdiction rules
+- Background job execution and monitoring
 
-**Current Test Coverage**: 91.7% (from Phase 0-2)
+**Migration Tests** (~20 tests):
+- Dry-run mode produces accurate reports
+- Backfill scripts are idempotent
+- Data validation detects missing/corrupt records
 
-**New Tests Needed**:
-```python
-# tests/test_permits.py
-async def test_create_permit()
-async def test_permit_status_transitions()
-async def test_permit_expiration_job()
-async def test_business_id_generation()
+**E2E Tests** (~15 tests):
+- Full permit workflow: Create → Submit → Approve → Schedule Inspection → Complete
+- Invoice workflow: Create → Send → QuickBooks sync → Apply Payment
+- Inspector workflow: Accept inspection → Complete → Upload photos
 
-# tests/test_inspections.py
-async def test_schedule_inspection()
-async def test_inspection_precheck_blocks_invalid()
-async def test_inspection_precheck_allows_valid()
-async def test_complete_inspection_updates_permit()
-async def test_no_access_creates_followup()
-async def test_photo_upload_metadata()
+**Test Coverage Target**: >85% code coverage
 
-# tests/test_billing.py
-async def test_create_permit_fee_invoice()
-async def test_create_inspection_fee_invoice()
-async def test_payment_sync_from_qb()
+### 10.3 Rollout Strategy
 
-# tests/test_migration.py
-async def test_migrate_permits_dry_run()
-async def test_migrate_permits_with_validation()
-async def test_jurisdiction_auto_create()
+**Phase 1: Dual-Write Mode** (1-2 weeks)
+- Write to both PostgreSQL and Google Sheets
+- Read from PostgreSQL, fallback to Sheets if missing
+- Monitor for discrepancies (alerting via Slack)
+- Fix any data sync issues
 
-# Contract tests for AI context shape
-async def test_context_contains_permits()
-async def test_context_optimized_size()
-```
+**Phase 2: Canary (10% Traffic)** (Week 3)
+- 10% of API requests read from PostgreSQL only
+- Monitor error rates, query performance, data integrity
+- Roll back if error rate > 0.5%
 
-**Target**: Maintain > 85% test coverage through all phases
-
----
-
-### E.3: Staging Rollout Strategy
-**Priority**: 🔥🔥🔥 CRITICAL  
-**Effort**: 2-3 hours
-
-**Rollout Phases**:
-
-**Phase 1: Dual-Write Mode** (Week 1-2)
-```python
-# Write to both Sheets and DB
-DB_WRITE_ENABLED = True
-SHEETS_WRITE_ENABLED = True  # Keep as backup
-DB_READ_FALLBACK = True  # Read from Sheets if DB fails
-```
-
-**Phase 2: Canary Testing** (Week 3)
-```python
-# 10% of traffic reads from DB
-DB_READ_PERCENTAGE = 10
-SHEETS_WRITE_ENABLED = True  # Still writing to both
-```
-
-**Phase 3: Full DB Cutover** (Week 4)
-```python
-# All reads from DB
-DB_READ_PERCENTAGE = 100
-SHEETS_WRITE_ENABLED = False  # DB is source of truth
-DB_READ_FALLBACK = True  # Emergency fallback only
-```
+**Phase 3: Full Cutover (100% Traffic)** (Week 4)
+- All API requests use PostgreSQL
+- Google Sheets becomes read-only backup
+- Remove dual-write code
 
 **Phase 4: Decommission Sheets** (Week 5+)
-```python
-# Remove Sheets writes completely
-DB_READ_FALLBACK = False
-# Archive Sheets data
-# Remove google_service.py (except minimal read-only)
+- Stop writing to Sheets entirely
+- Remove `GoogleService` from codebase
+- Archive Sheets-related documentation
+- Export Sheets data for historical backup
+
+**Success Metrics**:
+- Zero data loss during migration
+- API response times < 500ms (p95)
+- Error rate < 0.1%
+- 90% reduction in external API calls (QB)
+
+**Rollback Plan**:
+- **Immediate rollback** (< 5 minutes): Set `DB_READ_FALLBACK=true`, restart backend
+- **Data reconciliation** (1-2 hours): Run `compare_sheets_db.py` script, identify gaps
+- **Post-mortem required** for any rollback
+
+---
+
+## 11. Scheduling Parity & Inspector Workflow
+
+### 11.1 Schedule Items ↔ Inspections Mapping
+
+**Database Schema**:
+```sql
+ALTER TABLE schedule_items ADD COLUMN inspection_id UUID REFERENCES inspections(id);
+CREATE INDEX idx_schedule_items_inspection_id ON schedule_items(inspection_id);
 ```
 
-**Monitoring During Rollout**:
-- Track DB query performance (target: < 100ms)
-- Monitor error rates (target: < 0.1%)
-- Compare Sheets vs DB data integrity
-- Watch for race conditions in dual-write mode
+**Bidirectional Sync**:
+- When inspection is scheduled, create or update `schedule_items`
+- When schedule item date changes, update `inspections.scheduled_date`
+- Sync is immediate (not background job)
+
+**API**:
+```python
+@router.post("/v1/permits/{permit_id}/inspections")
+async def create_inspection(permit_id: UUID, inspection_data: InspectionCreate):
+    # 1. Run precheck
+    precheck = await inspection_precheck(permit_id, inspection_data.inspection_type)
+    if not precheck.can_schedule:
+        raise HTTPException(400, {"message": "Cannot schedule", "missing": precheck.missing})
+    
+    # 2. Create inspection
+    inspection = await db.inspections.create({
+        "permit_id": permit_id,
+        "inspection_type": inspection_data.inspection_type,
+        "scheduled_date": inspection_data.scheduled_date,
+        "status": "Scheduled"
+    })
+    
+    # 3. Create schedule item
+    schedule_item = await db.schedule_items.create({
+        "project_id": inspection.project_id,
+        "inspection_id": inspection.id,
+        "title": f"{inspection_data.inspection_type} Inspection",
+        "scheduled_date": inspection_data.scheduled_date,
+        "assigned_to": inspection_data.inspector
+    })
+    
+    return {"inspection": inspection, "schedule_item": schedule_item}
+```
+
+### 11.2 Inspector PWA Workflow
+
+**Accept/Decline Assignment**:
+```python
+@router.put("/v1/inspections/{inspection_id}/accept")
+async def accept_inspection(inspection_id: UUID, current_user: User = Depends(get_current_user)):
+    if current_user.role != "inspector":
+        raise HTTPException(403, "Only inspectors can accept")
+    
+    await db.inspections.update(inspection_id, {
+        "status": "Accepted",
+        "inspector": current_user.id
+    })
+    
+    # Notify PM
+    await notify_pm(inspection_id, "Inspection accepted")
+```
+
+**Complete Inspection**:
+```python
+@router.put("/v1/inspections/{inspection_id}/complete")
+async def complete_inspection(
+    inspection_id: UUID,
+    result: InspectionResult,  # Pass, Fail, Partial, No-Access
+    notes: str,
+    deficiencies: List[Deficiency],
+    current_user: User = Depends(get_current_user)
+):
+    inspection = await db.inspections.update(inspection_id, {
+        "status": "Completed",
+        "completed_date": datetime.now(),
+        "result": result,
+        "notes": notes,
+        "deficiencies": deficiencies
+    })
+    
+    # If failed, create punchlist items
+    if result == "Fail":
+        for deficiency in deficiencies:
+            await create_punchlist_item(inspection.project_id, deficiency)
+    
+    # If no-access, create follow-up inspection (+2 days)
+    if result == "No-Access":
+        await db.inspections.create({
+            "permit_id": inspection.permit_id,
+            "inspection_type": inspection.inspection_type,
+            "scheduled_date": inspection.scheduled_date + timedelta(days=2),
+            "status": "Scheduled",
+            "notes": f"Follow-up from no-access: {notes}"
+        })
+    
+    return inspection
+```
+
+**Photo Upload**:
+```python
+@router.post("/v1/inspections/{inspection_id}/photos")
+async def upload_photos(
+    inspection_id: UUID,
+    photos: List[UploadFile],
+    gps_coords: str,  # "lat,lon"
+    current_user: User = Depends(get_current_user)
+):
+    photo_data = []
+    
+    for photo in photos:
+        # Upload to S3 or similar
+        url = await storage.upload(photo, f"inspections/{inspection_id}")
+        
+        photo_data.append({
+            "url": url,
+            "timestamp": datetime.now().isoformat(),
+            "gps": gps_coords,
+            "uploaded_by": current_user.id
+        })
+    
+    # Append to photos JSONB array
+    await db.inspections.append_photos(inspection_id, photo_data)
+    
+    return {"uploaded": len(photo_data)}
+```
+
+### 11.3 Reconciliation Job (Nightly)
+
+**Detect Orphaned Records**:
+```python
+@celery.task
+async def reconcile_schedules_and_inspections():
+    """
+    Find mismatches:
+    - Schedule items with no inspection_id
+    - Inspections with no linked schedule_items
+    """
+    orphaned_schedules = await db.query("""
+        SELECT * FROM schedule_items 
+        WHERE inspection_id IS NULL 
+        AND title ILIKE '%inspection%'
+    """)
+    
+    orphaned_inspections = await db.query("""
+        SELECT i.* FROM inspections i
+        LEFT JOIN schedule_items s ON s.inspection_id = i.id
+        WHERE s.id IS NULL
+    """)
+    
+    # Auto-fix simple cases
+    for schedule in orphaned_schedules:
+        # Try to find matching inspection by date + project
+        inspection = await find_matching_inspection(schedule)
+        if inspection:
+            await db.schedule_items.update(schedule.id, {"inspection_id": inspection.id})
+    
+    # Flag complex cases for manual review
+    if orphaned_inspections:
+        await notify_ops_team(f"Found {len(orphaned_inspections)} orphaned inspections")
+```
 
 ---
 
-### E.4: Rollback Plan
-**Priority**: 🔥🔥🔥 CRITICAL  
-**Effort**: 1 hour
+## 12. Implementation Phases & Timeline
 
-**If Issues Arise During Rollout**:
+### Phase A: Core Data & Migration (1-2 weeks, 🔥🔥🔥)
 
-1. **Immediate Rollback** (< 5 minutes)
-   ```python
-   # Set environment variables
-   DB_READ_ENABLED = False
-   SHEETS_READ_ENABLED = True
-   
-   # Restart service
-   flyctl machine restart --app houserenovators-api
-   ```
+**A.1: Database Models & Migrations** (4-5 hours)
+- [ ] Create Alembic migration for `permits`, `inspections`, `permit_status_events`, `jurisdictions`, `optional_inspections`
+- [ ] Add indexes (B-tree on FKs, GIN on JSONB)
+- [ ] Create `invoices`, `payments`, `qb_*_cache` tables
+- [ ] Add `sync_status`, `sync_error`, `last_sync_attempt` fields
 
-2. **Data Reconciliation** (1-2 hours)
-   ```python
-   # Compare DB vs Sheets data
-   python scripts/compare_sheets_db.py
-   
-   # Identify discrepancies
-   # Manually fix or re-run migration
-   ```
+**A.2: Business ID System** (3-4 hours)
+- [ ] Create sequences for all entities
+- [ ] Write trigger functions
+- [ ] Apply triggers to tables
+- [ ] Write backfill script (idempotent, chronological)
+- [ ] Test backfill on staging
 
-3. **Post-Mortem** (Required)
-   - Document what went wrong
-   - Update tests to catch the issue
-   - Fix root cause before retry
+**A.3: Database Service Layer** (5-6 hours)
+- [ ] Implement `PermitService`: CRUD, precheck, status updates
+- [ ] Implement `InspectionService`: CRUD, complete, upload photos
+- [ ] Implement `InvoiceService`: CRUD, QB sync
+- [ ] Implement `PaymentService`: CRUD, QB sync
+- [ ] Background job runners: expire permits, sync QB
+
+**A.4: Migration Scripts** (3-4 hours)
+- [ ] Extend migration for permits/inspections
+- [ ] Add dry-run mode
+- [ ] Jurisdiction validation and auto-create
+- [ ] Migration report generation
+
+### Phase B: API & Business Flows (1-2 weeks, 🔥🔥🔥)
+
+**B.1: Permit API Endpoints** (3-4 hours)
+- [ ] `POST /v1/projects/{id}/permits`
+- [ ] `GET /v1/permits`, `GET /v1/permits/{id}`
+- [ ] `PUT /v1/permits/{id}/submit`
+- [ ] `GET /v1/permits/{id}/precheck`
+
+**B.2: Inspection API Endpoints** (3-4 hours)
+- [ ] `POST /v1/permits/{id}/inspections` (with precheck)
+- [ ] `PUT /v1/inspections/{id}/complete`
+- [ ] `POST /v1/inspections/{id}/photos`
+- [ ] `GET /v1/projects/{id}/inspections`
+
+**B.3: AI Precheck & Document Extraction** (4-5 hours)
+- [ ] PDF extraction service (OpenAI Vision API)
+- [ ] Precheck logic (jurisdiction rules + extraction results)
+- [ ] Confidence scoring
+- [ ] Store in `permits.extra` and `permit_status_events`
+
+**B.4: QuickBooks Billing Integration** (2-3 hours)
+- [ ] `create_permit_fee_invoice()` helper
+- [ ] `create_inspection_fee_invoice()` helper (optional fees)
+- [ ] Payment status sync back to permits
+
+### Phase C: Scheduling Parity (1 week, 🔥🔥)
+
+**C.1: Schedule ↔ Inspection Mapping** (2-3 hours)
+- [ ] Add `inspection_id` FK to `schedule_items`
+- [ ] Create schedule on inspection creation
+- [ ] Bidirectional date sync
+
+**C.2: Inspector Workflow** (4-5 hours)
+- [ ] Accept/decline endpoints
+- [ ] Complete with result/notes/photos
+- [ ] No-access flow (auto follow-up +2 days)
+- [ ] Failure creates punchlist items
+- [ ] Photo upload with GPS/timestamp
+
+**C.3: Reconciliation Job** (2-3 hours)
+- [ ] Nightly job to detect orphans
+- [ ] Auto-fix simple cases
+- [ ] Flag complex cases for manual review
+
+### Phase D: Performance & Cost Control (1 week, 🔥🔥🔥)
+
+**D.1: DB-Centered QuickBooks Strategy** (4-5 hours)
+- [ ] Create `qb_customers_cache`, `qb_invoices_cache`, `qb_payments_cache` tables
+- [ ] Background sync job (every 5 min, incremental)
+- [ ] Context builder reads from DB cache
+- [ ] Measure API call reduction
+
+**D.2: Context Size Optimization** (2-3 hours)
+- [ ] Intelligent truncation (last 10 invoices + summary stats)
+- [ ] Filter to query-relevant records
+- [ ] Measure token reduction
+
+**D.3: Retire Sheets Optimizations** (1-2 hours)
+- [ ] Mark Sheets batching as transitional
+- [ ] Remove after full DB cutover
+- [ ] Keep minimal Sheets service for historical access
+
+### Phase E: Documentation, Testing & Rollout (Ongoing, 🔥🔥🔥)
+
+**E.1: Documentation Updates** (3-4 hours)
+- [ ] `POSTGRES_MIGRATION_GUIDE.md`
+- [ ] `PERMIT_WORKFLOW.md`
+- [ ] `INSPECTOR_GUIDE.md`
+- [ ] Update `API_DOCUMENTATION.md`
+- [ ] Update `TROUBLESHOOTING.md`
+
+**E.2: Test Coverage** (4-5 hours)
+- [ ] Unit tests for new services
+- [ ] Integration tests for QB sync
+- [ ] E2E tests for permit → inspection → invoice flows
+- [ ] Contract tests for API shapes
+
+**E.3: Staging Rollout** (Ongoing monitoring)
+- [ ] Phase 1: Dual-write (1-2 weeks)
+- [ ] Phase 2: Canary 10% (week 3)
+- [ ] Phase 3: Full cutover (week 4)
+- [ ] Phase 4: Decommission Sheets (week 5+)
+
+**E.4: Rollback Plan** (Documented)
+- [ ] Immediate rollback procedure (< 5 min)
+- [ ] Data reconciliation scripts
+- [ ] Post-mortem template
 
 ---
 
-## 🎯 Success Metrics
-
-### Phase A Success Criteria
-- ✅ All tables created with proper indexes
-- ✅ Business IDs working for all entities
-- ✅ Permit and inspection CRUD working
-- ✅ Migration scripts tested in dry-run mode
-- ✅ Unit tests passing (> 85% coverage)
-
-### Phase B Success Criteria
-- ✅ All API endpoints working
-- ✅ Precheck blocking invalid inspections
-- ✅ QB invoices created automatically
-- ✅ Integration tests passing
-
-### Phase C Success Criteria
-- ✅ Schedule ↔ inspection parity working
-- ✅ Inspector workflow complete
-- ✅ Reconciliation job running nightly
-- ✅ No orphaned records
-
-### Phase D Success Criteria
-- ✅ QB API calls reduced by 90%+
-- ✅ Token usage down 40-50%
-- ✅ Context building < 50ms (from DB cache)
-- ✅ No performance regressions
-
-### Phase E Success Criteria
-- ✅ All documentation updated
-- ✅ Test coverage > 85%
-- ✅ Successful staging rollout
-- ✅ Zero data loss
-- ✅ Sheets decommissioned
-
----
-
-## 📊 Timeline Summary
+## Timeline Summary
 
 | Phase | Duration | Effort | Priority | Status |
 |-------|----------|--------|----------|--------|
@@ -1064,37 +1098,60 @@ DB_READ_FALLBACK = False
 
 ---
 
-## 🗂️ Preserved from Original Roadmap
+## Next Immediate Actions
 
-### Items Still Relevant (Integrated Above)
-- ✅ DB migration / Postgres backend (Phase A)
-- ✅ Payments / QuickBooks integration (Phase B.4)
-- ✅ Context size optimization (Phase D.2)
-- ✅ Document intelligence (Phase B.3)
-- ✅ Test coverage and CI/CD (Phase E.2)
-
-### Items Deprioritized
-- ⏸️ Google Sheets rate-limit optimization (Transitional only, Phase D.3)
-- ⏸️ Large-scale QB caching (Replaced by DB-centered strategy, Phase D.1)
-- ⏸️ Sheets-as-primary patterns (Replaced by DB-first, Phase D.3)
-
----
-
-## 🚀 Next Immediate Actions
-
-1. **Complete A.1**: Finish permit/inspection table migrations
-2. **Complete A.2**: Implement business ID system with sequences
-3. **Complete A.3**: Build database service layer for permits/inspections
-4. **Complete A.4**: Test migration scripts in dry-run mode
+1. **Complete Phase A.1**: Finish permit/inspection table migrations with indexes
+2. **Complete Phase A.2**: Implement business ID system with sequences and triggers
+3. **Complete Phase A.3**: Build database service layer for permits/inspections
+4. **Complete Phase A.4**: Test migration scripts in dry-run mode on staging data
 
 **Estimated time to Phase A completion**: 1-2 weeks
 
 ---
 
-## 📞 Support & Questions
+## Success Metrics
 
-For questions about this roadmap or implementation details:
-- See `docs/DEPLOYMENT_TROUBLESHOOTING.md` for infrastructure issues
+**Phase A**:
+- ✅ All tables created with proper indexes
+- ✅ Business IDs generated correctly for new records
+- ✅ Backfill script populates existing records in order
+- ✅ Migration dry-run completes without errors
+
+**Phase B**:
+- ✅ Precheck blocks invalid scheduling requests
+- ✅ AI confidence scores stored in database
+- ✅ Invoice/payment creation pushes to QuickBooks
+- ✅ `qb_invoice_id`/`qb_payment_id` persisted correctly
+
+**Phase C**:
+- ✅ Schedule items automatically created from inspections
+- ✅ Inspector can complete inspections with photos
+- ✅ No-access flow creates follow-up inspections
+- ✅ Reconciliation job detects orphaned records
+
+**Phase D**:
+- ✅ 90% reduction in QuickBooks API calls (via caching)
+- ✅ 40-50% token reduction (via truncation)
+- ✅ Sub-2s response time for all AI queries
+- ✅ Context builder reads from DB cache, not QB API
+
+**Phase E**:
+- ✅ Zero data loss during migration
+- ✅ Error rate < 0.1% post-cutover
+- ✅ Test coverage > 85%
+- ✅ Google Sheets fully decommissioned
+
+---
+
+## Support & Questions
+
+For implementation details:
 - See `docs/guides/API_DOCUMENTATION.md` for API reference
-- Check `docs/technical/` for detailed technical specs
+- See `docs/technical/POSTGRES_MIGRATION_GUIDE.md` for migration procedures
+- See `docs/guides/PERMIT_WORKFLOW.md` for business logic
+- Check `docs/DEPLOYMENT_TROUBLESHOOTING.md` for infrastructure issues
+
+**Roadmap maintained by**: Development Team  
+**Last Review**: December 10, 2025  
+**Next Review**: Weekly during Phase A-D implementation
 
