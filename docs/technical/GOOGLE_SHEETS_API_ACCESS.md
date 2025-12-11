@@ -1,7 +1,14 @@
 # Google Sheets API Direct Access Guide
 
+> **⚠️ LEGACY REFERENCE**: December 11, 2025  
+> **Status**: Google Sheets is now legacy - only used for QuickBooks OAuth tokens.  
+> **Current Data Layer**: PostgreSQL (Supabase) - See [DATABASE_SCHEMA.md](DATABASE_SCHEMA.md)  
+> **Note**: This guide remains useful for QuickBooks token storage migration and historical reference.
+
 ## Overview
 When you need to programmatically create or modify Google Sheets structure (tabs, headers, validation), you can access the Google Sheets API directly instead of using the backend's `google_service` module.
+
+**Current Use Case (Dec 2025)**: QuickBooks OAuth token storage only. All operational data (clients, projects, permits, payments) now in PostgreSQL.
 
 ## Why Direct Access?
 
