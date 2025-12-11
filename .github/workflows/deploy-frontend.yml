@@ -36,7 +36,9 @@ jobs:
           cd frontend
           npm run build
         env:
-          VITE_API_URL: https://houserenoai.onrender.com
+          VITE_API_URL: https://houserenovators-api.fly.dev
+          VITE_ENV: production
+          VITE_ENABLE_DEBUG: false
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
