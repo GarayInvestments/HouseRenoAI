@@ -203,9 +203,9 @@ async def test_all_services():
                 project_id=project.project_id,
                 client_id=client.client_id,
                 visit_type="Progress Check",
-                scheduled_time=datetime.now(timezone.utc) + timedelta(days=3),
+                scheduled_date=datetime.now(timezone.utc) + timedelta(days=3),
                 attendees=["John Smith", "Jane Doe"],
-                purpose="Review framing progress"
+                notes="Review framing progress"
             )
             await db.commit()
             
@@ -274,7 +274,7 @@ async def test_all_services():
             
             print(f"✅ Completed site visit")
             assert completed_visit.status == "Completed"
-            assert completed_visit.summary is not None
+            assert completed_visit.notes is not None
             
             # Test 6: Business ID Queries
             print("\n" + "-"*80)

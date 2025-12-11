@@ -43,7 +43,7 @@ class SiteVisitService:
         Returns:
             List of SiteVisit objects
         """
-        query = select(SiteVisit).order_by(SiteVisit.scheduled_time.desc())
+        query = select(SiteVisit).order_by(SiteVisit.scheduled_date.desc())
         
         if project_id:
             query = query.where(SiteVisit.project_id == project_id)
@@ -84,9 +84,9 @@ class SiteVisitService:
         project_id: str,
         client_id: str,
         visit_type: str,
-        scheduled_time: datetime,
+        scheduled_date: datetime,
         attendees: Optional[List[str]] = None,
-        purpose: Optional[str] = None,
+        notes: Optional[str] = None,
         extra: Optional[Dict[str, Any]] = None
     ) -> SiteVisit:
         """
@@ -97,9 +97,9 @@ class SiteVisitService:
             project_id: Project UUID
             client_id: Client UUID
             visit_type: Type of visit (e.g., "Initial Consultation", "Progress Check")
-            scheduled_time: When visit is scheduled
+            scheduled_date: When visit is scheduled
             attendees: List of attendee names
-            purpose: Purpose of visit
+            notes: Purpose/notes for visit
             extra: Additional metadata
             
         Returns:
@@ -117,13 +117,10 @@ class SiteVisitService:
             project_id=project_id,
             client_id=client_id,
             visit_type=visit_type,
-            scheduled_time=scheduled_time,
+            scheduled_date=scheduled_date,
             status="Scheduled",
             attendees=attendees or [],
-            purpose=purpose,
-            photos=[],
-            deficiencies=[],
-            follow_up_actions=[],
+            notes=notes,
             extra=extra or {}
         )
         
@@ -158,10 +155,11 @@ class SiteVisitService:
             return None
         
         visit.status = "In Progress"
-        visit.actual_start_time = actual_start_time or datetime.now(timezone.utc)
+        visit.start_time = actual_start_time or datetime.now(timezone.utc)
         
         if gps_location:
-            visit.gps_location = gps_location
+            # Convert dict to "lat,lon" string format
+            visit.gps_location = f"{gps_location['latitude']},{gps_location['longitude']}"
         
         visit.updated_at = datetime.now(timezone.utc)
         
@@ -197,8 +195,8 @@ class SiteVisitService:
             return None
         
         visit.status = "Completed"
-        visit.actual_end_time = actual_end_time or datetime.now(timezone.utc)
-        visit.summary = summary
+        visit.end_time = actual_end_time or datetime.now(timezone.utc)
+        visit.notes = summary
         
         if deficiencies:
             visit.deficiencies = deficiencies
@@ -236,15 +234,16 @@ class SiteVisitService:
         if not visit:
             return None
         
-        if not visit.photos:
-            visit.photos = []
+        # JSONB field - ensure it's an array
+        current_photos = visit.photos if visit.photos and isinstance(visit.photos, list) else []
         
         # Add timestamp to photos if not present
         for photo in photos:
             if "timestamp" not in photo:
                 photo["timestamp"] = datetime.now(timezone.utc).isoformat()
         
-        visit.photos.extend(photos)
+        # Update JSONB field with combined array
+        visit.photos = current_photos + photos
         visit.updated_at = datetime.now(timezone.utc)
         
         await db.flush()
@@ -279,8 +278,8 @@ class SiteVisitService:
         if not visit:
             return None
         
-        if not visit.follow_up_actions:
-            visit.follow_up_actions = []
+        # JSONB field - ensure it's an array
+        current_actions = visit.follow_up_actions if visit.follow_up_actions and isinstance(visit.follow_up_actions, list) else []
         
         # Add creation timestamp and default status to actions
         for action in actions:
@@ -289,7 +288,8 @@ class SiteVisitService:
             if "status" not in action:
                 action["status"] = "pending"
         
-        visit.follow_up_actions.extend(actions)
+        # Update JSONB field with combined array
+        visit.follow_up_actions = current_actions + actions
         visit.updated_at = datetime.now(timezone.utc)
         
         await db.flush()

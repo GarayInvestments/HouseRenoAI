@@ -281,7 +281,11 @@ class Invoice(Base):
     subtotal: Mapped[float | None] = mapped_column(Numeric(12, 2))
     tax_amount: Mapped[float | None] = mapped_column(Numeric(12, 2))
     total_amount: Mapped[float | None] = mapped_column(Numeric(12, 2))
-    balance: Mapped[float | None] = mapped_column(Numeric(12, 2))  # Outstanding balance
+    balance: Mapped[float | None] = mapped_column(Numeric(12, 2))  # Outstanding balance (legacy)
+    
+    # Payment tracking (added in migration 1792b711773f)
+    amount_paid: Mapped[float | None] = mapped_column(Numeric(12, 2), server_default=text("0"))  # Total payments received
+    balance_due: Mapped[float | None] = mapped_column(Numeric(12, 2))  # Calculated: total_amount - amount_paid
     
     # Status
     status: Mapped[str | None] = mapped_column(String(50), index=True)  # Draft, Sent, Paid, Overdue, Cancelled

@@ -1,0 +1,188 @@
+                                 Table "public.permits"
+      Column       |           Type           | Collation | Nullable |      Default      
+-------------------+--------------------------+-----------+----------+-------------------
+ permit_id         | uuid                     |           | not null | gen_random_uuid()
+ project_id        | uuid                     |           |          | 
+ client_id         | uuid                     |           |          | 
+ permit_number     | character varying(100)   |           |          | 
+ permit_type       | character varying(100)   |           |          | 
+ status            | character varying(50)    |           |          | 
+ application_date  | timestamp with time zone |           |          | 
+ approval_date     | timestamp with time zone |           |          | 
+ expiration_date   | timestamp with time zone |           |          | 
+ issuing_authority | character varying(255)   |           |          | 
+ inspector_name    | character varying(255)   |           |          | 
+ notes             | text                     |           |          | 
+ extra             | jsonb                    |           |          | 
+ created_at        | timestamp with time zone |           | not null | CURRENT_TIMESTAMP
+ updated_at        | timestamp with time zone |           | not null | CURRENT_TIMESTAMP
+ business_id       | character varying(20)    |           |          | 
+ status_history    | jsonb                    |           |          | 
+ approved_by       | character varying(255)   |           |          | 
+ approved_at       | timestamp with time zone |           |          | 
+Indexes:
+    "permits_pkey" PRIMARY KEY, btree (permit_id)
+    "ix_permits_business_id" UNIQUE, btree (business_id)
+    "ix_permits_client_id" btree (client_id)
+    "ix_permits_extra_gin" gin (extra)
+    "ix_permits_permit_number" UNIQUE, btree (permit_number)
+    "ix_permits_project_id" btree (project_id)
+    "ix_permits_status" btree (status)
+Triggers:
+    permit_business_id_trigger BEFORE INSERT ON permits FOR EACH ROW EXECUTE FUNCTION generate_permit_business_id()
+    trigger_set_permit_business_id BEFORE INSERT ON permits FOR EACH ROW EXECUTE FUNCTION set_permit_business_id()
+
+                              Table "public.inspections"
+     Column      |           Type           | Collation | Nullable |      Default      
+-----------------+--------------------------+-----------+----------+-------------------
+ inspection_id   | uuid                     |           | not null | gen_random_uuid()
+ business_id     | character varying(20)    |           |          | 
+ permit_id       | uuid                     |           | not null | 
+ project_id      | uuid                     |           | not null | 
+ inspection_type | character varying(100)   |           |          | 
+ status          | character varying(50)    |           |          | 
+ scheduled_date  | timestamp with time zone |           |          | 
+ completed_date  | timestamp with time zone |           |          | 
+ inspector       | character varying(255)   |           |          | 
+ assigned_to     | uuid                     |           |          | 
+ result          | character varying(50)    |           |          | 
+ notes           | text                     |           |          | 
+ photos          | jsonb                    |           |          | 
+ deficiencies    | jsonb                    |           |          | 
+ extra           | jsonb                    |           |          | 
+ created_at      | timestamp with time zone |           | not null | CURRENT_TIMESTAMP
+ updated_at      | timestamp with time zone |           | not null | CURRENT_TIMESTAMP
+Indexes:
+    "inspections_pkey" PRIMARY KEY, btree (inspection_id)
+    "ix_inspections_business_id" UNIQUE, btree (business_id)
+    "ix_inspections_deficiencies_gin" gin (deficiencies)
+    "ix_inspections_extra_gin" gin (extra)
+    "ix_inspections_inspection_type" btree (inspection_type)
+    "ix_inspections_permit_id" btree (permit_id)
+    "ix_inspections_photos_gin" gin (photos)
+    "ix_inspections_project_id" btree (project_id)
+    "ix_inspections_scheduled_date" btree (scheduled_date)
+    "ix_inspections_status" btree (status)
+Triggers:
+    inspection_business_id_trigger BEFORE INSERT ON inspections FOR EACH ROW EXECUTE FUNCTION generate_inspection_business_id()
+
+                                 Table "public.invoices"
+      Column       |           Type           | Collation | Nullable |      Default      
+-------------------+--------------------------+-----------+----------+-------------------
+ invoice_id        | uuid                     |           | not null | gen_random_uuid()
+ business_id       | character varying(20)    |           |          | 
+ project_id        | uuid                     |           | not null | 
+ client_id         | uuid                     |           |          | 
+ qb_invoice_id     | character varying(50)    |           |          | 
+ invoice_number    | character varying(50)    |           |          | 
+ invoice_date      | timestamp with time zone |           |          | 
+ due_date          | timestamp with time zone |           |          | 
+ subtotal          | numeric(12,2)            |           |          | 
+ tax_amount        | numeric(12,2)            |           |          | 
+ total_amount      | numeric(12,2)            |           |          | 
+ balance           | numeric(12,2)            |           |          | 
+ status            | character varying(50)    |           |          | 
+ line_items        | jsonb                    |           |          | 
+ sync_status       | character varying(50)    |           |          | 
+ sync_error        | text                     |           |          | 
+ last_sync_attempt | timestamp with time zone |           |          | 
+ notes             | text                     |           |          | 
+ extra             | jsonb                    |           |          | 
+ created_at        | timestamp with time zone |           | not null | CURRENT_TIMESTAMP
+ updated_at        | timestamp with time zone |           | not null | CURRENT_TIMESTAMP
+ amount_paid       | numeric(12,2)            |           |          | '0'::numeric
+ balance_due       | numeric(12,2)            |           |          | 
+Indexes:
+    "invoices_pkey" PRIMARY KEY, btree (invoice_id)
+    "ix_invoices_business_id" UNIQUE, btree (business_id)
+    "ix_invoices_client_id" btree (client_id)
+    "ix_invoices_due_date" btree (due_date)
+    "ix_invoices_extra_gin" gin (extra)
+    "ix_invoices_invoice_date" btree (invoice_date)
+    "ix_invoices_invoice_number" UNIQUE, btree (invoice_number)
+    "ix_invoices_line_items_gin" gin (line_items)
+    "ix_invoices_project_id" btree (project_id)
+    "ix_invoices_qb_invoice_id" UNIQUE, btree (qb_invoice_id)
+    "ix_invoices_status" btree (status)
+    "ix_invoices_sync_status" btree (sync_status)
+Triggers:
+    invoice_business_id_trigger BEFORE INSERT ON invoices FOR EACH ROW EXECUTE FUNCTION generate_invoice_business_id()
+
+                                 Table "public.payments"
+      Column       |           Type           | Collation | Nullable |      Default      
+-------------------+--------------------------+-----------+----------+-------------------
+ payment_id        | uuid                     |           | not null | gen_random_uuid()
+ client_id         | uuid                     |           |          | 
+ project_id        | uuid                     |           |          | 
+ amount            | numeric(12,2)            |           |          | 
+ payment_date      | timestamp with time zone |           |          | 
+ payment_method    | character varying(50)    |           |          | 
+ status            | character varying(50)    |           |          | 
+ check_number      | character varying(50)    |           |          | 
+ transaction_id    | character varying(100)   |           |          | 
+ qb_payment_id     | character varying(50)    |           |          | 
+ notes             | text                     |           |          | 
+ extra             | jsonb                    |           |          | 
+ created_at        | timestamp with time zone |           | not null | CURRENT_TIMESTAMP
+ updated_at        | timestamp with time zone |           | not null | CURRENT_TIMESTAMP
+ business_id       | character varying(20)    |           |          | 
+ invoice_id        | uuid                     |           |          | 
+ reference_number  | character varying(50)    |           |          | 
+ sync_status       | character varying(50)    |           |          | 
+ sync_error        | text                     |           |          | 
+ last_sync_attempt | timestamp with time zone |           |          | 
+Indexes:
+    "payments_pkey" PRIMARY KEY, btree (payment_id)
+    "ix_payments_business_id" UNIQUE, btree (business_id)
+    "ix_payments_client_id" btree (client_id)
+    "ix_payments_extra_gin" gin (extra)
+    "ix_payments_invoice_id" btree (invoice_id)
+    "ix_payments_payment_date" btree (payment_date)
+    "ix_payments_project_id" btree (project_id)
+    "ix_payments_qb_payment_id" UNIQUE, btree (qb_payment_id)
+    "ix_payments_status" btree (status)
+    "ix_payments_sync_status" btree (sync_status)
+Triggers:
+    payment_business_id_trigger BEFORE INSERT ON payments FOR EACH ROW EXECUTE FUNCTION generate_payment_business_id()
+    trigger_set_payment_business_id BEFORE INSERT ON payments FOR EACH ROW EXECUTE FUNCTION set_payment_business_id()
+
+                               Table "public.site_visits"
+      Column       |           Type           | Collation | Nullable |      Default      
+-------------------+--------------------------+-----------+----------+-------------------
+ visit_id          | uuid                     |           | not null | gen_random_uuid()
+ business_id       | character varying(20)    |           |          | 
+ project_id        | uuid                     |           | not null | 
+ client_id         | uuid                     |           |          | 
+ visit_type        | character varying(100)   |           |          | 
+ status            | character varying(50)    |           |          | 
+ scheduled_date    | timestamp with time zone |           |          | 
+ start_time        | timestamp with time zone |           |          | 
+ end_time          | timestamp with time zone |           |          | 
+ attendees         | jsonb                    |           |          | 
+ gps_location      | character varying(100)   |           |          | 
+ photos            | jsonb                    |           |          | 
+ notes             | text                     |           |          | 
+ weather           | character varying(100)   |           |          | 
+ deficiencies      | jsonb                    |           |          | 
+ follow_up_actions | jsonb                    |           |          | 
+ created_by        | uuid                     |           |          | 
+ assigned_to       | uuid                     |           |          | 
+ extra             | jsonb                    |           |          | 
+ created_at        | timestamp with time zone |           | not null | CURRENT_TIMESTAMP
+ updated_at        | timestamp with time zone |           | not null | CURRENT_TIMESTAMP
+Indexes:
+    "site_visits_pkey" PRIMARY KEY, btree (visit_id)
+    "ix_site_visits_attendees_gin" gin (attendees)
+    "ix_site_visits_business_id" UNIQUE, btree (business_id)
+    "ix_site_visits_client_id" btree (client_id)
+    "ix_site_visits_deficiencies_gin" gin (deficiencies)
+    "ix_site_visits_extra_gin" gin (extra)
+    "ix_site_visits_follow_up_actions_gin" gin (follow_up_actions)
+    "ix_site_visits_photos_gin" gin (photos)
+    "ix_site_visits_project_id" btree (project_id)
+    "ix_site_visits_scheduled_date" btree (scheduled_date)
+    "ix_site_visits_status" btree (status)
+    "ix_site_visits_visit_type" btree (visit_type)
+Triggers:
+    site_visit_business_id_trigger BEFORE INSERT ON site_visits FOR EACH ROW EXECUTE FUNCTION generate_site_visit_business_id()
+
