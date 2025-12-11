@@ -189,9 +189,125 @@ class Permit(Base):
     )
 
 
+class Inspection(Base):
+    """
+    Building inspection tracking - first-class schedulable objects linked to permits and projects.
+    Part of Buildertrend-influenced architecture for permit workflow.
+    """
+    __tablename__ = "inspections"
+    
+    # Primary key - UUID for unique identification
+    inspection_id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, server_default=text("gen_random_uuid()"))
+    
+    # Business ID - human-friendly immutable ID (INS-00001, INS-00002, etc.)
+    business_id: Mapped[str | None] = mapped_column(String(20), unique=True, index=True)
+    
+    # Foreign keys
+    permit_id: Mapped[str] = mapped_column(UUID(as_uuid=False), index=True, nullable=False)
+    project_id: Mapped[str] = mapped_column(UUID(as_uuid=False), index=True, nullable=False)  # Denormalized for query performance
+    
+    # Inspection details
+    inspection_type: Mapped[str | None] = mapped_column(String(100), index=True)  # Footing, Foundation, Framing, Final, etc.
+    status: Mapped[str | None] = mapped_column(String(50), index=True)  # Scheduled, Accepted, In-Progress, Completed, Failed, Cancelled
+    
+    # Scheduling
+    scheduled_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+    completed_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    
+    # Inspector assignment
+    inspector: Mapped[str | None] = mapped_column(String(255))  # Inspector name or user_id
+    assigned_to: Mapped[str | None] = mapped_column(UUID(as_uuid=False))  # FK to users table
+    
+    # Results
+    result: Mapped[str | None] = mapped_column(String(50))  # Pass, Fail, Partial, No-Access
+    notes: Mapped[str | None] = mapped_column(Text)
+    
+    # JSONB fields for flexibility
+    photos: Mapped[Dict[str, Any] | None] = mapped_column(JSONB)  # Array of {url, gps, timestamp, uploaded_by}
+    deficiencies: Mapped[Dict[str, Any] | None] = mapped_column(JSONB)  # Array of {description, severity, photo_refs, status}
+    extra: Mapped[Dict[str, Any] | None] = mapped_column(JSONB)  # Additional flexible fields
+    
+    # Audit
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), 
+        server_default=text("CURRENT_TIMESTAMP")
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=text("CURRENT_TIMESTAMP"),
+        onupdate=datetime.utcnow
+    )
+    
+    __table_args__ = (
+        Index('ix_inspections_photos_gin', 'photos', postgresql_using='gin'),
+        Index('ix_inspections_deficiencies_gin', 'deficiencies', postgresql_using='gin'),
+        Index('ix_inspections_extra_gin', 'extra', postgresql_using='gin'),
+    )
+
+
+class Invoice(Base):
+    """
+    Invoice tracking with QuickBooks sync - supports project billing and permit fees.
+    Part of financial workflow for construction projects.
+    """
+    __tablename__ = "invoices"
+    
+    # Primary key - UUID for unique identification
+    invoice_id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, server_default=text("gen_random_uuid()"))
+    
+    # Business ID - human-friendly immutable ID (INV-00001, INV-00002, etc.)
+    business_id: Mapped[str | None] = mapped_column(String(20), unique=True, index=True)
+    
+    # Foreign keys
+    project_id: Mapped[str] = mapped_column(UUID(as_uuid=False), index=True, nullable=False)
+    client_id: Mapped[str | None] = mapped_column(UUID(as_uuid=False), index=True)  # Denormalized
+    
+    # QuickBooks integration
+    qb_invoice_id: Mapped[str | None] = mapped_column(String(50), unique=True, index=True)
+    
+    # Invoice details
+    invoice_number: Mapped[str | None] = mapped_column(String(50), unique=True, index=True)
+    invoice_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+    due_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+    
+    # Amounts
+    subtotal: Mapped[float | None] = mapped_column(Numeric(12, 2))
+    tax_amount: Mapped[float | None] = mapped_column(Numeric(12, 2))
+    total_amount: Mapped[float | None] = mapped_column(Numeric(12, 2))
+    balance: Mapped[float | None] = mapped_column(Numeric(12, 2))  # Outstanding balance
+    
+    # Status
+    status: Mapped[str | None] = mapped_column(String(50), index=True)  # Draft, Sent, Paid, Overdue, Cancelled
+    
+    # Line items and details stored as JSONB
+    line_items: Mapped[Dict[str, Any] | None] = mapped_column(JSONB)  # [{description, quantity, rate, amount, item_id}]
+    
+    # QuickBooks sync tracking
+    sync_status: Mapped[str | None] = mapped_column(String(50), index=True)  # pending, synced, failed, conflict
+    sync_error: Mapped[str | None] = mapped_column(Text)
+    last_sync_attempt: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    
+    # Notes
+    notes: Mapped[str | None] = mapped_column(Text)
+    
+    # Dynamic fields
+    extra: Mapped[Dict[str, Any] | None] = mapped_column(JSONB)
+    
+    # Audit timestamps
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"), onupdate=datetime.utcnow)
+    
+    # GIN indexes for JSONB fields
+    __table_args__ = (
+        Index('ix_invoices_line_items_gin', 'line_items', postgresql_using='gin'),
+        Index('ix_invoices_extra_gin', 'extra', postgresql_using='gin'),
+    )
+
+
 class Payment(Base):
     """
-    Payment tracking from 'Payments' sheet.
+    Payment tracking with QuickBooks sync - supports invoice payments and general receipts.
+    Part of financial workflow for construction projects.
     """
     __tablename__ = "payments"
     
@@ -202,22 +318,28 @@ class Payment(Base):
     business_id: Mapped[str | None] = mapped_column(String(20), unique=True, index=True)
     
     # Foreign keys
+    invoice_id: Mapped[str | None] = mapped_column(UUID(as_uuid=False), index=True)  # Link to invoice
     client_id: Mapped[str | None] = mapped_column(UUID(as_uuid=False), index=True)
     project_id: Mapped[str | None] = mapped_column(UUID(as_uuid=False), index=True)
+    
+    # QuickBooks integration
+    qb_payment_id: Mapped[str | None] = mapped_column(String(50), unique=True, index=True)
     
     # Payment details
     amount: Mapped[float | None] = mapped_column(Numeric(12, 2))
     payment_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
-    payment_method: Mapped[str | None] = mapped_column(String(50))  # Check, Credit Card, Wire
-    status: Mapped[str | None] = mapped_column(String(50), index=True)  # Pending, Cleared, Failed
+    payment_method: Mapped[str | None] = mapped_column(String(50))  # Check, Credit Card, Wire, Cash, ACH
+    status: Mapped[str | None] = mapped_column(String(50), index=True)  # Pending, Cleared, Failed, Refunded
     
     # References
+    reference_number: Mapped[str | None] = mapped_column(String(50))  # Check number or transaction ID
     check_number: Mapped[str | None] = mapped_column(String(50))
     transaction_id: Mapped[str | None] = mapped_column(String(100))
     
-    # QuickBooks
-    qb_payment_id: Mapped[str | None] = mapped_column(String(50), index=True)
-    qb_sync_status: Mapped[str | None] = mapped_column(String(50))
+    # QuickBooks sync tracking
+    sync_status: Mapped[str | None] = mapped_column(String(50), index=True)  # pending, synced, failed, conflict
+    sync_error: Mapped[str | None] = mapped_column(Text)
+    last_sync_attempt: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     
     # Notes
     notes: Mapped[str | None] = mapped_column(Text)
@@ -238,6 +360,75 @@ class Payment(Base):
     
     __table_args__ = (
         Index('ix_payments_extra_gin', 'extra', postgresql_using='gin'),
+    )
+
+
+class SiteVisit(Base):
+    """
+    Site visit tracking - field visits for pre-construction, progress checks, walkthroughs, and punch lists.
+    Supports photo upload, deficiency tracking, and follow-up action creation.
+    """
+    __tablename__ = "site_visits"
+    
+    # Primary key - UUID for unique identification
+    visit_id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, server_default=text("gen_random_uuid()"))
+    
+    # Business ID - human-friendly immutable ID (SV-00001, SV-00002, etc.)
+    business_id: Mapped[str | None] = mapped_column(String(20), unique=True, index=True)
+    
+    # Foreign keys
+    project_id: Mapped[str] = mapped_column(UUID(as_uuid=False), index=True, nullable=False)
+    client_id: Mapped[str | None] = mapped_column(UUID(as_uuid=False), index=True)  # Denormalized
+    
+    # Visit details
+    visit_type: Mapped[str | None] = mapped_column(String(100), index=True)  # Pre-Construction, Progress, Final Walkthrough, Punch List, Client Meeting
+    status: Mapped[str | None] = mapped_column(String(50), index=True)  # Scheduled, In-Progress, Completed, Cancelled
+    
+    # Scheduling
+    scheduled_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+    start_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))  # Actual check-in time
+    end_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))  # Actual check-out time
+    
+    # Attendees (JSONB array of objects)
+    attendees: Mapped[Dict[str, Any] | None] = mapped_column(JSONB)  # [{name, role, email, phone}]
+    
+    # Location
+    gps_location: Mapped[str | None] = mapped_column(String(100))  # lat,lon format
+    
+    # Photos (JSONB array of objects)
+    photos: Mapped[Dict[str, Any] | None] = mapped_column(JSONB)  # [{url, gps, timestamp, uploaded_by, caption}]
+    
+    # Notes and observations
+    notes: Mapped[str | None] = mapped_column(Text)
+    weather: Mapped[str | None] = mapped_column(String(100))  # Weather conditions during visit
+    
+    # Deficiencies found (JSONB array of objects)
+    deficiencies: Mapped[Dict[str, Any] | None] = mapped_column(JSONB)  # [{description, severity, location, photo_refs, status}]
+    
+    # Follow-up actions (JSONB array of objects)
+    follow_up_actions: Mapped[Dict[str, Any] | None] = mapped_column(JSONB)  # [{type, status, created_entity_id, description}]
+    # type: 'inspection', 'change_order', 'punchlist'
+    # status: 'pending', 'created', 'completed'
+    # created_entity_id: UUID of created inspection/change_order/punchlist
+    
+    # Assignment
+    created_by: Mapped[str | None] = mapped_column(UUID(as_uuid=False))  # FK to users
+    assigned_to: Mapped[str | None] = mapped_column(UUID(as_uuid=False))  # FK to users
+    
+    # Dynamic fields
+    extra: Mapped[Dict[str, Any] | None] = mapped_column(JSONB)
+    
+    # Audit timestamps
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"), onupdate=datetime.utcnow)
+    
+    # GIN indexes for JSONB fields
+    __table_args__ = (
+        Index('ix_site_visits_attendees_gin', 'attendees', postgresql_using='gin'),
+        Index('ix_site_visits_photos_gin', 'photos', postgresql_using='gin'),
+        Index('ix_site_visits_deficiencies_gin', 'deficiencies', postgresql_using='gin'),
+        Index('ix_site_visits_follow_up_actions_gin', 'follow_up_actions', postgresql_using='gin'),
+        Index('ix_site_visits_extra_gin', 'extra', postgresql_using='gin'),
     )
 
 
