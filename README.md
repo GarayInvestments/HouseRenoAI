@@ -2,23 +2,25 @@
 
 ![FastAPI](https://img.shields.io/badge/Backend-FastAPI-blue)
 ![React](https://img.shields.io/badge/Frontend-React_PWA-cyan)
-![Google Sheets](https://img.shields.io/badge/Data-Google_Sheets-green)
+![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-blue)
+![Supabase](https://img.shields.io/badge/Auth-Supabase-green)
 ![OpenAI](https://img.shields.io/badge/AI-GPT--4o-purple)
 ![Multi-Cloud](https://img.shields.io/badge/Platform-Multi--Cloud-orange)
 
 > **Complete AI-powered permit management and project tracking solution for construction professionals.**
 
 ## ✅ **STATUS: PRODUCTION READY & FULLY OPERATIONAL**
-- 🚀 **Live Backend**: https://houserenoai.onrender.com *(Healthy - All systems operational)*
+- 🚀 **Live Backend**: https://houserenovators-api.fly.dev *(Fly.io - All systems operational)*
 - 📱 **Frontend PWA**: https://portal.houserenovatorsllc.com *(Accessible and responsive)*
 - 🤖 **AI Integration**: OpenAI GPT-4o with smart context loading *(Zero hallucinations)*
-- 📊 **Data Source**: Google Sheets real-time integration *(Active permit/project data)*
+- 💾 **Database**: PostgreSQL (Supabase) with SQLAlchemy async ORM *(8 clients, 13 projects, 9 permits, 1 payment)*
+- 🔐 **Authentication**: Supabase Auth with JWT tokens *(Role-based access control)*
 - 💼 **QuickBooks**: OAuth2 production integration *(24 customers, 53+ invoices)*
 - 💰 **Payments**: Full tracking with QB sync *(Nov 10, 2025)*
--  **DevOps**: Complete automation toolkit *(Validated and operational)*
-- 📈 **Performance**: 19.3% faster overall, 80% fewer API calls for simple queries *(Nov 10, 2025)*
+- 🚀 **DevOps**: Complete automation toolkit *(Validated and operational)*
+- 📈 **Performance**: Database migration complete - All operations async *(Dec 11, 2025)*
 - 🧪 **Testing**: Comprehensive test suite (11/12 tests passed - 91.7%)
-- 📚 **Documentation**: Organized structure (28 docs in 6 categories + roadmap)
+- 📚 **Documentation**: Organized structure (61 docs across repository - audit in progress)
 - 🗺️ **Roadmap**: Complete Phase 3-5 development plan *(NEW - Nov 12, 2025)*
 
 ---
@@ -47,11 +49,12 @@ HouseRenovators-api/
 │   │   └── quickbooks.py      # QB OAuth2, customers, invoices, sync
 │   ├── 📂 services/            # Core Business Logic
 │   │   ├── auth_service.py    # JWT + bcrypt authentication
-│   │   ├── google_service.py  # Google Sheets integration (async)
+│   │   ├── db_service.py      # PostgreSQL database operations (async SQLAlchemy)
+│   │   ├── google_service.py  # Google Sheets integration (LEGACY - QB tokens only)
 │   │   ├── openai_service.py  # OpenAI GPT-4o with function calling
 │   │   └── quickbooks_service.py  # QB OAuth2, CRUD operations, sync
 │   └── 📂 utils/               # Utility Functions
-│       └── context_builder.py # Smart context loading (80% API reduction)
+│       └── context_builder.py # Smart context loading from database
 ├── 📂 frontend/                # React PWA Frontend Application
 │   ├── src/
 │   │   ├── components/        # Reusable UI components
