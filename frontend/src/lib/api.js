@@ -12,6 +12,8 @@ class ApiService {
 
   async request(endpoint, options = {}) {
     const url = `${this.baseUrl}${endpoint}`;
+    console.log('[API Request] Full URL:', url);
+    console.log('[API Request] Base URL:', this.baseUrl);
     
     // Get token from localStorage
     const token = localStorage.getItem('token');
