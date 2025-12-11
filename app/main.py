@@ -148,14 +148,15 @@ async def startup_event():
 # Add CORS middleware with permissive settings for Cloudflare Pages
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"https://.*\.house-renovators-ai-portal\.pages\.dev",
+    allow_origin_regex=r"https://.*\.(house-renovators-ai-portal|houserenoai)\.pages\.dev",
     allow_origins=[
         "https://portal.houserenovatorsllc.com",  # Production frontend
         "http://localhost:3000",  # Local dev
         "http://localhost:5173",  # Vite dev server (primary)
         "http://localhost:5174",  # Vite dev server (alternate port)
         "https://house-renovators-pwa.pages.dev",  # Cloudflare preview
-        "https://house-renovators-ai-portal.pages.dev",  # Cloudflare Pages domain
+        "https://house-renovators-ai-portal.pages.dev",  # Cloudflare Pages domain (old)
+        "https://houserenoai.pages.dev",  # Cloudflare Pages domain (current)
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],

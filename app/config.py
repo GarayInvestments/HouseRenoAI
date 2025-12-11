@@ -41,10 +41,11 @@ class Settings:
             "http://localhost:3000",
             "http://localhost:5173",  # Vite dev server
             "https://house-renovators-pwa.pages.dev",  # Cloudflare Pages
+            "https://houserenoai.pages.dev",  # Cloudflare Pages (current)
         ]
         
         # Regex pattern for Cloudflare Pages
-        self.CLOUDFLARE_PAGES_PATTERN: str = r"https://.*\.house-renovators-ai-portal\.pages\.dev"
+        self.CLOUDFLARE_PAGES_PATTERN: str = r"https://.*\.(house-renovators-ai-portal|houserenoai)\.pages\.dev"
     
     # Dynamic CORS check for Cloudflare Pages deployments
     @staticmethod
@@ -55,14 +56,15 @@ class Settings:
             "http://localhost:3000",
             "http://localhost:5173",
             "https://house-renovators-pwa.pages.dev",
-            "https://house-renovators-ai-portal.pages.dev",  # Main Cloudflare Pages domain
+            "https://house-renovators-ai-portal.pages.dev",  # Old Cloudflare Pages domain
+            "https://houserenoai.pages.dev",  # Current Cloudflare Pages domain
         ]
         
         if origin in static_origins:
             return True
             
-        # Allow any Cloudflare Pages deployment of our project (subdomains)
-        if origin and origin.endswith(".house-renovators-ai-portal.pages.dev"):
+        # Allow any Cloudflare Pages deployment of our projects (subdomains)
+        if origin and (origin.endswith(".house-renovators-ai-portal.pages.dev") or origin.endswith(".houserenoai.pages.dev")):
             return True
             
         return False
