@@ -13,7 +13,7 @@ from uuid import UUID
 from datetime import datetime, timezone
 import logging
 
-from app.db.database import get_db
+from app.db.session import get_db
 from app.db.models import Permit
 from app.routes.auth import get_current_user
 from app.services.permit_service import PermitService
