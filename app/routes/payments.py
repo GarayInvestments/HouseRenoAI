@@ -3,19 +3,16 @@ from typing import List, Dict, Any, Optional
 import logging
 import uuid
 from datetime import datetime
+from sqlalchemy.ext.asyncio import AsyncSession
 
-import app.services.google_service as google_service_module
 import app.services.quickbooks_service as quickbooks_service_module
-from app.routes.auth import get_current_user
+from app.routes.auth_supabase import get_current_user
+from app.services.db_service import db_service
+from app.db.session import get_db
+from app.db.models import User
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
-
-def get_google_service():
-    """Helper function to get Google service with proper error handling"""
-    if not google_service_module.google_service:
-        raise HTTPException(status_code=503, detail="Google service not initialized")
-    return google_service_module.google_service
 
 def get_quickbooks_service():
     """Helper function to get QuickBooks service with proper error handling"""
@@ -24,16 +21,15 @@ def get_quickbooks_service():
     return quickbooks_service_module.quickbooks_service
 
 @router.get("/")
-async def get_all_payments(current_user: dict = Depends(get_current_user)):
+async def get_all_payments(current_user: User = Depends(get_current_user)):
     """
-    Get all payments from Google Sheets.
+    Get all payments from database.
     
     Returns list of payment records with client and invoice information.
     """
     try:
-        google_service = get_google_service()
-        payments = await google_service.get_sheet_data('Payments')
-        logger.info(f"Retrieved {len(payments)} payments for user {current_user.get('email')}")
+        payments = await db_service.get_payments_data()
+        logger.info(f"Retrieved {len(payments)} payments for user {current_user.email}")
         return {
             "status": "success",
             "count": len(payments),
@@ -44,25 +40,24 @@ async def get_all_payments(current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=500, detail=f"Failed to retrieve payments: {str(e)}")
 
 @router.get("/{payment_id}")
-async def get_payment(payment_id: str, current_user: dict = Depends(get_current_user)):
+async def get_payment(payment_id: str, current_user: User = Depends(get_current_user)):
     """
-    Get a specific payment by Payment ID.
+    Get a specific payment by Payment ID (UUID or business ID like PAY-00001).
     
     Args:
-        payment_id: The Payment ID to retrieve
+        payment_id: The Payment ID to retrieve (UUID or business ID)
     
     Returns:
         Payment record with details
     """
     try:
-        google_service = get_google_service()
-        payments = await google_service.get_sheet_data('Payments')
+        # Try business_id first (PAY-00001 format)
+        payment = await db_service.get_payment_by_business_id(payment_id)
         
-        payment = next((p for p in payments if p.get('Payment ID') == payment_id), None)
         if not payment:
             raise HTTPException(status_code=404, detail=f"Payment {payment_id} not found")
         
-        logger.info(f"Retrieved payment {payment_id} for user {current_user.get('email')}")
+        logger.info(f"Retrieved payment {payment_id} for user {current_user.email}")
         return {
             "status": "success",
             "payment": payment
@@ -74,7 +69,7 @@ async def get_payment(payment_id: str, current_user: dict = Depends(get_current_
         raise HTTPException(status_code=500, detail=f"Failed to retrieve payment: {str(e)}")
 
 @router.get("/client/{client_id}")
-async def get_client_payments(client_id: str, current_user: dict = Depends(get_current_user)):
+async def get_client_payments(client_id: str, current_user: User = Depends(get_current_user)):
     """
     Get all payments for a specific client.
     
@@ -85,10 +80,8 @@ async def get_client_payments(client_id: str, current_user: dict = Depends(get_c
         List of payment records for the client
     """
     try:
-        google_service = get_google_service()
-        payments = await google_service.get_sheet_data('Payments')
-        
-        client_payments = [p for p in payments if p.get('Client ID') == client_id]
+        all_payments = await db_service.get_payments_data()
+        client_payments = [p for p in all_payments if p.get('Client ID') == client_id]
         
         logger.info(f"Retrieved {len(client_payments)} payments for client {client_id}")
         return {
@@ -104,10 +97,11 @@ async def get_client_payments(client_id: str, current_user: dict = Depends(get_c
 @router.post("/sync")
 async def sync_quickbooks_payments(
     days_back: int = Query(default=90, description="Number of days back to sync"),
-    current_user: dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
 ):
     """
-    Sync QuickBooks payments to Google Sheets.
+    Sync QuickBooks payments to database.
     
     Args:
         days_back: How many days back to sync payments (default 90)
@@ -116,16 +110,19 @@ async def sync_quickbooks_payments(
         Sync summary with counts of new/updated payments
     """
     try:
-        google_service = get_google_service()
         qb_service = get_quickbooks_service()
         
-        logger.info(f"Starting payment sync (days_back={days_back}) by user {current_user.get('email')}")
+        logger.info(f"Starting payment sync (days_back={days_back}) by user {current_user.email}")
         
-        result = await qb_service.sync_payments_to_sheets(google_service, days_back)
+        # TODO: Implement sync_payments_to_database method in quickbooks_service
+        # For now, return not implemented
+        raise HTTPException(
+            status_code=501,
+            detail="QuickBooks payment sync to database not yet implemented. Use manual payment recording."
+        )
         
-        logger.info(f"Payment sync complete: {result}")
-        return result
-        
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Payment sync failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Payment sync failed: {str(e)}")
@@ -133,7 +130,8 @@ async def sync_quickbooks_payments(
 @router.post("/")
 async def record_payment(
     payment_data: Dict[str, Any],
-    current_user: dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Record a manual payment (non-QuickBooks).
@@ -143,11 +141,12 @@ async def record_payment(
             "client_id": "abc12345",
             "amount": 4000,
             "payment_date": "2025-11-08",  # optional, defaults to today
-            "payment_method": "Zelle",     # required
-            "status": "Completed",         # optional, defaults to "Completed"
-            "invoice_id": "INV-001",       # optional
-            "project_id": "P-001",         # optional
-            "transaction_id": "zelle-123", # optional
+            "payment_method": "Check",     # required: Check, Credit Card, Wire, Cash, ACH
+            "status": "Cleared",           # optional, defaults to "Cleared"
+            "invoice_id": "invoice-uuid",  # optional
+            "project_id": "project-uuid",  # optional
+            "check_number": "1234",        # optional
+            "transaction_id": "txn-123",   # optional
             "notes": "Payment received"    # optional
         }
     
@@ -155,8 +154,6 @@ async def record_payment(
         Created payment record
     """
     try:
-        google_service = get_google_service()
-        
         # Validate required fields
         if not payment_data.get('client_id'):
             raise HTTPException(status_code=400, detail="client_id is required")
@@ -165,44 +162,38 @@ async def record_payment(
         if not payment_data.get('payment_method'):
             raise HTTPException(status_code=400, detail="payment_method is required")
         
-        # Generate Payment ID
-        payment_id = f"PAY-{uuid.uuid4().hex[:8]}"
-        
-        # Build payment record
-        payment = {
-            'Payment ID': payment_id,
-            'Invoice ID': payment_data.get('invoice_id', ''),
-            'Project ID': payment_data.get('project_id', ''),
-            'Client ID': payment_data.get('client_id', ''),
-            'Amount': payment_data.get('amount', 0),
-            'Payment Date': payment_data.get('payment_date', datetime.now().strftime('%Y-%m-%d')),
-            'Payment Method': payment_data.get('payment_method', 'Other'),
-            'Status': payment_data.get('status', 'Completed'),
-            'QB Payment ID': '',  # Manual entry - no QB ID
-            'Transaction ID': payment_data.get('transaction_id', ''),
-            'Notes': payment_data.get('notes', f'Manual entry by {current_user.get("email")}')
-        }
-        
         # Validate payment method
-        valid_methods = ['Zelle', 'Check', 'Cash', 'Credit Card', 'ACH', 'Other']
-        if payment['Payment Method'] not in valid_methods:
+        valid_methods = ['Check', 'Credit Card', 'Wire', 'Cash', 'ACH']
+        if payment_data.get('payment_method') not in valid_methods:
             raise HTTPException(
                 status_code=400,
                 detail=f"Invalid payment_method. Must be one of: {', '.join(valid_methods)}"
             )
         
         # Validate status
-        valid_statuses = ['Pending', 'Completed', 'Failed', 'Refunded']
-        if payment['Status'] not in valid_statuses:
+        valid_statuses = ['Pending', 'Cleared', 'Failed', 'Refunded']
+        status = payment_data.get('status', 'Cleared')
+        if status not in valid_statuses:
             raise HTTPException(
                 status_code=400,
                 detail=f"Invalid status. Must be one of: {', '.join(valid_statuses)}"
             )
         
-        # Append to Payments sheet
-        await google_service.append_row('Payments', list(payment.values()))
+        # Create payment in database
+        payment = await db_service.create_payment(
+            client_id=payment_data['client_id'],
+            amount=float(payment_data['amount']),
+            payment_date=payment_data.get('payment_date'),
+            payment_method=payment_data['payment_method'],
+            status=status,
+            invoice_id=payment_data.get('invoice_id'),
+            project_id=payment_data.get('project_id'),
+            check_number=payment_data.get('check_number'),
+            transaction_id=payment_data.get('transaction_id'),
+            notes=payment_data.get('notes', f'Manual entry by {current_user.email}')
+        )
         
-        logger.info(f"Recorded manual payment: {payment_id} by user {current_user.get('email')}")
+        logger.info(f"Recorded manual payment: {payment.get('Business ID')} by user {current_user.email}")
         return {
             "status": "success",
             "message": "Payment recorded successfully",

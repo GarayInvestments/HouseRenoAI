@@ -126,24 +126,27 @@ def get_required_contexts(message: str, session_memory: Optional[Dict[str, Any]]
     return contexts
 
 
-async def build_sheets_context(google_service) -> Dict[str, Any]:
+async def build_database_context() -> Dict[str, Any]:
     """
-    Build context from Google Sheets data.
+    Build context from PostgreSQL database.
     
     Fetches and summarizes:
     - Projects (with status breakdown)
     - Permits (with status breakdown)
     - Clients (count only, full list available on request)
+    - Payments (with status breakdown)
     
     Returns:
-        Dict with sheets data and summaries
+        Dict with database data and summaries
     """
     try:
-        # Fetch all sheets data using the correct methods (with caching!)
-        projects = await google_service.get_projects_data()
-        permits = await google_service.get_permits_data()
-        clients = await google_service.get_clients_data()
-        payments = await google_service.get_all_sheet_data('Payments')
+        from app.services.db_service import db_service
+        
+        # Fetch all data from database (with caching!)
+        projects = await db_service.get_projects_data()
+        permits = await db_service.get_permits_data()
+        clients = await db_service.get_clients_data()
+        payments = await db_service.get_payments_data()
         
         # Summarize project statuses
         project_statuses = {}
@@ -183,7 +186,7 @@ async def build_sheets_context(google_service) -> Dict[str, Any]:
             }
         }
     except Exception as e:
-        logger.error(f"Error building sheets context: {e}")
+        logger.error(f"Error building database context: {e}")
         return {
             "projects": [],
             "permits": [],
@@ -285,7 +288,6 @@ async def build_quickbooks_context(qb_service) -> Dict[str, Any]:
 
 async def build_context(
     message: str,
-    google_service,
     qb_service,
     session_memory: Dict[str, Any]
 ) -> Dict[str, Any]:
@@ -293,13 +295,12 @@ async def build_context(
     Build smart context based on message content.
     
     Only loads data that's relevant to the user's query:
-    - "Show me Temple project" → Sheets only
-    - "Create invoice for Temple" → Sheets + QB
+    - "Show me Temple project" → Database only
+    - "Create invoice for Temple" → Database + QB
     - "What's the weather?" → Nothing
     
     Args:
         message: User's chat message
-        google_service: Google Sheets service instance
         qb_service: QuickBooks service instance
         session_memory: Current session memory dict
         
@@ -316,10 +317,10 @@ async def build_context(
         "contexts_loaded": list(required)
     }
     
-    # Load Google Sheets context if needed
+    # Load Database context if needed (replaces 'sheets')
     if 'sheets' in required:
-        sheets_data = await build_sheets_context(google_service)
-        context.update(sheets_data)
+        db_data = await build_database_context()
+        context.update(db_data)
     
     # Load QuickBooks context if needed
     if 'quickbooks' in required:

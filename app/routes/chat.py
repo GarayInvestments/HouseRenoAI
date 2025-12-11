@@ -4,7 +4,6 @@ import logging
 import time
 
 from app.services.openai_service import openai_service
-import app.services.google_service as google_service_module
 from app.services.quickbooks_service import quickbooks_service
 from app.memory.memory_manager import memory_manager
 from app.handlers.ai_functions import FUNCTION_HANDLERS
@@ -16,12 +15,6 @@ from app.utils.timing import RequestTimer
 session_logger = SessionLogger(__name__)
 logger = logging.getLogger(__name__)  # Keep for backward compatibility
 router = APIRouter()
-
-def get_google_service():
-    """Helper function to get Google service with proper error handling"""
-    if not hasattr(google_service_module, 'google_service') or google_service_module.google_service is None:
-        raise HTTPException(status_code=503, detail="Google service not initialized")
-    return google_service_module.google_service
 
 @router.post("/")
 async def process_chat_message(chat_data: Dict[str, Any]):
@@ -68,13 +61,10 @@ async def process_chat_message(chat_data: Dict[str, Any]):
         timer.start("context_build")
         
         try:
-            google_service = get_google_service()
-            
             # Use smart context builder to determine what data to load
             # IMPORTANT: Pass the session_memory we just loaded (not from context)
             smart_context = await build_context(
                 message=message,
-                google_service=google_service,
                 qb_service=qb_service,
                 session_memory=session_memory  # Use the session_memory we loaded earlier
             )

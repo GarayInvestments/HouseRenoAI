@@ -645,6 +645,69 @@ class DBService:
             self.cache.set(cache_key, payment_dict)
             return payment_dict
     
+    async def create_payment(
+        self,
+        client_id: str,
+        amount: float,
+        payment_method: str,
+        payment_date: Optional[str] = None,
+        status: str = "Cleared",
+        invoice_id: Optional[str] = None,
+        project_id: Optional[str] = None,
+        check_number: Optional[str] = None,
+        transaction_id: Optional[str] = None,
+        qb_payment_id: Optional[str] = None,
+        notes: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Create a new payment record."""
+        async with AsyncSessionLocal() as session:
+            from datetime import datetime
+            
+            # Parse payment_date if provided as string
+            parsed_date = None
+            if payment_date:
+                if isinstance(payment_date, str):
+                    parsed_date = datetime.fromisoformat(payment_date.replace('Z', '+00:00'))
+                else:
+                    parsed_date = payment_date
+            else:
+                from datetime import timezone
+                parsed_date = datetime.now(timezone.utc)
+            
+            payment = Payment(
+                client_id=client_id,
+                invoice_id=invoice_id,
+                project_id=project_id,
+                amount=amount,
+                payment_date=parsed_date,
+                payment_method=payment_method,
+                status=status,
+                check_number=check_number,
+                transaction_id=transaction_id,
+                qb_payment_id=qb_payment_id,
+                notes=notes
+            )
+            
+            session.add(payment)
+            await session.commit()
+            await session.refresh(payment)
+            
+            return {
+                "Payment ID": payment.payment_id,
+                "Business ID": payment.business_id,
+                "Client ID": payment.client_id or "",
+                "Project ID": payment.project_id or "",
+                "Invoice ID": payment.invoice_id or "",
+                "Amount": float(payment.amount) if payment.amount else 0.0,
+                "Payment Date": payment.payment_date.isoformat() if payment.payment_date else "",
+                "Payment Method": payment.payment_method or "Check",
+                "Status": payment.status or "Pending",
+                "Check Number": payment.check_number or "",
+                "Transaction ID": payment.transaction_id or "",
+                "QB Payment ID": payment.qb_payment_id or "",
+                "Notes": payment.notes or ""
+            }
+    
     # ==================== HELPER METHODS ====================
     
     def _generate_id(self, seed: str) -> str:
