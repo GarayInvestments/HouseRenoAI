@@ -12,9 +12,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
 from app.services.quickbooks_service_v2 import get_quickbooks_service
+from app.services import quickbooks_service as qb_service_module
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+def get_legacy_qb_service():
+    """Get the legacy QuickBooks service for API operations."""
+    if not qb_service_module.quickbooks_service or qb_service_module.quickbooks_service is None:
+        raise HTTPException(status_code=503, detail="QuickBooks service not initialized")
+    return qb_service_module.quickbooks_service
 
 
 # ==================== OAUTH2 FLOW ====================
@@ -108,10 +116,11 @@ async def disconnect():
         Success status
     """
     try:
-        quickbooks_service.access_token = None
-        quickbooks_service.refresh_token = None
-        quickbooks_service.realm_id = None
-        quickbooks_service.token_expires_at = None
+        qb_service = get_legacy_qb_service()
+        qb_service.access_token = None
+        qb_service.refresh_token = None
+        qb_service.realm_id = None
+        qb_service.token_expires_at = None
         
         logger.info("Disconnected from QuickBooks")
         return {"success": True, "message": "Disconnected from QuickBooks"}
@@ -158,20 +167,21 @@ async def manual_refresh():
         Success status and new token expiration
     """
     try:
-        if not quickbooks_service.refresh_token:
+        qb_service = get_legacy_qb_service()
+        if not qb_service.refresh_token:
             raise HTTPException(
                 status_code=400, 
                 detail="No refresh token available. Please authenticate first at /v1/quickbooks/auth"
             )
         
         # Attempt to refresh
-        result = await quickbooks_service.refresh_access_token()
+        result = await qb_service.refresh_access_token()
         
         return {
             "success": True,
             "message": "Token refreshed successfully",
             "token_expires_in": result.get("expires_in"),
-            "token_expires_at": quickbooks_service.token_expires_at.isoformat() if quickbooks_service.token_expires_at else None
+            "token_expires_at": qb_service.token_expires_at.isoformat() if qb_service.token_expires_at else None
         }
         
     except Exception as e:
@@ -203,10 +213,11 @@ async def get_company_info():
         }
     """
     try:
-        if not quickbooks_service.is_authenticated():
+        qb_service = get_legacy_qb_service()
+        if not qb_service.is_authenticated():
             raise HTTPException(status_code=401, detail="Not authenticated with QuickBooks")
         
-        company_info = await quickbooks_service.get_company_info()
+        company_info = await qb_service.get_company_info()
         return company_info
         
     except HTTPException:
@@ -239,13 +250,14 @@ async def get_customers(
         GET /v1/quickbooks/customers?customer_type=GC%20Compliance
     """
     try:
-        if not quickbooks_service.is_authenticated():
+        qb_service = get_legacy_qb_service()
+        if not qb_service.is_authenticated():
             raise HTTPException(status_code=401, detail="Not authenticated with QuickBooks")
         
         # Convert empty string to None for "no filter"
         filter_type = None if customer_type == "" else customer_type
         
-        customers = await quickbooks_service.get_customers(
+        customers = await qb_service.get_customers(
             active_only=active_only,
             customer_type=filter_type
         )
@@ -292,13 +304,14 @@ async def create_customer(customer_data: Dict[str, Any]):
         Body: {"DisplayName": "John Doe", "PrimaryPhone": {"FreeFormNumber": "555-1234"}}
     """
     try:
-        if not quickbooks_service.is_authenticated():
+        qb_service = get_legacy_qb_service()
+        if not qb_service.is_authenticated():
             raise HTTPException(status_code=401, detail="Not authenticated with QuickBooks")
         
         if "DisplayName" not in customer_data:
             raise HTTPException(status_code=400, detail="DisplayName is required")
         
-        customer = await quickbooks_service.create_customer(customer_data)
+        customer = await qb_service.create_customer(customer_data)
         
         return {
             "success": True,
@@ -328,10 +341,11 @@ async def get_customer(customer_id: str):
         GET /v1/quickbooks/customers/123
     """
     try:
-        if not quickbooks_service.is_authenticated():
+        qb_service = get_legacy_qb_service()
+        if not qb_service.is_authenticated():
             raise HTTPException(status_code=401, detail="Not authenticated with QuickBooks")
         
-        customer = await quickbooks_service.get_customer_by_id(customer_id)
+        customer = await qb_service.get_customer_by_id(customer_id)
         
         return {
             "success": True,
@@ -370,10 +384,11 @@ async def get_invoices(
         GET /v1/quickbooks/invoices?start_date=2025-01-01&end_date=2025-01-31
     """
     try:
-        if not quickbooks_service.is_authenticated():
+        qb_service = get_legacy_qb_service()
+        if not qb_service.is_authenticated():
             raise HTTPException(status_code=401, detail="Not authenticated with QuickBooks")
         
-        invoices = await quickbooks_service.get_invoices(
+        invoices = await qb_service.get_invoices(
             customer_id=customer_id,
             start_date=start_date,
             end_date=end_date
@@ -432,7 +447,8 @@ async def create_invoice(invoice_data: Dict[str, Any]):
         }
     """
     try:
-        if not quickbooks_service.is_authenticated():
+        qb_service = get_legacy_qb_service()
+        if not qb_service.is_authenticated():
             raise HTTPException(status_code=401, detail="Not authenticated with QuickBooks")
         
         # Validate required fields
@@ -441,7 +457,7 @@ async def create_invoice(invoice_data: Dict[str, Any]):
         if "Line" not in invoice_data or not invoice_data["Line"]:
             raise HTTPException(status_code=400, detail="At least one Line item is required")
         
-        invoice = await quickbooks_service.create_invoice(invoice_data)
+        invoice = await qb_service.create_invoice(invoice_data)
         
         return {
             "success": True,
@@ -471,10 +487,11 @@ async def get_invoice(invoice_id: str):
         GET /v1/quickbooks/invoices/123
     """
     try:
-        if not quickbooks_service.is_authenticated():
+        qb_service = get_legacy_qb_service()
+        if not qb_service.is_authenticated():
             raise HTTPException(status_code=401, detail="Not authenticated with QuickBooks")
         
-        invoice = await quickbooks_service.get_invoice_by_id(invoice_id)
+        invoice = await qb_service.get_invoice_by_id(invoice_id)
         
         return {
             "success": True,
@@ -506,7 +523,8 @@ async def create_estimate(estimate_data: Dict[str, Any]):
         Created estimate record
     """
     try:
-        if not quickbooks_service.is_authenticated():
+        qb_service = get_legacy_qb_service()
+        if not qb_service.is_authenticated():
             raise HTTPException(status_code=401, detail="Not authenticated with QuickBooks")
         
         if "CustomerRef" not in estimate_data:
@@ -514,7 +532,7 @@ async def create_estimate(estimate_data: Dict[str, Any]):
         if "Line" not in estimate_data or not estimate_data["Line"]:
             raise HTTPException(status_code=400, detail="At least one Line item is required")
         
-        estimate = await quickbooks_service.create_estimate(estimate_data)
+        estimate = await qb_service.create_estimate(estimate_data)
         
         return {
             "success": True,
@@ -543,10 +561,11 @@ async def get_vendors(active_only: bool = Query(default=True)):
         List of vendor records
     """
     try:
-        if not quickbooks_service.is_authenticated():
+        qb_service = get_legacy_qb_service()
+        if not qb_service.is_authenticated():
             raise HTTPException(status_code=401, detail="Not authenticated with QuickBooks")
         
-        vendors = await quickbooks_service.get_vendors(active_only=active_only)
+        vendors = await qb_service.get_vendors(active_only=active_only)
         
         return {
             "success": True,
@@ -587,7 +606,8 @@ async def create_bill(bill_data: Dict[str, Any]):
         Created bill record
     """
     try:
-        if not quickbooks_service.is_authenticated():
+        qb_service = get_legacy_qb_service()
+        if not qb_service.is_authenticated():
             raise HTTPException(status_code=401, detail="Not authenticated with QuickBooks")
         
         if "VendorRef" not in bill_data:
@@ -595,7 +615,7 @@ async def create_bill(bill_data: Dict[str, Any]):
         if "Line" not in bill_data or not bill_data["Line"]:
             raise HTTPException(status_code=400, detail="At least one Line item is required")
         
-        bill = await quickbooks_service.create_bill(bill_data)
+        bill = await qb_service.create_bill(bill_data)
         
         return {
             "success": True,
@@ -628,10 +648,11 @@ async def get_items(item_type: Optional[str] = Query(default=None)):
         GET /v1/quickbooks/items?item_type=Service
     """
     try:
-        if not quickbooks_service.is_authenticated():
+        qb_service = get_legacy_qb_service()
+        if not qb_service.is_authenticated():
             raise HTTPException(status_code=401, detail="Not authenticated with QuickBooks")
         
-        items = await quickbooks_service.get_items(item_type=item_type)
+        items = await qb_service.get_items(item_type=item_type)
         
         return {
             "success": True,
@@ -660,11 +681,12 @@ async def get_customer_types():
         GET /v1/quickbooks/customer-types
     """
     try:
-        if not quickbooks_service.is_authenticated():
+        qb_service = get_legacy_qb_service()
+        if not qb_service.is_authenticated():
             raise HTTPException(status_code=401, detail="Not authenticated with QuickBooks")
         
         query = "SELECT * FROM CustomerType"
-        response = await quickbooks_service._make_request("GET", "query", params={"query": query})
+        response = await qb_service._make_request("GET", "query", params={"query": query})
         types = response.get("QueryResponse", {}).get("CustomerType", [])
         
         return {
@@ -704,7 +726,8 @@ async def sync_customer_types(dry_run: bool = Query(default=False)):
         POST /v1/quickbooks/sync-types?dry_run=true (preview only)
     """
     try:
-        if not quickbooks_service.is_authenticated():
+        qb_service = get_legacy_qb_service()
+        if not qb_service.is_authenticated():
             raise HTTPException(status_code=401, detail="Not authenticated with QuickBooks")
         
         # Get Google Sheets service
@@ -714,7 +737,7 @@ async def sync_customer_types(dry_run: bool = Query(default=False)):
             raise HTTPException(status_code=503, detail="Google Sheets service not initialized")
         
         # Execute sync
-        result = await quickbooks_service.sync_gc_customer_types_from_sheets(
+        result = await qb_service.sync_gc_customer_types_from_sheets(
             google_service=google_service,
             dry_run=dry_run
         )
