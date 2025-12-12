@@ -124,7 +124,7 @@ async def disconnect():
 # ==================== STATUS & INFO ====================
 
 @router.get("/status")
-async def get_status():
+async def get_status(db: AsyncSession = Depends(get_db)):
     """
     Get QuickBooks connection status.
     
@@ -140,7 +140,8 @@ async def get_status():
         }
     """
     try:
-        status = quickbooks_service.get_status()
+        qb_service = get_quickbooks_service(db)
+        status = qb_service.get_status()
         return status
     except Exception as e:
         logger.error(f"Failed to get status: {e}")

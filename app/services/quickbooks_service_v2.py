@@ -257,6 +257,20 @@ class QuickBooksService:
             and not self.is_token_expired()
         )
     
+    def get_status(self) -> Dict[str, Any]:
+        """
+        Get current QuickBooks connection status.
+        
+        Returns:
+            Dictionary with authentication status, realm ID, environment, and token expiration
+        """
+        return {
+            "authenticated": self.is_authenticated(),
+            "realm_id": self.realm_id,
+            "environment": self.environment,
+            "token_expires_at": self.access_token_expires_at.isoformat() if self.access_token_expires_at else None
+        }
+    
     def _create_qb_client(self):
         """Create QuickBooks API client with current tokens"""
         if self.realm_id and self.access_token:
