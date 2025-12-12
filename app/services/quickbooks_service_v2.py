@@ -268,7 +268,7 @@ class QuickBooksService:
             "authenticated": self.is_authenticated(),
             "realm_id": self.realm_id,
             "environment": self.environment,
-            "token_expires_at": self.access_token_expires_at.isoformat() if self.access_token_expires_at else None
+            "token_expires_at": self.token_expires_at.isoformat() if self.token_expires_at else None
         }
     
     def _create_qb_client(self):
