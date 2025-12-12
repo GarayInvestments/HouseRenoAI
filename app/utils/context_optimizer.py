@@ -49,7 +49,7 @@ def extract_entity_mentions(message: str) -> Dict[str, List[str]]:
             entities["client_names"].append(client)
     
     # Extract business IDs (CL-00001, PRJ-00002, etc.)
-    id_pattern = r'\b(CL|PRJ|PER|INS|INV|PAY|SV)-\d{5}\b'
+    id_pattern = r'\b(?:CL|PRJ|PER|INS|INV|PAY|SV)-\d{5}\b'
     matches = re.findall(id_pattern, message.upper())
     entities["specific_ids"].extend(matches)
     
