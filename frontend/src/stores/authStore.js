@@ -28,8 +28,9 @@ export const useAuthStore = create((set, get) => ({
           isAuthenticated: true 
         })
         // Attempt to get a fresh access token (don't clear auth on failure during init)
-        get().refreshAccessToken(false).catch(err => {
-          console.warn('Token refresh on init failed, will retry on next API call:', err)
+        get().refreshAccessToken(false).catch(() => {
+          // Silent fail on init - this is expected if refresh token is expired or invalid
+          // The user will be prompted to login on first API call
         })
       } catch (error) {
         console.error('Failed to parse stored user:', error)
@@ -142,7 +143,8 @@ export const useAuthStore = create((set, get) => ({
       })
 
       if (!response.ok) {
-        throw new Error('Token refresh failed')
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.detail || 'Token refresh failed')
       }
 
       const data = await response.json()
