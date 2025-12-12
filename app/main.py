@@ -17,9 +17,7 @@ from app.routes.quickbooks import router as quickbooks_router
 from app.routes.payments import router as payments_router
 from app.routes.auth import router as auth_router
 from app.routes.auth_supabase import router as auth_supabase_router
-from app.routes.auth_v2 import router as auth_v2_router
 from app.middleware.auth_middleware import JWTAuthMiddleware as LegacyJWTAuthMiddleware
-from app.middleware.auth_middleware_v2 import JWTAuthMiddleware
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -116,12 +114,7 @@ class HTTPSRedirectFixMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(HTTPSRedirectFixMiddleware)
 
-# Add JWT authentication middleware v2 (modern token rotation system)
-# Protects all routes except public ones (/, /health, /docs, /v1/auth/*)
-app.add_middleware(JWTAuthMiddleware)
-
 # Include routers
-app.include_router(auth_v2_router, prefix=f"/{settings.API_VERSION}/auth", tags=["auth"])  # Modern JWT auth with refresh tokens
 app.include_router(auth_supabase_router, prefix=f"/{settings.API_VERSION}/auth/supabase", tags=["auth-supabase"])  # Supabase integration
 # app.include_router(auth_router, prefix=f"/{settings.API_VERSION}/auth/legacy", tags=["auth-legacy"])  # Legacy auth (disabled)
 app.include_router(chat_router, prefix=f"/{settings.API_VERSION}/chat", tags=["chat"])

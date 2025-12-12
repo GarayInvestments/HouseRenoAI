@@ -608,8 +608,6 @@ class QuickBooksInvoiceCache(Base):
         server_default=text("CURRENT_TIMESTAMP"),
         index=True
     )
-# Import authentication models
-from app.db.models_auth import RefreshToken, TokenBlacklist, UserSession, LoginAttempt
 
 __all__ = [
     'Base',
@@ -618,8 +616,7 @@ __all__ = [
     'Permit',
     'Payment',
     'User',
-    'RefreshToken',
-    'TokenBlacklist',
-    'UserSession',
-    'LoginAttempt',
+    'QuickBooksToken',
+    'QuickBooksCustomerCache',
+    'QuickBooksInvoiceCache',
 ]
