@@ -61,138 +61,108 @@ class QuickBooksService:
         self._cache: Dict[str, Dict[str, Any]] = {}
         self._cache_ttl = timedelta(minutes=5)
         
+        # Database session for token storage (optional - falls back to Sheets if not provided)
+        self.db: Optional[Any] = None
+        
         logger.info(f"QuickBooksService initialized ({self.environment} environment)")
         
-        # Load tokens from Google Sheets on startup
-        self._load_tokens_from_sheets()
+        # Tokens will be loaded by startup event in main.py
+        # Don't load here to avoid event loop conflicts
     
-    def _load_tokens_from_sheets(self) -> None:
+    def set_db_session(self, db: Any):
+        """Set database session for token storage (enables database mode)"""
+        self.db = db
+        logger.info("Database session set for QuickBooks token storage")
+    
+    async def _load_tokens_from_db(self) -> bool:
         """
-        Load QuickBooks tokens from Google Sheets.
+        Load QuickBooks tokens from PostgreSQL database.
         
-        TODO: Migrate to database table (quickbooks_tokens)
-        This is the ONLY remaining Google Sheets usage in the app.
+        Returns:
+            True if tokens loaded, False otherwise
         """
-        try:
-            from app.services.google_service import google_service
-            
-            if not google_service or not google_service.sheets_service:
-                logger.warning("Google Sheets service not available for token loading")
-                return
-            
-            # Try to read from QB_Tokens sheet
-            result = google_service.sheets_service.spreadsheets().values().get(
-                spreadsheetId=settings.SHEET_ID,
-                range=f"{QB_TOKENS_SHEET}!A2:E2"
-            ).execute()
-            
-            values = result.get('values', [])
-            if values and len(values[0]) >= 4:
-                row = values[0]
-                self.realm_id = row[0] if len(row) > 0 else None
-                self.access_token = row[1] if len(row) > 1 else None
-                self.refresh_token = row[2] if len(row) > 2 else None
-                expires_str = row[3] if len(row) > 3 else None
-                
-                if expires_str:
-                    self.token_expires_at = datetime.fromisoformat(expires_str)
-                
-                logger.info(f"Loaded tokens from Google Sheets for realm: {self.realm_id}")
-            else:
-                logger.info("No tokens found in Google Sheets")
-                
-        except Exception as e:
-            logger.warning(f"Could not load tokens from sheets (sheet may not exist yet): {e}")
-    
-    def _save_tokens_to_sheets(self) -> None:
-        """
-        Save QuickBooks tokens to Google Sheets.
+        if not self.db:
+            return False
         
-        TODO: Migrate to database table (quickbooks_tokens)
-        This is the ONLY remaining Google Sheets usage in the app.
-        """
         try:
-            from app.services.google_service import google_service
+            from sqlalchemy import select
+            from app.db.models import QuickBooksToken
             
-            if not google_service or not google_service.sheets_service:
-                logger.warning("Google Sheets service not available for token saving")
-                return
+            # Get the most recent active token
+            result = await self.db.execute(
+                select(QuickBooksToken)
+                .where(QuickBooksToken.is_active == True)
+                .order_by(QuickBooksToken.updated_at.desc())
+                .limit(1)
+            )
+            token_record = result.scalar_one_or_none()
             
-            # Prepare data
-            expires_str = self.token_expires_at.isoformat() if self.token_expires_at else ""
-            updated_at = datetime.now().isoformat()
+            if not token_record:
+                logger.info("No QuickBooks tokens found in database")
+                return False
             
-            values = [[
-                self.realm_id or "",
-                self.access_token or "",
-                self.refresh_token or "",
-                expires_str,
-                updated_at
-            ]]
+            # Load token data
+            self.realm_id = token_record.realm_id
+            self.access_token = token_record.access_token
+            self.refresh_token = token_record.refresh_token
+            self.token_expires_at = token_record.access_token_expires_at.replace(tzinfo=None)  # Remove timezone for compatibility
             
-            # Try to update existing row, or create sheet if it doesn't exist
-            try:
-                google_service.sheets_service.spreadsheets().values().update(
-                    spreadsheetId=settings.SHEET_ID,
-                    range=f"{QB_TOKENS_SHEET}!A2:E2",
-                    valueInputOption="RAW",
-                    body={"values": values}
-                ).execute()
-                logger.info("Saved tokens to Google Sheets")
-            except Exception as update_error:
-                # Sheet might not exist, try to create it
-                logger.info(f"Creating {QB_TOKENS_SHEET} sheet...")
-                self._create_tokens_sheet()
-                # Retry update
-                google_service.sheets_service.spreadsheets().values().update(
-                    spreadsheetId=settings.SHEET_ID,
-                    range=f"{QB_TOKENS_SHEET}!A2:E2",
-                    valueInputOption="RAW",
-                    body={"values": values}
-                ).execute()
-                logger.info("Created sheet and saved tokens")
-                
+            logger.info(f"Loaded tokens from database for realm: {self.realm_id}")
+            return True
+            
         except Exception as e:
-            logger.error(f"Failed to save tokens to sheets: {e}")
+            logger.error(f"Error loading tokens from database: {e}", exc_info=True)
+            return False
     
-    def _create_tokens_sheet(self) -> None:
-        """Create the QB_Tokens sheet with headers."""
+    async def _save_tokens_to_db(self) -> bool:
+        """
+        Save QuickBooks tokens to PostgreSQL database.
+        
+        Returns:
+            True if saved, False otherwise
+        """
+        if not self.db:
+            return False
+        
         try:
-            from app.services.google_service import google_service
+            from sqlalchemy import select
+            from app.db.models import QuickBooksToken
             
-            # Add new sheet
-            request_body = {
-                "requests": [{
-                    "addSheet": {
-                        "properties": {
-                            "title": QB_TOKENS_SHEET,
-                            "gridProperties": {
-                                "rowCount": 10,
-                                "columnCount": 5
-                            }
-                        }
-                    }
-                }]
-            }
+            # Calculate expiration times
+            now = datetime.utcnow()
+            access_expires_at = self.token_expires_at if self.token_expires_at else now + timedelta(hours=1)
+            refresh_expires_at = now + timedelta(days=100)  # QB refresh tokens last 100 days
             
-            google_service.sheets_service.spreadsheets().batchUpdate(
-                spreadsheetId=settings.SHEET_ID,
-                body=request_body
-            ).execute()
+            # Deactivate old tokens for this realm
+            if self.realm_id:
+                old_tokens = await self.db.execute(
+                    select(QuickBooksToken).where(QuickBooksToken.realm_id == self.realm_id)
+                )
+                for old_token in old_tokens.scalars():
+                    old_token.is_active = False
             
-            # Add headers
-            headers = [["Realm ID", "Access Token", "Refresh Token", "Expires At", "Updated At"]]
-            google_service.sheets_service.spreadsheets().values().update(
-                spreadsheetId=settings.SHEET_ID,
-                range=f"{QB_TOKENS_SHEET}!A1:E1",
-                valueInputOption="RAW",
-                body={"values": headers}
-            ).execute()
+            # Create new token record
+            new_token = QuickBooksToken(
+                realm_id=self.realm_id,
+                access_token=self.access_token,
+                refresh_token=self.refresh_token,
+                access_token_expires_at=access_expires_at,
+                refresh_token_expires_at=refresh_expires_at,
+                environment=self.environment,
+                is_active=True
+            )
             
-            logger.info(f"Created {QB_TOKENS_SHEET} sheet with headers")
+            self.db.add(new_token)
+            await self.db.commit()
+            
+            logger.info(f"Saved tokens to database for realm: {self.realm_id}")
+            return True
             
         except Exception as e:
-            logger.error(f"Failed to create tokens sheet: {e}")
+            logger.error(f"Error saving tokens to database: {e}", exc_info=True)
+            if self.db:
+                await self.db.rollback()
+            return False
     
     def _get_cache(self, key: str) -> Optional[Any]:
         """Get value from cache if still valid."""
@@ -357,8 +327,15 @@ class QuickBooksService:
             self.refresh_token = token_data["refresh_token"]
             self.token_expires_at = datetime.now() + timedelta(seconds=token_data["expires_in"])
             
-            # Save refreshed tokens to Google Sheets
-            self._save_tokens_to_sheets()
+            # Save refreshed tokens to database
+            if self.db:
+                saved = await self._save_tokens_to_db()
+                if saved:
+                    logger.info("Tokens saved to database after refresh")
+                else:
+                    logger.error("Failed to save tokens to database after refresh")
+            else:
+                logger.warning("Database session not available - tokens not persisted")
             
             logger.info("Successfully refreshed access token")
             
@@ -1281,23 +1258,14 @@ class QuickBooksService:
     def is_authenticated(self) -> bool:
         """
         Check if service has valid authentication.
-        Lazy-loads tokens from Google Sheets if not in memory.
+        Tokens should be loaded by startup event in main.py.
         """
-        # If tokens not in memory, try to load from Sheets
-        if not self.access_token or not self.realm_id:
-            self._load_tokens_from_sheets()
-        
         return bool(self.access_token and self.realm_id)
     
     def get_status(self) -> Dict[str, Any]:
         """
         Get current service status.
-        Ensures tokens are loaded before reporting status.
         """
-        # Ensure tokens loaded
-        if not self.access_token or not self.realm_id:
-            self._load_tokens_from_sheets()
-        
         return {
             "authenticated": bool(self.access_token and self.realm_id),
             "realm_id": self.realm_id,

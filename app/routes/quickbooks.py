@@ -2,13 +2,16 @@
 QuickBooks Online API Routes
 
 Handles OAuth2 flow and QuickBooks operations.
+Uses database-backed token storage (PostgreSQL) instead of Google Sheets.
 """
 import logging
 from typing import Dict, Any, List, Optional
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from fastapi.responses import RedirectResponse
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.quickbooks_service import quickbooks_service
+from app.db.session import get_db
+from app.services.quickbooks_service_v2 import get_quickbooks_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -17,7 +20,10 @@ router = APIRouter()
 # ==================== OAUTH2 FLOW ====================
 
 @router.get("/auth")
-async def initiate_auth(state: str = Query(default="randomstate")):
+async def initiate_auth(
+    state: str = Query(default="randomstate"),
+    db: AsyncSession = Depends(get_db)
+):
     """
     Initiate QuickBooks OAuth2 flow.
     
@@ -35,7 +41,8 @@ async def initiate_auth(state: str = Query(default="randomstate")):
         GET /v1/quickbooks/auth?state=my-secure-state
     """
     try:
-        auth_url = quickbooks_service.get_auth_url(state=state)
+        qb_service = get_quickbooks_service(db)
+        auth_url = qb_service.get_authorization_url(state=state)
         logger.info(f"Redirecting to QuickBooks auth: {auth_url}")
         return RedirectResponse(url=auth_url)
     except Exception as e:
@@ -47,13 +54,15 @@ async def initiate_auth(state: str = Query(default="randomstate")):
 async def oauth_callback(
     code: str = Query(..., description="Authorization code from QuickBooks"),
     realmId: str = Query(..., description="Company ID"),
-    state: Optional[str] = Query(default=None)
+    state: Optional[str] = Query(default=None),
+    db: AsyncSession = Depends(get_db)
 ):
     """
     OAuth2 callback endpoint.
     
     QuickBooks redirects here after user authorizes the app.
     Exchanges authorization code for access and refresh tokens.
+    Stores tokens in PostgreSQL database.
     
     Query Parameters:
         code: Authorization code
@@ -69,13 +78,16 @@ async def oauth_callback(
     try:
         logger.info(f"Received OAuth callback for realm: {realmId}")
         
-        token_data = await quickbooks_service.exchange_code_for_token(code, realmId)
+        qb_service = get_quickbooks_service(db)
+        success = await qb_service.handle_callback(code, realmId, state)
+        
+        if not success:
+            raise HTTPException(status_code=400, detail="Failed to exchange authorization code")
         
         return {
             "success": True,
-            "message": "Successfully connected to QuickBooks",
+            "message": "Successfully connected to QuickBooks - tokens stored in database",
             "realm_id": realmId,
-            "token_expires_in": token_data.get("expires_in"),
             "redirect_to": "/quickbooks/status"  # Frontend can redirect here
         }
         

@@ -17,7 +17,9 @@ from app.routes.quickbooks import router as quickbooks_router
 from app.routes.payments import router as payments_router
 from app.routes.auth import router as auth_router
 from app.routes.auth_supabase import router as auth_supabase_router
-from app.middleware.auth_middleware import JWTAuthMiddleware
+from app.routes.auth_v2 import router as auth_v2_router
+from app.middleware.auth_middleware import JWTAuthMiddleware as LegacyJWTAuthMiddleware
+from app.middleware.auth_middleware_v2 import JWTAuthMiddleware
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -37,103 +39,48 @@ GIT_COMMIT = "0e8fc6e"
 
 @app.on_event("startup")
 async def startup_event():
-    """Create service account file from environment variable on startup"""
+    """Initialize services on startup - database-only mode"""
     try:
-        # Check if we have the JSON credentials as environment variable
-        service_account_json = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")
-        service_account_base64 = os.getenv("GOOGLE_SERVICE_ACCOUNT_BASE64")
+        logger.info("Application starting up (database-only mode)...")
         
-        logger.info(f"Service account JSON found: {service_account_json is not None}")
-        logger.info(f"Service account BASE64 found: {service_account_base64 is not None}")
-        
-        credentials_data = None
-        
-        # Try base64 first (preferred method)
-        if service_account_base64:
+        # Load QuickBooks tokens from database
+        try:
+            from app.services.quickbooks_service import quickbooks_service
+            from app.db.session import get_db
+            
+            logger.info("Loading QuickBooks tokens from database...")
+            
+            # Get database session
+            db = None
             try:
-                import base64
-                decoded_json = base64.b64decode(service_account_base64).decode('utf-8')
-                credentials_data = json.loads(decoded_json)
-                logger.info("Successfully loaded credentials from base64 environment variable")
-            except Exception as e:
-                logger.error(f"Failed to decode base64 credentials: {e}")
-        
-        # Fallback to regular JSON
-        elif service_account_json:
-            try:
-                logger.info("Parsing service account JSON...")
-                credentials_data = json.loads(service_account_json)
+                db_gen = get_db()
+                db = await anext(db_gen)
+                quickbooks_service.set_db_session(db)
                 
-                # Fix private key newlines if they are double-escaped
-                if 'private_key' in credentials_data and '\\n' in credentials_data['private_key']:
-                    credentials_data['private_key'] = credentials_data['private_key'].replace('\\n', '\n')
-                    logger.info("Fixed private key newlines")
-                    
-                logger.info("Successfully loaded credentials from JSON environment variable")
-            except Exception as e:
-                logger.error(f"Failed to parse JSON credentials: {e}")
-        
-        # Create the service account file if we have credentials
-        if credentials_data and not os.path.exists(settings.GOOGLE_SERVICE_ACCOUNT_FILE):
-            with open(settings.GOOGLE_SERVICE_ACCOUNT_FILE, 'w') as f:
-                json.dump(credentials_data, f, indent=2)
-            logger.info(f"Created service account file: {settings.GOOGLE_SERVICE_ACCOUNT_FILE}")
-            
-            # Verify the file was created and is readable
-            if os.path.exists(settings.GOOGLE_SERVICE_ACCOUNT_FILE):
-                with open(settings.GOOGLE_SERVICE_ACCOUNT_FILE, 'r') as f:
-                    test_load = json.load(f)
-                logger.info(f"Service account file verified, client_email: {test_load.get('client_email')}")
-                logger.info(f"Private key length: {len(test_load.get('private_key', ''))}")
-                private_key = test_load.get('private_key', '')
-                logger.info(f"Private key starts correctly: {private_key.startswith('-----BEGIN PRIVATE KEY-----')}")
-                logger.info(f"Private key ends correctly: {private_key.endswith('-----END PRIVATE KEY-----')}")
-            
-        elif os.path.exists(settings.GOOGLE_SERVICE_ACCOUNT_FILE):
-            logger.info(f"Service account file already exists: {settings.GOOGLE_SERVICE_ACCOUNT_FILE}")
-        else:
-            logger.info("No Google Sheets service account credentials - using database only")
-            
-        # Initialize Google Sheets service ONLY for QuickBooks token storage
-        # TODO: Migrate QB tokens to database and remove this
-        if os.path.exists(settings.GOOGLE_SERVICE_ACCOUNT_FILE):
-            try:
-                import app.services.google_service as gs
-                logger.info("Initializing Google Sheets (QB tokens only)...")
-                gs.google_service = gs.GoogleService()
-                gs.google_service.initialize()
-                logger.info("Google Sheets initialized for QB token storage")
+                # Load tokens from database
+                await quickbooks_service._load_tokens_from_db()
                 
-                # Load QuickBooks tokens from Google Sheets
-                try:
-                    from app.services.quickbooks_service import quickbooks_service
-                    logger.info("Loading QuickBooks tokens from Google Sheets...")
-                    quickbooks_service._load_tokens_from_sheets()
-                    
-                    if quickbooks_service.is_authenticated():
-                        from datetime import datetime, timedelta
-                        # Check if token expires soon (within 10 minutes)
-                        if quickbooks_service.token_expires_at and datetime.now() >= quickbooks_service.token_expires_at - timedelta(minutes=10):
-                            logger.info("QuickBooks token expiring soon, refreshing on startup...")
-                            await quickbooks_service.refresh_access_token()
-                            logger.info("QuickBooks token refreshed successfully")
-                        else:
-                            logger.info(f"QuickBooks token valid until {quickbooks_service.token_expires_at}")
+                if quickbooks_service.is_authenticated():
+                    from datetime import datetime, timedelta
+                    # Check if token expires soon (within 10 minutes)
+                    if quickbooks_service.token_expires_at and datetime.now() >= quickbooks_service.token_expires_at - timedelta(minutes=10):
+                        logger.info("QuickBooks token expiring soon, refreshing on startup...")
+                        await quickbooks_service.refresh_access_token()
+                        logger.info("QuickBooks token refreshed successfully")
                     else:
-                        logger.info("QuickBooks not authenticated, skipping token refresh")
-                except Exception as qb_error:
-                    logger.warning(f"QuickBooks token refresh on startup failed: {qb_error}")
+                        logger.info(f"QuickBooks token valid until {quickbooks_service.token_expires_at}")
+                else:
+                    logger.info("QuickBooks not authenticated - connect at /v1/quickbooks/auth")
+            finally:
+                if db:
+                    await db.close()
                     
-            except Exception as init_error:
-                import traceback
-                logger.error(f"Failed to initialize Google services: {init_error}")
-                logger.error(f"Traceback: {traceback.format_exc()}")
-        else:
-            logger.warning("Skipping Google service initialization - no service account file")
+        except Exception as qb_error:
+            logger.warning(f"QuickBooks token load from database failed: {qb_error}")
+            logger.info("QuickBooks will use database storage once OAuth flow is completed")
             
     except Exception as e:
-        logger.error(f"Failed to create service account file: {e}")
-        logger.error(f"Exception type: {type(e)}")
+        logger.error(f"Startup error: {e}")
         import traceback
         logger.error(f"Traceback: {traceback.format_exc()}")
 
@@ -169,12 +116,14 @@ class HTTPSRedirectFixMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(HTTPSRedirectFixMiddleware)
 
-# Add JWT authentication middleware (protects all routes except public ones)
+# Add JWT authentication middleware v2 (modern token rotation system)
+# Protects all routes except public ones (/, /health, /docs, /v1/auth/*)
 app.add_middleware(JWTAuthMiddleware)
 
 # Include routers
-app.include_router(auth_router, prefix=f"/{settings.API_VERSION}/auth", tags=["auth"])  # Old auth (Google Sheets) - will be phased out
-app.include_router(auth_supabase_router, prefix=f"/{settings.API_VERSION}/auth/supabase", tags=["auth-supabase"])  # New Supabase auth
+app.include_router(auth_v2_router, prefix=f"/{settings.API_VERSION}/auth", tags=["auth"])  # Modern JWT auth with refresh tokens
+app.include_router(auth_supabase_router, prefix=f"/{settings.API_VERSION}/auth/supabase", tags=["auth-supabase"])  # Supabase integration
+# app.include_router(auth_router, prefix=f"/{settings.API_VERSION}/auth/legacy", tags=["auth-legacy"])  # Legacy auth (disabled)
 app.include_router(chat_router, prefix=f"/{settings.API_VERSION}/chat", tags=["chat"])
 app.include_router(permits_router, prefix=f"/{settings.API_VERSION}/permits", tags=["permits"])
 app.include_router(inspections_router, prefix=f"/{settings.API_VERSION}/inspections", tags=["inspections"])

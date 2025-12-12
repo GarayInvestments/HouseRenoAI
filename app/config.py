@@ -45,9 +45,13 @@ class Settings:
         self.DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
         self.ENVIRONMENT: str = os.getenv("ENVIRONMENT", "production")  # development, staging, production
         
-        # Auth Configuration
+        # Modern Auth Configuration (Dec 11, 2025)
+        self.JWT_SECRET: str = os.getenv("JWT_SECRET", "")  # Dedicated JWT secret
+        self.JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "15"))  # Short-lived
+        self.JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = int(os.getenv("JWT_REFRESH_TOKEN_EXPIRE_DAYS", "30"))  # Long-lived
+        
+        # Legacy Auth Configuration (backward compatibility)
         self.JWT_ACCESS_TOKEN_EXPIRE_HOURS: int = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_HOURS", "24"))
-        self.JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = int(os.getenv("JWT_REFRESH_TOKEN_EXPIRE_DAYS", "30"))
         
         # CORS Settings - Allow all Cloudflare Pages deployments
         self.ALLOWED_ORIGINS: list = [

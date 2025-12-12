@@ -448,6 +448,7 @@ class QuickBooksToken(Base):
     QuickBooks OAuth2 tokens - migrated from 'QB_Tokens' sheet.
     
     Stores access/refresh tokens with automatic expiry tracking.
+    Supports multiple environments (sandbox/production) and token revocation.
     """
     __tablename__ = "quickbooks_tokens"
     
@@ -462,8 +463,9 @@ class QuickBooksToken(Base):
     access_token_expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     refresh_token_expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     
-    # Environment
+    # Environment and status
     environment: Mapped[str] = mapped_column(String(20), default="production")  # sandbox, production
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)  # For token revocation
     
     # Audit
     created_at: Mapped[datetime] = mapped_column(
@@ -536,13 +538,16 @@ class User(Base):
     # Primary key - internal UUID
     id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, server_default=text("gen_random_uuid()"))
     
-    # Supabase Auth user ID - maps to auth.users.id
-    supabase_user_id: Mapped[str] = mapped_column(UUID(as_uuid=False), unique=True, index=True)
+    # Supabase Auth user ID - maps to auth.users.id (nullable for local users)
+    supabase_user_id: Mapped[str | None] = mapped_column(UUID(as_uuid=False), unique=True, index=True)
     
     # User profile (duplicated from auth.users for performance)
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     full_name: Mapped[str | None] = mapped_column(String(255))
     phone: Mapped[str | None] = mapped_column(String(50))
+    
+    # Authentication (for local users not using Supabase Auth)
+    password_hash: Mapped[str | None] = mapped_column(String(255))
     
     # Role-based access control
     # Valid roles: admin, pm, inspector, client, finance
@@ -603,3 +608,18 @@ class QuickBooksInvoiceCache(Base):
         server_default=text("CURRENT_TIMESTAMP"),
         index=True
     )
+# Import authentication models
+from app.db.models_auth import RefreshToken, TokenBlacklist, UserSession, LoginAttempt
+
+__all__ = [
+    'Base',
+    'Client',
+    'Project',
+    'Permit',
+    'Payment',
+    'User',
+    'RefreshToken',
+    'TokenBlacklist',
+    'UserSession',
+    'LoginAttempt',
+]

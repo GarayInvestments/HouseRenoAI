@@ -91,21 +91,28 @@
 ```
 **Why**: Render doesn't persist files, so credentials load from env vars on every cold start.
 
-### Authentication Pattern (JWT)
+### Authentication Pattern (Modern JWT with Refresh Tokens)
 ```python
 # Protected routes use get_current_user dependency
-from app.routes.auth import get_current_user
+from app.routes.auth_v2 import get_current_user
+from app.db.models import User
 
 @router.get("/protected")
-async def protected_route(current_user: dict = Depends(get_current_user)):
-    # current_user contains: {"email": "...", "name": "...", "role": "..."}
-    return {"message": f"Hello {current_user['name']}"}
+async def protected_route(current_user: User = Depends(get_current_user)):
+    # current_user is User model from database
+    return {"message": f"Hello {current_user.full_name}"}
 
-# Frontend must send: Authorization: Bearer <token>
-# Tokens expire after 7 days
+# Frontend must send: Authorization: Bearer <access_token>
+# Access tokens expire after 15 minutes (refresh via /v1/auth/refresh)
+# Refresh tokens expire after 30 days with automatic rotation
 # JWTAuthMiddleware automatically protects all routes except PUBLIC_ROUTES
 ```
-**Why**: Centralized auth via middleware + dependency injection. Users stored in Google Sheets `Users` tab.
+**Why**: Short-lived access tokens (15 min) with refresh token rotation for security. Token revocation via blacklist. Session management for multi-device support. Users stored in PostgreSQL `users` table.
+
+**Auth System Documentation**:
+- **Quick Reference**: `docs/guides/AUTH_QUICK_REFERENCE.md` (endpoints, examples, debugging)
+- **Migration Guide**: `docs/guides/AUTH_MIGRATION_GUIDE.md` (complete setup and migration steps)
+- **System Summary**: `docs/guides/AUTH_SYSTEM_SUMMARY.md` (architecture and security features)
 
 ### API Route Structure
 ```python
