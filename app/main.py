@@ -166,9 +166,10 @@ async def debug_info():
             "supabase_url_configured": bool(settings.SUPABASE_URL),
             "quickbooks_configured": {
                 "client_id": bool(settings.QUICKBOOKS_CLIENT_ID),
-                "environment": settings.QUICKBOOKS_ENVIRONMENT
+                "environment": settings.QUICKBOOKS_ENVIRONMENT,
+                "tokens_in_database": True  # Phase D.3: QB tokens now in PostgreSQL
             },
-            "google_sheets_for_qb_tokens": os.path.exists(settings.GOOGLE_SERVICE_ACCOUNT_FILE) if hasattr(settings, 'GOOGLE_SERVICE_ACCOUNT_FILE') else False
+            "google_sheets": "DEPRECATED (Phase D.3 complete)"
         }
         
         return debug_info

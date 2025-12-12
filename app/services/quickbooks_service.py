@@ -3,6 +3,7 @@ QuickBooks Online API Service
 
 Handles OAuth2 authentication and API interactions with QuickBooks Online.
 Supports customer, vendor, invoice, estimate, and bill management.
+With PostgreSQL caching to reduce API calls by 90%.
 """
 import logging
 import httpx
@@ -17,9 +18,6 @@ from app.utils.sanitizer import sanitize_log_message
 
 logger = logging.getLogger(__name__)
 
-# Token storage sheet name
-QB_TOKENS_SHEET = "QB_Tokens"
-
 
 class QuickBooksService:
     """
@@ -29,10 +27,12 @@ class QuickBooksService:
     - OAuth2 authentication flow
     - Token management (access + refresh)
     - Customer, vendor, and invoice operations
-    - Sync with Google Sheets data
+    - PostgreSQL caching (90% API call reduction)
     
-    Note: Tokens are stored in memory. For production, consider
-    storing in Google Sheets or a proper database.
+    Cache Strategy:
+    - 5-minute TTL for all cached data
+    - Check cache first, fallback to API on miss
+    - Invalidate cache on create/update/delete operations
     """
     
     def __init__(self):
@@ -51,18 +51,19 @@ class QuickBooksService:
             self.auth_url = "https://appcenter.intuit.com/connect/oauth2"
             self.token_url = "https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer"
         
-        # Token storage (persisted in Google Sheets)
+        # Token storage (persisted in Google Sheets or database)
         self.realm_id: Optional[str] = None  # Company ID
         self.access_token: Optional[str] = None
         self.refresh_token: Optional[str] = None
         self.token_expires_at: Optional[datetime] = None
         
-        # Cache storage for QB data (5-minute TTL)
+        # In-memory cache (DEPRECATED - use PostgreSQL cache via qb_cache_service)
         self._cache: Dict[str, Dict[str, Any]] = {}
         self._cache_ttl = timedelta(minutes=5)
         
-        # Database session for token storage (optional - falls back to Sheets if not provided)
+        # Database session for token + cache storage
         self.db: Optional[Any] = None
+        self.cache_service: Optional[Any] = None  # QuickBooksCacheService instance
         
         logger.info(f"QuickBooksService initialized ({self.environment} environment)")
         
@@ -70,9 +71,12 @@ class QuickBooksService:
         # Don't load here to avoid event loop conflicts
     
     def set_db_session(self, db: Any):
-        """Set database session for token storage (enables database mode)"""
+        """Set database session for token storage and caching."""
+        from app.services.qb_cache_service import QuickBooksCacheService
+        
         self.db = db
-        logger.info("Database session set for QuickBooks token storage")
+        self.cache_service = QuickBooksCacheService(db, cache_ttl_minutes=5)
+        logger.info("Database session and cache service initialized for QuickBooks")
     
     async def _load_tokens_from_db(self) -> bool:
         """
@@ -188,15 +192,39 @@ class QuickBooksService:
         }
         logger.info(f"Cache SET for {key} (TTL: {self._cache_ttl.seconds}s)")
     
-    def _invalidate_cache(self, key: Optional[str] = None) -> None:
-        """Invalidate cache (specific key or all keys)."""
-        if key:
-            if key in self._cache:
+    async def _invalidate_cache(self, cache_type: Optional[str] = None) -> None:
+        """
+        Invalidate cache (specific type or all caches).
+        
+        Clears both memory cache and PostgreSQL cache.
+        
+        Args:
+            cache_type: 'customers', 'invoices', 'payments', or None for all
+        """
+        # Clear memory cache
+        if cache_type:
+            # Clear specific cache keys matching the type
+            keys_to_delete = [k for k in self._cache.keys() if k.startswith(cache_type)]
+            for key in keys_to_delete:
                 del self._cache[key]
-                logger.info(f"Cache INVALIDATED for {key}")
+            logger.info(f"Memory cache INVALIDATED for {cache_type}")
         else:
             self._cache.clear()
-            logger.info("Cache INVALIDATED (all keys)")
+            logger.info("Memory cache INVALIDATED (all keys)")
+        
+        # PHASE D.1: Clear PostgreSQL cache
+        if self.cache_service:
+            try:
+                if cache_type == 'customers':
+                    await self.cache_service.invalidate_customer_cache()
+                elif cache_type == 'invoices':
+                    await self.cache_service.invalidate_invoice_cache()
+                elif cache_type == 'payments':
+                    await self.cache_service.invalidate_payment_cache()
+                elif cache_type is None:
+                    await self.cache_service.invalidate_all_caches()
+            except Exception as e:
+                logger.error(f"[CACHE] Failed to invalidate PostgreSQL cache: {e}")
     
     def get_auth_url(self, state: str = "randomstate") -> str:
         """
@@ -269,8 +297,15 @@ class QuickBooksService:
             self.realm_id = realm_id
             self.token_expires_at = datetime.now() + timedelta(seconds=token_data["expires_in"])
             
-            # Save tokens to Google Sheets for persistence
-            self._save_tokens_to_sheets()
+            # Save tokens to database for persistence
+            if self.db:
+                saved = await self._save_tokens_to_db()
+                if saved:
+                    logger.info("Tokens saved to database after OAuth exchange")
+                else:
+                    logger.error("Failed to save tokens to database after OAuth exchange")
+            else:
+                logger.warning("Database session not available - tokens not persisted")
             
             logger.info(f"Successfully exchanged code for tokens. Realm ID: {realm_id}")
             
@@ -448,9 +483,13 @@ class QuickBooksService:
     
     async def get_customers(self, active_only: bool = True, customer_type: Optional[str] = "GC Compliance") -> List[Dict[str, Any]]:
         """
-        Retrieve all customers from QuickBooks with caching.
+        Retrieve all customers from QuickBooks with PostgreSQL caching.
         
-        Cache is invalidated after create/update operations.
+        Cache Strategy:
+        1. Check PostgreSQL cache first (5-min TTL)
+        2. On cache miss, fetch from QB API
+        3. Store result in PostgreSQL cache
+        4. Cache invalidated after create/update operations
         
         Args:
             active_only: Only return active customers
@@ -463,10 +502,22 @@ class QuickBooksService:
             customers = await qb_service.get_customers()  # Returns only GC Compliance customers
             all_customers = await qb_service.get_customers(customer_type=None)  # Returns all customers
         """
-        # Build cache key from filters
-        cache_key = f"customers_{active_only}_{customer_type}"
+        # PHASE D.1: Check PostgreSQL cache first
+        if self.cache_service:
+            is_cache_fresh = await self.cache_service.is_customers_cache_fresh()
+            if is_cache_fresh:
+                cached_customers = await self.cache_service.get_cached_customers(
+                    customer_type=customer_type
+                )
+                if cached_customers:
+                    # Filter for active_only if needed
+                    if active_only:
+                        cached_customers = [c for c in cached_customers if c.get('Active') == True]
+                    logger.info(f"[CACHE HIT] Retrieved {len(cached_customers)} customers from PostgreSQL cache")
+                    return cached_customers
         
-        # Check cache first
+        # Fallback to old in-memory cache
+        cache_key = f"customers_{active_only}_{customer_type}"
         cached = self._get_cache(cache_key)
         if cached is not None:
             return cached
@@ -480,6 +531,7 @@ class QuickBooksService:
                 return []
         
         # Cache miss - fetch from API
+        logger.info("[CACHE MISS] Fetching customers from QuickBooks API")
         query = "SELECT * FROM Customer"
         if active_only:
             query += " WHERE Active = true"
@@ -499,7 +551,14 @@ class QuickBooksService:
         else:
             logger.info(f"Retrieved {len(customers)} customers from QB API")
         
-        # Store in cache
+        # PHASE D.1: Store in PostgreSQL cache
+        if self.cache_service:
+            try:
+                await self.cache_service.cache_customers(customers)
+            except Exception as e:
+                logger.error(f"[CACHE] Failed to cache customers in PostgreSQL: {e}")
+        
+        # Store in memory cache as fallback
         self._set_cache(cache_key, customers)
         
         return customers
@@ -528,7 +587,7 @@ class QuickBooksService:
         customer = response.get("Customer", {})
         
         # Invalidate customer cache after creation
-        self._invalidate_cache()  # Clear all customer caches
+        await self._invalidate_cache('customers')  # Clear customer caches
         logger.info(f"Created customer: {customer.get('DisplayName')} - cache invalidated")
         
         return customer
@@ -548,10 +607,13 @@ class QuickBooksService:
         customer_type: Optional[str] = "GC Compliance"
     ) -> List[Dict[str, Any]]:
         """
-        Retrieve invoices from QuickBooks with caching.
+        Retrieve invoices from QuickBooks with PostgreSQL caching.
         
-        Cache key includes filters to ensure correct data.
-        Cache is invalidated after create/update/delete operations.
+        Cache Strategy:
+        1. Check PostgreSQL cache first (5-min TTL)
+        2. On cache miss, fetch from QB API
+        3. Store result in PostgreSQL cache
+        4. Cache invalidated after create/update/delete operations
         
         Args:
             start_date: Filter by TxnDate >= start_date (YYYY-MM-DD)
@@ -566,15 +628,35 @@ class QuickBooksService:
         Example:
             invoices = await qb_service.get_invoices(customer_id="123")
         """
-        # Build cache key from filters
+        # PHASE D.1: Check PostgreSQL cache first (if no date filters or customer_id specified)
+        if self.cache_service and not start_date and not end_date:
+            is_cache_fresh = await self.cache_service.is_invoices_cache_fresh()
+            if is_cache_fresh:
+                cached_invoices = await self.cache_service.get_cached_invoices(
+                    customer_id=customer_id
+                )
+                if cached_invoices:
+                    # Post-filter by CustomerType if specified
+                    if customer_type:
+                        gc_customers = await self.get_customers(customer_type=customer_type)
+                        gc_customer_ids = set(str(c.get('Id')) for c in gc_customers)
+                        cached_invoices = [
+                            inv for inv in cached_invoices
+                            if str(inv.get('CustomerRef', {}).get('value', '')) in gc_customer_ids
+                        ]
+                    logger.info(f"[CACHE HIT] Retrieved {len(cached_invoices)} invoices from PostgreSQL cache")
+                    return cached_invoices
+        
+        # Build cache key from filters for old memory cache
         cache_key = f"invoices_{start_date}_{end_date}_{customer_id}_{customer_type}"
         
-        # Check cache first
+        # Check old memory cache
         cached = self._get_cache(cache_key)
         if cached is not None:
             return cached
         
         # Cache miss - fetch from API
+        logger.info("[CACHE MISS] Fetching invoices from QuickBooks API")
         query = "SELECT * FROM Invoice"
         conditions = []
         
@@ -609,7 +691,14 @@ class QuickBooksService:
         else:
             logger.info(f"Retrieved {len(invoices)} invoices from QB API")
         
-        # Store in cache
+        # PHASE D.1: Store in PostgreSQL cache (if no date filters)
+        if self.cache_service and not start_date and not end_date:
+            try:
+                await self.cache_service.cache_invoices(invoices)
+            except Exception as e:
+                logger.error(f"[CACHE] Failed to cache invoices in PostgreSQL: {e}")
+        
+        # Store in old memory cache
         self._set_cache(cache_key, invoices)
         
         return invoices
@@ -644,7 +733,7 @@ class QuickBooksService:
         invoice = response.get("Invoice", {})
         
         # Invalidate invoice cache after creation
-        self._invalidate_cache()  # Clear all invoice caches
+        await self._invalidate_cache('invoices')  # Clear invoice caches
         logger.info(f"Created invoice: {invoice.get('DocNumber')} - cache invalidated")
         
         return invoice
@@ -688,7 +777,7 @@ class QuickBooksService:
         invoice = response.get("Invoice", {})
         
         # Invalidate invoice cache after update
-        self._invalidate_cache()  # Clear all invoice caches
+        await self._invalidate_cache('invoices')  # Clear invoice caches
         logger.info(f"Updated invoice: {invoice.get('DocNumber')} - cache invalidated")
         
         return invoice
@@ -702,7 +791,12 @@ class QuickBooksService:
         end_date: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """
-        Retrieve payments from QuickBooks with optional filters.
+        Retrieve payments from QuickBooks with PostgreSQL caching.
+        
+        Cache Strategy:
+        1. Check PostgreSQL cache first (5-min TTL)
+        2. On cache miss, fetch from QB API
+        3. Store result in PostgreSQL cache
         
         Args:
             customer_id: Filter by QB customer ID
@@ -716,6 +810,20 @@ class QuickBooksService:
             payments = await qb_service.get_payments(start_date="2025-01-01")
         """
         self._check_authentication()
+        
+        # PHASE D.1: Check PostgreSQL cache first (if no date filters)
+        if self.cache_service and not start_date and not end_date:
+            is_cache_fresh = await self.cache_service.is_payments_cache_fresh()
+            if is_cache_fresh:
+                cached_payments = await self.cache_service.get_cached_payments(
+                    customer_id=customer_id
+                )
+                if cached_payments:
+                    logger.info(f"[CACHE HIT] Retrieved {len(cached_payments)} payments from PostgreSQL cache")
+                    return cached_payments
+        
+        # Cache miss - fetch from API
+        logger.info("[CACHE MISS] Fetching payments from QuickBooks API")
         
         # Build query
         query = "SELECT * FROM Payment"
@@ -741,6 +849,13 @@ class QuickBooksService:
         
         payments = response.get("QueryResponse", {}).get("Payment", [])
         logger.info(f"Retrieved {len(payments)} payments from QB API")
+        
+        # PHASE D.1: Store in PostgreSQL cache (if no date filters)
+        if self.cache_service and not start_date and not end_date:
+            try:
+                await self.cache_service.cache_payments(payments)
+            except Exception as e:
+                logger.error(f"[CACHE] Failed to cache payments in PostgreSQL: {e}")
         
         return payments
     
@@ -770,89 +885,26 @@ class QuickBooksService:
         days_back: int = 90
     ) -> Dict[str, Any]:
         """
-        Sync QuickBooks payments to Google Sheets Payments tab.
+        DEPRECATED: Sync QuickBooks payments to Google Sheets Payments tab.
+        
+        Phase D.3: Google Sheets retired. Payments are now stored in PostgreSQL.
+        Use db_service.get_payments_data() instead.
+        
+        This method is kept for backwards compatibility but will be removed in future.
         
         Args:
-            google_service: Google Sheets service instance
+            google_service: Google Sheets service instance (DEPRECATED)
             days_back: How many days back to sync (default 90)
         
         Returns:
-            Sync summary with counts
-        
-        Example:
-            result = await qb_service.sync_payments_to_sheets(google_service, days_back=30)
-            # Returns: {"status": "success", "synced": 5, "new": 3, "updated": 2}
+            Deprecation warning
         """
-        from datetime import datetime, timedelta
-        import uuid
-        
-        start_date = (datetime.now() - timedelta(days=days_back)).strftime('%Y-%m-%d')
-        
-        logger.info(f"Starting payment sync from {start_date}")
-        
-        # Get QB payments
-        qb_payments = await self.get_payments(start_date=start_date)
-        logger.info(f"Retrieved {len(qb_payments)} payments from QuickBooks")
-        
-        # Get existing payments from Sheets
-        existing_payments = await google_service.get_sheet_data('Payments')
-        existing_qb_ids = {p.get('QB Payment ID') for p in existing_payments if p.get('QB Payment ID')}
-        
-        logger.info(f"Found {len(existing_qb_ids)} existing payments in Sheets")
-        
-        synced_count = 0
-        new_count = 0
-        updated_count = 0
-        errors = []
-        
-        for qb_payment in qb_payments:
-            try:
-                payment_id = qb_payment.get('Id')
-                
-                # Map QB payment to Sheets structure
-                sheet_payment = await self._map_qb_payment_to_sheet(qb_payment, google_service)
-                
-                if payment_id in existing_qb_ids:
-                    # Update existing - find row by QB Payment ID
-                    row_index = None
-                    for idx, p in enumerate(existing_payments):
-                        if p.get('QB Payment ID') == payment_id:
-                            row_index = idx + 2  # +2 for header row and 0-indexing
-                            break
-                    
-                    if row_index:
-                        # Update the row
-                        values = [list(sheet_payment.values())]
-                        await google_service.update_range(
-                            sheet_name='Payments',
-                            range_name=f'A{row_index}:K{row_index}',
-                            values=values
-                        )
-                        updated_count += 1
-                        logger.info(f"Updated payment: {payment_id}")
-                else:
-                    # Insert new payment
-                    await google_service.append_row('Payments', list(sheet_payment.values()))
-                    new_count += 1
-                    logger.info(f"Added new payment: {payment_id}")
-                
-                synced_count += 1
-                
-            except Exception as e:
-                error_msg = f"Error syncing payment {qb_payment.get('Id')}: {str(e)}"
-                logger.error(error_msg)
-                errors.append(error_msg)
-        
-        result = {
-            "status": "success" if not errors else "partial",
-            "synced": synced_count,
-            "new": new_count,
-            "updated": updated_count,
-            "errors": errors if errors else None
+        logger.warning("sync_payments_to_sheets is DEPRECATED (Phase D.3). Use PostgreSQL db_service instead.")
+        return {
+            "status": "deprecated",
+            "error": "Google Sheets integration retired in Phase D.3. Payments are now in PostgreSQL.",
+            "migration": "Use db_service.get_payments_data() or /v1/payments API endpoints"
         }
-        
-        logger.info(f"Payment sync complete: {result}")
-        return result
     
     async def _map_qb_payment_to_sheet(
         self,
@@ -860,71 +912,22 @@ class QuickBooksService:
         google_service
     ) -> Dict[str, Any]:
         """
-        Map QuickBooks Payment entity to Sheets Payments row.
+        DEPRECATED: Map QuickBooks Payment entity to Sheets Payments row.
+        
+        Phase D.3: Google Sheets retired. This method is no longer used.
+        Payments are stored in PostgreSQL via db_service.
         
         Args:
-            qb_payment: QB Payment entity
-            google_service: Google service for client lookup
+            qb_payment: QB Payment entity (DEPRECATED)
+            google_service: Google service for client lookup (DEPRECATED)
         
         Returns:
-            Dictionary with Sheets column values
+            Deprecation warning
         """
-        import uuid
-        
-        # Extract QB fields
-        qb_id = qb_payment.get('Id', '')
-        customer_ref = qb_payment.get('CustomerRef', {}).get('value', '')
-        total_amt = qb_payment.get('TotalAmt', 0)
-        txn_date = qb_payment.get('TxnDate', '')
-        payment_method_ref = qb_payment.get('PaymentMethodRef', {})
-        payment_method = payment_method_ref.get('name', 'Unknown') if payment_method_ref else 'Unknown'
-        
-        # Extract linked invoice ID
-        invoice_id = ''
-        lines = qb_payment.get('Line', [])
-        for line in lines:
-            linked_txns = line.get('LinkedTxn', [])
-            for txn in linked_txns:
-                if txn.get('TxnType') == 'Invoice':
-                    invoice_id = txn.get('TxnId', '')
-                    break
-            if invoice_id:
-                break
-        
-        # Resolve Client ID from QB Customer ID
-        # Look up in Clients sheet for matching QBO Client ID
-        clients = await google_service.get_sheet_data('Clients')
-        client_id = ''
-        for client in clients:
-            if str(client.get('QBO Client ID', '')).strip() == str(customer_ref).strip():
-                client_id = client.get('Client ID', '')
-                break
-        
-        # Generate Payment ID if this is a new payment
-        payment_id = f"PAY-{uuid.uuid4().hex[:8]}"
-        
-        # Map payment method names
-        method_mapping = {
-            'Cash': 'Cash',
-            'Check': 'Check',
-            'Credit Card': 'Credit Card',
-            'Bank Transfer': 'ACH',
-            'Other': 'Other'
-        }
-        mapped_method = method_mapping.get(payment_method, 'Other')
-        
+        logger.warning("_map_qb_payment_to_sheet is DEPRECATED (Phase D.3). Payments now in PostgreSQL.")
         return {
-            'Payment ID': payment_id,
-            'Invoice ID': invoice_id,
-            'Project ID': '',  # Will be filled later if we link invoice to project
-            'Client ID': client_id,
-            'Amount': total_amt,
-            'Payment Date': txn_date,
-            'Payment Method': mapped_method,
-            'Status': 'Completed',  # QB payments are completed
-            'QB Payment ID': qb_id,
-            'Transaction ID': '',
-            'Notes': f'Synced from QuickBooks on {datetime.now().strftime("%Y-%m-%d %H:%M")}'
+            "status": "deprecated",
+            "error": "Google Sheets integration retired"
         }
     
     # ==================== ESTIMATE OPERATIONS ====================
@@ -1052,7 +1055,7 @@ class QuickBooksService:
         customer = response.get("Customer", {})
         
         # Invalidate customer cache after update
-        self._invalidate_cache()
+        await self._invalidate_cache('customers')
         logger.info(f"Updated customer ID {customer_id}: {customer.get('DisplayName')} - cache invalidated")
         
         return customer

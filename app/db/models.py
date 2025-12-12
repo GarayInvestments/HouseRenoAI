@@ -547,7 +547,8 @@ class User(Base):
     phone: Mapped[str | None] = mapped_column(String(50))
     
     # Authentication (for local users not using Supabase Auth)
-    password_hash: Mapped[str | None] = mapped_column(String(255))
+    # Note: Column removed from database - Supabase Auth handles password hashing
+    # password_hash: Mapped[str | None] = mapped_column(String(255))
     
     # Role-based access control
     # Valid roles: admin, pm, inspector, client, finance
@@ -559,7 +560,7 @@ class User(Base):
     
     # Activity tracking
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    last_activity_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # last_activity_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     
     # App-specific metadata
     # Example: {"permissions": ["view_permits"], "preferences": {"theme": "dark"}}
@@ -609,6 +610,41 @@ class QuickBooksInvoiceCache(Base):
         index=True
     )
 
+
+class QuickBooksPaymentCache(Base):
+    """
+    Cache for QuickBooks payment data to reduce API calls.
+    
+    TTL-based cache refreshed during active use.
+    """
+    __tablename__ = "quickbooks_payments_cache"
+    
+    # QuickBooks payment ID as primary key
+    qb_payment_id: Mapped[str] = mapped_column(String(50), primary_key=True)
+    
+    # Payment summary
+    customer_id: Mapped[str | None] = mapped_column(String(50), index=True)
+    total_amount: Mapped[float | None] = mapped_column(Numeric(12, 2))
+    payment_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    payment_method: Mapped[str | None] = mapped_column(String(50))  # Check, Cash, CreditCard, etc.
+    payment_ref_num: Mapped[str | None] = mapped_column(String(100))  # Check number or reference
+    
+    # Full QB response (includes linked invoices)
+    qb_data: Mapped[Dict[str, Any] | None] = mapped_column(JSONB)
+    
+    # Cache metadata
+    cached_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), 
+        server_default=text("CURRENT_TIMESTAMP"),
+        index=True
+    )
+    
+    __table_args__ = (
+        Index('ix_qb_payments_cached_at', 'cached_at'),
+        Index('ix_qb_payments_payment_date', 'payment_date'),
+    )
+
+
 __all__ = [
     'Base',
     'Client',
@@ -619,4 +655,5 @@ __all__ = [
     'QuickBooksToken',
     'QuickBooksCustomerCache',
     'QuickBooksInvoiceCache',
+    'QuickBooksPaymentCache',
 ]

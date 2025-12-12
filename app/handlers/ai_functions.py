@@ -1655,53 +1655,30 @@ async def handle_sync_payments(
     session_id: str
 ) -> Dict[str, Any]:
     """
-    Sync payments from QuickBooks to Google Sheets
+    DEPRECATED: Sync payments from QuickBooks to Google Sheets
+    
+    Phase D.3: Google Sheets retired. Payments are now in PostgreSQL.
+    This function returns a deprecation notice.
     
     Args:
         args: Function arguments containing optional days_back
-        google_service: Google Sheets service instance
+        google_service: Google Sheets service instance (DEPRECATED)
         quickbooks_service: QuickBooks service instance
         memory_manager: Session memory manager
         session_id: Current session ID
         
     Returns:
-        Dictionary with sync results
+        Deprecation warning
     """
-    try:
-        days_back = int(args.get('days_back', 90))
-        
-        logger.info(f"AI executing: Sync payments from QuickBooks (days_back={days_back})")
-        
-        # Execute the sync
-        result = await quickbooks_service.sync_payments_to_sheets(google_service, days_back)
-        
-        if result.get('status') == 'success':
-            # Remember this in session memory
-            memory_manager.set(session_id, "last_action", "synced_payments")
-            memory_manager.set(session_id, "last_payments_synced", result.get('synced', 0))
-            
-            logger.info(f"AI executed: Synced {result['synced']} payments ({result['new']} new, {result['updated']} updated)")
-            
-            return {
-                "status": "success",
-                "message": f"✅ Synced {result['synced']} payments from QuickBooks",
-                "details": f"{result['new']} new payments added, {result['updated']} existing payments updated",
-                "data": result,
-                "action_taken": f"Synced {result['synced']} payments from last {days_back} days",
-                "data_updated": True
-            }
-        else:
-            return {
-                "status": "failed",
-                "error": result.get('error', 'Unknown error during sync')
-            }
-            
-    except Exception as e:
-        logger.error(f"Error syncing payments: {e}", exc_info=True)
-        return {
-            "status": "failed",
-            "error": f"Payment sync failed: {str(e)}"
-        }
+    logger.warning("handle_sync_payments is DEPRECATED (Phase D.3). Payments now in PostgreSQL.")
+    
+    return {
+        "status": "deprecated",
+        "message": "⚠️ This feature has been retired (Phase D.3)",
+        "details": "Payments are now automatically stored in PostgreSQL. No manual sync needed.",
+        "migration": "View payments via /v1/payments API or the Payments page in the frontend",
+        "error": "Google Sheets integration retired. Use PostgreSQL /v1/payments endpoints instead."
+    }
 
 
 async def handle_get_client_payments(
