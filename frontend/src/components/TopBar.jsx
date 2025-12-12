@@ -1,11 +1,9 @@
 import { Menu, User, Settings, LogOut, Wifi, WifiOff } from 'lucide-react';
 import { useAppStore } from '../stores/appStore';
-import { useAuthStore } from '../stores/authStore';
 import { useState, useRef, useEffect } from 'react';
 
 export default function TopBar() {
-  const { connectionStatus, setMobileDrawerOpen } = useAppStore();
-  const { user } = useAuthStore();
+  const { user, connectionStatus, setMobileDrawerOpen } = useAppStore();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -19,19 +17,6 @@ export default function TopBar() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  // Helper to get user initials
-  const getUserInitials = () => {
-    if (!user) return 'U';
-    const name = user.full_name || user.email || 'User';
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-  };
-
-  // Helper to get display name
-  const getDisplayName = () => {
-    if (!user) return 'User';
-    return user.full_name || user.email || 'User';
-  };
 
   return (
     <>
@@ -174,14 +159,14 @@ export default function TopBar() {
                 fontSize: '13px',
                 boxShadow: '0 2px 4px rgba(37, 99, 235, 0.3)'
               }}>
-                {getUserInitials()}
+                {user.initials}
               </div>
               <span className="hidden md:block" style={{
                 fontWeight: '600',
                 fontSize: '14px',
                 color: '#1E293B'
               }}>
-                {getDisplayName()}
+                {user.name}
               </span>
             </button>
 
@@ -203,8 +188,8 @@ export default function TopBar() {
                   borderBottom: '1px solid #F1F5F9',
                   backgroundColor: '#F8FAFC'
                 }}>
-                  <p style={{ fontWeight: '600', fontSize: '14px', color: '#1E293B' }}>{getDisplayName()}</p>
-                  <p style={{ fontSize: '12px', color: '#64748B', marginTop: '2px' }}>{user?.email || 'user@example.com'}</p>
+                  <p style={{ fontWeight: '600', fontSize: '14px', color: '#1E293B' }}>{user.name}</p>
+                  <p style={{ fontSize: '12px', color: '#64748B', marginTop: '2px' }}>{user.email}</p>
                 </div>
                 <div style={{ padding: '8px' }}>
                   <button style={{
@@ -245,9 +230,9 @@ export default function TopBar() {
                   </button>
                   <div style={{ borderTop: '1px solid #F1F5F9', margin: '8px 0' }} />
                   <button 
-                    onClick={async () => {
+                    onClick={() => {
+                      useAppStore.getState().logout();
                       setDropdownOpen(false);
-                      await useAuthStore.getState().logout();
                     }}
                     style={{
                     width: '100%',
