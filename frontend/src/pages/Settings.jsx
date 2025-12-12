@@ -1,8 +1,17 @@
-import { Settings as SettingsIcon, User, Bell, Lock, Palette, Globe, Shield } from 'lucide-react';
+import { Settings as SettingsIcon, User, Bell, Lock, Palette, Globe, Shield, LogOut } from 'lucide-react';
 import { useState } from 'react';
+import { useAuthStore } from '../stores/authStore';
 
 export default function Settings() {
   const [hoveredItem, setHoveredItem] = useState(null);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const logout = useAuthStore((state) => state.logout);
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    await logout();
+    // App.jsx will detect auth state change and redirect to login
+  };
 
   const settingSections = [
     {
@@ -238,6 +247,64 @@ export default function Settings() {
                 </div>
               );
             })}
+          </div>
+
+          {/* Logout Section */}
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: '12px',
+            padding: '24px',
+            border: '1px solid #E2E8F0',
+            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)',
+            marginTop: '32px'
+          }}>
+            <h3 style={{
+              fontSize: '16px',
+              fontWeight: '600',
+              color: '#1E293B',
+              marginBottom: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              <LogOut size={20} />
+              Sign Out
+            </h3>
+            <p style={{
+              fontSize: '14px',
+              color: '#64748B',
+              marginBottom: '16px'
+            }}>
+              Sign out of your account on this device. You can sign back in anytime.
+            </p>
+            <button
+              onClick={handleLogout}
+              disabled={loggingOut}
+              style={{
+                padding: '10px 20px',
+                border: '1px solid #2563EB',
+                borderRadius: '10px',
+                backgroundColor: loggingOut ? '#94A3B8' : '#2563EB',
+                color: '#FFFFFF',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: loggingOut ? 'not-allowed' : 'pointer',
+                transition: 'all 0.2s ease',
+                opacity: loggingOut ? 0.7 : 1
+              }}
+              onMouseEnter={(e) => {
+                if (!loggingOut) {
+                  e.currentTarget.style.backgroundColor = '#1D4ED8';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!loggingOut) {
+                  e.currentTarget.style.backgroundColor = '#2563EB';
+                }
+              }}
+            >
+              {loggingOut ? 'Signing Out...' : 'Sign Out'}
+            </button>
           </div>
 
           {/* Danger Zone */}

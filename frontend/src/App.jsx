@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAppStore } from './stores/appStore';
+import { useAuthStore } from './stores/authStore';
 import LoadingScreen from './components/LoadingScreen';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
@@ -23,7 +24,14 @@ import AuthResetPassword from './pages/AuthResetPassword';
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
-  const { currentView, currentProjectId, currentPermitId, currentClientId, setCurrentView, checkAuth } = useAppStore();
+  const { currentView, setCurrentView } = useAppStore();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const initialize = useAuthStore((state) => state.initialize);
+
+  useEffect(() => {
+    // Initialize auth from localStorage on app load
+    initialize();
+  }, [initialize]);
 
   useEffect(() => {
     // Check authentication and URL path on initial load
@@ -49,18 +57,39 @@ function App() {
         return;
       }
       
-      // Check if user is authenticated
-      const authenticated = await checkAuth();
+      // Small delay to allow auth initialization
+      await new Promise(resolve => setTimeout(resolve, 100));
       
-      if (!authenticated) {
+      // Check if user is authenticated
+      if (!isAuthenticated) {
         setCurrentView('login');
+      } else {
+        setCurrentView('dashboard');
       }
       
       setIsLoading(false);
     };
     
     initializeApp();
-  }, [setCurrentView, checkAuth]);
+  }, []); // Only run once on mount
+
+  useEffect(() => {
+    // Handle auth state changes after initial load
+    const publicViews = ['login', 'privacy', 'terms', 'auth-confirm', 'auth-reset-password'];
+    
+    if (isLoading) {
+      // Don't redirect during initial load
+      return;
+    }
+    
+    if (isAuthenticated && currentView === 'login') {
+      // User just logged in
+      setCurrentView('dashboard');
+    } else if (!isAuthenticated && !publicViews.includes(currentView)) {
+      // User just logged out
+      setCurrentView('login');
+    }
+  }, [isAuthenticated, isLoading, currentView]);
 
   useEffect(() => {
     // Update URL when view changes (for privacy/terms/auth pages)

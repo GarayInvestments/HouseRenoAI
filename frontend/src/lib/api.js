@@ -1,22 +1,38 @@
 // API service for backend communication
+import { useAuthStore } from '../stores/authStore';
+
 const API_URL = import.meta.env.VITE_API_URL || 'https://houserenovators-api.fly.dev';
 const API_VERSION = 'v1';
 
 class ApiService {
   constructor() {
     this.baseUrl = `${API_URL}/${API_VERSION}`;
+    this.isRefreshing = false;
+    this.failedQueue = [];
+  }
+
+  processQueue(error, token = null) {
+    this.failedQueue.forEach(prom => {
+      if (error) {
+        prom.reject(error);
+      } else {
+        prom.resolve(token);
+      }
+    });
+    
+    this.failedQueue = [];
   }
 
   async request(endpoint, options = {}) {
     const url = `${this.baseUrl}${endpoint}`;
     
-    // Get token from localStorage
-    const token = localStorage.getItem('token');
+    // Get access token from auth store
+    const accessToken = useAuthStore.getState().accessToken;
     
     const config = {
       headers: {
         'Content-Type': 'application/json',
-        ...(token && { 'Authorization': `Bearer ${token}` }),
+        ...(accessToken && { 'Authorization': `Bearer ${accessToken}` }),
         ...options.headers,
       },
       ...options,
@@ -25,16 +41,53 @@ class ApiService {
     try {
       const response = await fetch(url, config);
       
-      // Handle 401 Unauthorized - redirect to login
+      // Handle 401 Unauthorized - try to refresh token
       if (response.status === 401) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.href = '/';
-        throw new Error('Session expired. Please login again.');
+        const originalRequest = { endpoint, options };
+        
+        if (!this.isRefreshing) {
+          this.isRefreshing = true;
+          
+          try {
+            const result = await useAuthStore.getState().refreshAccessToken();
+            
+            if (result.success) {
+              this.isRefreshing = false;
+              this.processQueue(null, result.token);
+              
+              // Retry original request with new token
+              return this.request(endpoint, options);
+            } else {
+              // Refresh failed - logout
+              this.isRefreshing = false;
+              this.processQueue(new Error('Token refresh failed'), null);
+              useAuthStore.getState().clearAuth();
+              throw new Error('Session expired. Please login again.');
+            }
+          } catch (refreshError) {
+            this.isRefreshing = false;
+            this.processQueue(refreshError, null);
+            useAuthStore.getState().clearAuth();
+            throw new Error('Session expired. Please login again.');
+          }
+        }
+        
+        // If already refreshing, queue this request
+        return new Promise((resolve, reject) => {
+          this.failedQueue.push({
+            resolve: () => {
+              resolve(this.request(endpoint, options));
+            },
+            reject: (err) => {
+              reject(err);
+            }
+          });
+        });
       }
       
       if (!response.ok) {
-        throw new Error(`API error: ${response.status} ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `API error: ${response.status} ${response.statusText}`);
       }
 
       return await response.json();
