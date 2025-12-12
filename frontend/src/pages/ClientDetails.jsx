@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { ArrowLeft, User, Mail, Phone, MapPin, Calendar, FileText, Loader2 } from 'lucide-react';
 import api from '../lib/api';
 import useAppStore from '../stores/appStore';
+import LoadingScreen from '../components/LoadingScreen';
+import ErrorState from '../components/ErrorState';
 
 export default function ClientDetails() {
   const [client, setClient] = useState(null);
@@ -101,28 +103,17 @@ export default function ClientDetails() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-blue-500 mx-auto mb-4" />
-          <p className="text-gray-600">Loading client details...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (error || !client) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <p className="text-red-600 mb-4">{error || 'Client not found'}</p>
-          <button
-            onClick={handleRetry}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            Retry
-          </button>
-        </div>
+      <div style={{ padding: '20px', backgroundColor: '#F8FAFC', minHeight: '100vh' }}>
+        <ErrorState 
+          message={error || 'Client not found'} 
+          onRetry={handleRetry} 
+          fullScreen 
+        />
       </div>
     );
   }

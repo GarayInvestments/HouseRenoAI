@@ -1,3 +1,5 @@
+import { sanitizeInput } from '../utils/sanitize'
+
 export default function FormField({
   label,
   name,
@@ -11,12 +13,47 @@ export default function FormField({
   rows = 3, // For textarea
   disabled = false,
   className = '',
+  sanitize = true, // Enable sanitization by default
 }) {
   const baseInputClasses = `w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-colors ${
     error
       ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
       : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
   } ${disabled ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'} ${className}`;
+
+  // Wrapper for onChange to sanitize input before passing to parent
+  const handleChange = (e) => {
+    if (!onChange) return;
+    
+    if (!sanitize) {
+      // Skip sanitization if disabled
+      onChange(e);
+      return;
+    }
+    
+    // For text-like inputs, sanitize the value
+    if (type === 'text' || type === 'textarea' || type === 'email') {
+      const sanitizedValue = sanitizeInput(e.target.value);
+      
+      // Create a proper event object with sanitized value
+      const syntheticEvent = {
+        target: {
+          name: e.target.name,
+          value: sanitizedValue,
+          type: e.target.type
+        },
+        currentTarget: {
+          name: e.target.name,
+          value: sanitizedValue
+        }
+      };
+      
+      onChange(syntheticEvent);
+    } else {
+      // For other input types (number, date, select), pass through
+      onChange(e);
+    }
+  }
 
   const renderInput = () => {
     switch (type) {
@@ -26,7 +63,7 @@ export default function FormField({
             id={name}
             name={name}
             value={value}
-            onChange={onChange}
+            onChange={handleChange}
             required={required}
             placeholder={placeholder}
             rows={rows}
@@ -41,7 +78,7 @@ export default function FormField({
             id={name}
             name={name}
             value={value}
-            onChange={onChange}
+            onChange={handleChange}
             required={required}
             disabled={disabled}
             className={baseInputClasses}
@@ -66,7 +103,7 @@ export default function FormField({
             id={name}
             name={name}
             value={value}
-            onChange={onChange}
+            onChange={handleChange}
             required={required}
             disabled={disabled}
             className={baseInputClasses}
@@ -80,7 +117,7 @@ export default function FormField({
             id={name}
             name={name}
             value={value}
-            onChange={onChange}
+            onChange={handleChange}
             required={required}
             placeholder={placeholder}
             disabled={disabled}
@@ -96,7 +133,7 @@ export default function FormField({
             id={name}
             name={name}
             value={value}
-            onChange={onChange}
+            onChange={handleChange}
             required={required}
             placeholder={placeholder}
             disabled={disabled}

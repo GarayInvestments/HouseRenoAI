@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useAuthStore } from '../stores/authStore';
 import { useAppStore } from '../stores/appStore';
 
 export default function Login() {
@@ -8,7 +9,8 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
-  const login = useAppStore((state) => state.login);
+  const login = useAuthStore((state) => state.login);
+  const setCurrentView = useAppStore((state) => state.setCurrentView);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -17,7 +19,8 @@ export default function Login() {
 
     try {
       await login(email, password);
-      // Login successful, appStore will handle navigation
+      // Login successful, navigate to dashboard
+      setCurrentView('dashboard');
     } catch (err) {
       setError(err.message || 'Invalid email or password');
     } finally {

@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import api from '../lib/api';
 import { useAppStore } from '../stores/appStore';
+import LoadingScreen from '../components/LoadingScreen';
+import ErrorState from '../components/ErrorState';
 
 export default function ProjectDetails() {
   const { currentProjectId, navigateToProjects } = useAppStore();
@@ -100,49 +102,17 @@ export default function ProjectDetails() {
   };
 
   if (loading) {
-    return (
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100vh',
-        gap: '16px',
-        backgroundColor: '#F8FAFC'
-      }}>
-        <Loader2 className="animate-spin" size={40} style={{ color: '#2563EB' }} />
-        <p style={{ color: '#64748B', fontSize: '14px' }}>Loading project details...</p>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (error || !project) {
     return (
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100vh',
-        gap: '16px',
-        backgroundColor: '#F8FAFC'
-      }}>
-        <AlertCircle size={40} style={{ color: '#DC2626' }} />
-        <p style={{ color: '#DC2626', fontSize: '14px' }}>{error || 'Project not found'}</p>
-        <button
-          onClick={navigateToProjects}
-          style={{
-            padding: '8px 16px',
-            backgroundColor: '#2563EB',
-            color: '#FFFFFF',
-            border: 'none',
-            borderRadius: '8px',
-            fontSize: '14px',
-            cursor: 'pointer'
-          }}
-        >
-          Back to Projects
-        </button>
+      <div style={{ padding: '20px', backgroundColor: '#F8FAFC', minHeight: '100vh' }}>
+        <ErrorState 
+          message={error || 'Project not found'} 
+          onRetry={fetchProjectDetails} 
+          fullScreen 
+        />
       </div>
     );
   }

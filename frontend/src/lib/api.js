@@ -1,4 +1,6 @@
 // API service for backend communication
+import { supabase } from './supabase'
+
 const API_URL = import.meta.env.VITE_API_URL || 'https://houserenovators-api.fly.dev';
 const API_VERSION = 'v1';
 
@@ -7,11 +9,22 @@ class ApiService {
     this.baseUrl = `${API_URL}/${API_VERSION}`;
   }
 
+  async getAuthToken() {
+    // Get token from Supabase session (handles refresh automatically)
+    const { data: { session }, error } = await supabase.auth.getSession()
+    
+    if (error || !session) {
+      return null
+    }
+    
+    return session.access_token
+  }
+
   async request(endpoint, options = {}) {
     const url = `${this.baseUrl}${endpoint}`;
     
-    // Get token from localStorage
-    const token = localStorage.getItem('token');
+    // Get token from Supabase session (not localStorage)
+    const token = await this.getAuthToken();
     
     const config = {
       headers: {
@@ -25,10 +38,11 @@ class ApiService {
     try {
       const response = await fetch(url, config);
       
-      // Handle 401 Unauthorized - redirect to login
+      // Handle 401 Unauthorized - session expired or invalid
       if (response.status === 401) {
-        localStorage.removeItem('token');
+        // Clear any local storage
         localStorage.removeItem('user');
+        // Redirect to login (auth store will handle session cleanup)
         window.location.href = '/';
         throw new Error('Session expired. Please login again.');
       }

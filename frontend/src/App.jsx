@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAppStore } from './stores/appStore';
+import { useAuthStore } from './stores/authStore';
 import LoadingScreen from './components/LoadingScreen';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
@@ -23,7 +24,8 @@ import AuthResetPassword from './pages/AuthResetPassword';
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
-  const { currentView, currentProjectId, currentPermitId, currentClientId, setCurrentView, checkAuth } = useAppStore();
+  const { currentView, currentProjectId, currentPermitId, currentClientId, setCurrentView } = useAppStore();
+  const { initAuth, isAuthenticated } = useAuthStore();
 
   useEffect(() => {
     // Check authentication and URL path on initial load
@@ -49,8 +51,8 @@ function App() {
         return;
       }
       
-      // Check if user is authenticated
-      const authenticated = await checkAuth();
+      // Initialize auth - validates session and restores user state
+      const authenticated = await initAuth();
       
       if (!authenticated) {
         setCurrentView('login');
@@ -60,7 +62,7 @@ function App() {
     };
     
     initializeApp();
-  }, [setCurrentView, checkAuth]);
+  }, [setCurrentView, initAuth]);
 
   useEffect(() => {
     // Update URL when view changes (for privacy/terms/auth pages)

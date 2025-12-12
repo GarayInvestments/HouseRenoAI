@@ -2,6 +2,8 @@ import { FolderKanban, Plus, Search, MapPin, Users, Calendar, AlertCircle, Loade
 import { useState, useEffect } from 'react';
 import api from '../lib/api';
 import { useAppStore } from '../stores/appStore';
+import LoadingScreen from '../components/LoadingScreen';
+import ErrorState from '../components/ErrorState';
 
 export default function Projects() {
   const { navigateToProject, projectsFilter, setProjectsFilter } = useAppStore();
@@ -115,6 +117,18 @@ export default function Projects() {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
+
+  if (loading) {
+    return <LoadingScreen />;
+  }
+
+  if (error) {
+    return (
+      <div style={{ padding: '20px', backgroundColor: '#F8FAFC', minHeight: '100vh' }}>
+        <ErrorState message={error} onRetry={fetchProjects} fullScreen />
+      </div>
+    );
+  }
 
   return (
     <div style={{

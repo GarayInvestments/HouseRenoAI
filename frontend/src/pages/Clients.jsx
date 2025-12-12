@@ -5,6 +5,8 @@ import useAppStore from '../stores/appStore';
 import Modal from '../components/Modal';
 import FormField from '../components/FormField';
 import ConfirmDialog from '../components/ConfirmDialog';
+import ErrorState from '../components/ErrorState';
+import LoadingScreen from '../components/LoadingScreen';
 
 export default function Clients() {
   // Clients page with card layout
@@ -187,103 +189,13 @@ export default function Clients() {
   });
 
   if (loading) {
-    return (
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        backgroundColor: '#F8FAFC'
-      }}>
-        {/* Header */}
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          borderBottom: '1px solid #E2E8F0',
-          padding: '24px 32px',
-          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)'
-        }}>
-          <h1 style={{
-            fontSize: '24px',
-            fontWeight: '600',
-            color: '#1E293B',
-            marginBottom: '4px'
-          }}>Clients</h1>
-          <p style={{
-            color: '#64748B',
-            fontSize: '14px'
-          }}>Loading...</p>
-        </div>
-
-        {/* Loading State */}
-        <div style={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '400px',
-          gap: '16px'
-        }}>
-          <Loader2 className="animate-spin" size={40} style={{ color: '#2563EB' }} />
-          <p style={{ color: '#64748B', fontSize: '14px' }}>Loading clients...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (error) {
     return (
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        backgroundColor: '#F8FAFC'
-      }}>
-        {/* Header */}
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          borderBottom: '1px solid #E2E8F0',
-          padding: '24px 32px',
-          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)'
-        }}>
-          <h1 style={{
-            fontSize: '24px',
-            fontWeight: '600',
-            color: '#1E293B',
-            marginBottom: '4px'
-          }}>Clients</h1>
-          <p style={{
-            color: '#64748B',
-            fontSize: '14px'
-          }}>Error loading clients</p>
-        </div>
-
-        {/* Error State */}
-        <div style={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '400px',
-          gap: '16px'
-        }}>
-          <AlertCircle size={40} style={{ color: '#DC2626' }} />
-          <p style={{ color: '#DC2626', fontSize: '14px' }}>{error}</p>
-          <button
-            onClick={fetchClients}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: '#2563EB',
-              color: '#FFFFFF',
-              border: 'none',
-              borderRadius: '8px',
-              fontSize: '14px',
-              cursor: 'pointer'
-            }}
-          >
-            Retry
-          </button>
-        </div>
+      <div style={{ padding: '20px', backgroundColor: '#F8FAFC', minHeight: '100vh' }}>
+        <ErrorState message={error} onRetry={fetchClients} fullScreen />
       </div>
     );
   }

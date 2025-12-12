@@ -1,11 +1,21 @@
 import { Menu, User, Settings, LogOut, Wifi, WifiOff } from 'lucide-react';
 import { useAppStore } from '../stores/appStore';
+import { useAuthStore } from '../stores/authStore';
 import { useState, useRef, useEffect } from 'react';
 
 export default function TopBar() {
-  const { user, connectionStatus, setMobileDrawerOpen } = useAppStore();
+  const { connectionStatus, setMobileDrawerOpen } = useAppStore();
+  const { currentUser, logout } = useAuthStore();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+  
+  // Create user object for display (compatibility with existing code)
+  const user = currentUser ? {
+    name: currentUser.full_name || currentUser.email,
+    initials: (currentUser.full_name || currentUser.email).split(' ').map(n => n[0]).join(''),
+    email: currentUser.email,
+    role: currentUser.role
+  } : null;
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -231,7 +241,7 @@ export default function TopBar() {
                   <div style={{ borderTop: '1px solid #F1F5F9', margin: '8px 0' }} />
                   <button 
                     onClick={() => {
-                      useAppStore.getState().logout();
+                      logout();
                       setDropdownOpen(false);
                     }}
                     style={{
