@@ -161,6 +161,26 @@ class ApiService {
     });
   }
 
+  async createClient(clientData) {
+    return this.request('/clients', {
+      method: 'POST',
+      body: JSON.stringify(clientData),
+    });
+  }
+
+  async updateClient(clientId, updates) {
+    return this.request(`/clients/${clientId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  async deleteClient(clientId) {
+    return this.request(`/clients/${clientId}`, {
+      method: 'DELETE',
+    });
+  }
+
   async lookupClient(name = null, email = null) {
     const params = new URLSearchParams();
     if (name) params.append('name', name);
@@ -171,10 +191,240 @@ class ApiService {
     });
   }
 
-  async updateClient(clientId, updates) {
-    return this.request(`/clients/${clientId}`, {
+  // Projects endpoints (extended)
+  async createProject(projectData) {
+    return this.request('/projects', {
+      method: 'POST',
+      body: JSON.stringify(projectData),
+    });
+  }
+
+  async deleteProject(projectId) {
+    return this.request(`/projects/${projectId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Permits endpoints (extended)
+  async deletePermit(permitId) {
+    return this.request(`/permits/${permitId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Invoices endpoints
+  async getInvoices() {
+    return this.request('/invoices', {
+      method: 'GET',
+    });
+  }
+
+  async getInvoice(invoiceId) {
+    return this.request(`/invoices/${invoiceId}`, {
+      method: 'GET',
+    });
+  }
+
+  async createInvoice(invoiceData) {
+    return this.request('/invoices', {
+      method: 'POST',
+      body: JSON.stringify(invoiceData),
+    });
+  }
+
+  async updateInvoice(invoiceId, invoiceData) {
+    return this.request(`/invoices/${invoiceId}`, {
       method: 'PUT',
-      body: JSON.stringify(updates),
+      body: JSON.stringify(invoiceData),
+    });
+  }
+
+  async deleteInvoice(invoiceId) {
+    return this.request(`/invoices/${invoiceId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getInvoicesByProject(projectId) {
+    return this.request(`/invoices/project/${projectId}`, {
+      method: 'GET',
+    });
+  }
+
+  // Payments endpoints
+  async getPayments() {
+    return this.request('/payments', {
+      method: 'GET',
+    });
+  }
+
+  async createPayment(paymentData) {
+    return this.request('/payments', {
+      method: 'POST',
+      body: JSON.stringify(paymentData),
+    });
+  }
+
+  async syncPayments() {
+    return this.request('/payments/sync', {
+      method: 'POST',
+    });
+  }
+
+  // Inspections endpoints
+  async getInspections() {
+    return this.request('/inspections', {
+      method: 'GET',
+    });
+  }
+
+  async getInspection(inspectionId) {
+    return this.request(`/inspections/${inspectionId}`, {
+      method: 'GET',
+    });
+  }
+
+  async createInspection(inspectionData) {
+    return this.request('/inspections', {
+      method: 'POST',
+      body: JSON.stringify(inspectionData),
+    });
+  }
+
+  async updateInspection(inspectionId, inspectionData) {
+    return this.request(`/inspections/${inspectionId}`, {
+      method: 'PUT',
+      body: JSON.stringify(inspectionData),
+    });
+  }
+
+  async deleteInspection(inspectionId) {
+    return this.request(`/inspections/${inspectionId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Site Visits endpoints
+  async getSiteVisits() {
+    return this.request('/site-visits', {
+      method: 'GET',
+    });
+  }
+
+  async getSiteVisit(visitId) {
+    return this.request(`/site-visits/${visitId}`, {
+      method: 'GET',
+    });
+  }
+
+  async createSiteVisit(visitData) {
+    return this.request('/site-visits', {
+      method: 'POST',
+      body: JSON.stringify(visitData),
+    });
+  }
+
+  async updateSiteVisit(visitId, visitData) {
+    return this.request(`/site-visits/${visitId}`, {
+      method: 'PUT',
+      body: JSON.stringify(visitData),
+    });
+  }
+
+  async deleteSiteVisit(visitId) {
+    return this.request(`/site-visits/${visitId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getSiteVisitsByProject(projectId) {
+    return this.request(`/site-visits/project/${projectId}`, {
+      method: 'GET',
+    });
+  }
+
+  // Jurisdictions endpoints
+  async getJurisdictions() {
+    return this.request('/jurisdictions', {
+      method: 'GET',
+    });
+  }
+
+  async getJurisdiction(jurisdictionId) {
+    return this.request(`/jurisdictions/${jurisdictionId}`, {
+      method: 'GET',
+    });
+  }
+
+  async createJurisdiction(jurisdictionData) {
+    return this.request('/jurisdictions', {
+      method: 'POST',
+      body: JSON.stringify(jurisdictionData),
+    });
+  }
+
+  async updateJurisdiction(jurisdictionId, jurisdictionData) {
+    return this.request(`/jurisdictions/${jurisdictionId}`, {
+      method: 'PUT',
+      body: JSON.stringify(jurisdictionData),
+    });
+  }
+
+  async deleteJurisdiction(jurisdictionId) {
+    return this.request(`/jurisdictions/${jurisdictionId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Users endpoints (admin only)
+  async getUsers() {
+    return this.request('/users', {
+      method: 'GET',
+    });
+  }
+
+  async getUser(userId) {
+    return this.request(`/users/${userId}`, {
+      method: 'GET',
+    });
+  }
+
+  async createUser(userData) {
+    return this.request('/users', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
+  }
+
+  async updateUser(userId, userData) {
+    return this.request(`/users/${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify(userData),
+    });
+  }
+
+  async deleteUser(userId) {
+    return this.request(`/users/${userId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async updateUserRole(userId, role) {
+    return this.request(`/users/${userId}/role`, {
+      method: 'PUT',
+      body: JSON.stringify({ role }),
+    });
+  }
+
+  async activateUser(userId) {
+    return this.request(`/users/${userId}/activate`, {
+      method: 'PUT',
+    });
+  }
+
+  async deactivateUser(userId) {
+    return this.request(`/users/${userId}/deactivate`, {
+      method: 'PUT',
     });
   }
 

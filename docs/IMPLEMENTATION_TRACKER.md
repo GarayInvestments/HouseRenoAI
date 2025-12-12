@@ -423,22 +423,24 @@
 
 **Overall Progress**: 10% (1/15 hours estimated)
 
-### E.1: Documentation Updates (⏳ 10% - 1/4 hours)
+### E.1: Documentation Updates (⏳ 15% - 1.5/4 hours)
 
 **Completed**:
 - [x] `PROJECT_ROADMAP.md` v3.0 comprehensive spec
 - [x] `IMPLEMENTATION_TRACKER.md` (this file)
+- [x] Auth architecture documentation (Dec 12)
+- [x] QuickBooks integration patterns (Dec 12)
 
 **Pending**:
 - [ ] `POSTGRES_MIGRATION_GUIDE.md` - Migration procedures
 - [ ] `PERMIT_WORKFLOW.md` - Business logic for permits
 - [ ] `INSPECTOR_GUIDE.md` - Inspector PWA workflow
 - [ ] `SITE_VISIT_GUIDE.md` - Site visit workflow
-- [ ] Update `API_DOCUMENTATION.md` - Add all new endpoints
-- [ ] Update `TROUBLESHOOTING.md` - Common issues
+- [ ] Update `API_DOCUMENTATION.md` - Add QuickBooks endpoints
+- [ ] Update `TROUBLESHOOTING.md` - QB API common issues
 
 **Target**: Throughout implementation  
-**Estimated**: 3 hours remaining
+**Estimated**: 2.5 hours remaining
 
 ---
 
@@ -511,43 +513,63 @@
 
 ---
 
-## 🚧 Current Session Focus (Dec 11, 2025)
+## 🚧 Current Session Focus (Dec 12, 2025)
 
 ### Session Summary
-✅ **Supabase Auth Integration COMPLETE** - Full production deployment with email system
+✅ **Auth System Cleanup & QuickBooks API Testing COMPLETE**
 
-### Achievements Today
-- ✅ Created 6 professional email templates with House Renovators branding
-- ✅ Integrated @supabase/supabase-js in frontend
-- ✅ Updated appStore.js auth flow for Supabase
-- ✅ Created AuthConfirm and AuthResetPassword components
-- ✅ Configured SMTP (Gmail relay working)
-- ✅ Deployed frontend to Cloudflare Pages with environment variables
-- ✅ Fixed missing AuthResetPassword.jsx (gitignore issue)
-- ✅ Verified email delivery (test successful)
-- ✅ Admin user created (steve@houserenovatorsllc.com)
-- ✅ All documentation updated
+### Achievements Today (Dec 12)
+- ✅ Fixed QuickBooks API routes (undefined `quickbooks_service` error)
+- ✅ Added legacy QB service import and helper function
+- ✅ Updated 13 API operation endpoints (customers, invoices, vendors, items, etc.)
+- ✅ Tested QB customers endpoint - 7 GC Compliance customers returned
+- ✅ Tested QB invoices endpoint - 11 invoices with full data
+- ✅ Tested customer creation - Successfully created test customer (ID: 176)
+- ✅ Reverted to Supabase Auth (user requested password reset functionality)
+- ✅ Restored frontend Supabase integration (Login, App, TopBar, Settings)
+- ✅ Cleaned up unused JWT v2 auth system (~1,500 lines removed)
+- ✅ Dropped unused database tables (refresh_tokens, token_blacklist, user_sessions, login_attempts)
+- ✅ Kept `users` table for role management (removed password_hash column)
+- ✅ Updated password script for user migration
 
-### Commits
-- `02ba432` - Feature: Supabase Auth Integration + Email Templates (45 files)
-- `7c6fc4f` - Fix: Add missing AuthResetPassword component
-- `c15a635` - Trigger Cloudflare Pages rebuild with env vars
+### Commits (Dec 12)
+- `4c01014` - fix: Add legacy QB service import and update all API operation endpoints
+- `42385f8` - revert: Restore Supabase Auth for password reset and magic links
+- `8296793` - cleanup: Remove unused JWT v2 auth system, keep Supabase Auth
 
 ### Production Status
-- **Backend**: Running on Render (https://houserenoai.onrender.com)
-- **Frontend**: Deployed to Cloudflare Pages (https://portal.houserenovatorsllc.com)
-- **Database**: Supabase PostgreSQL with admin user
-- **SMTP**: Gmail relay operational
-- **Email Templates**: 6 templates deployed with branding
+- **Backend**: Fly.io (https://houserenovators-api.fly.dev) ✅ Running
+- **Frontend**: Cloudflare Pages (https://houserenoai.pages.dev) ✅ Deployed
+- **Database**: PostgreSQL with business data + QuickBooks tokens
+- **Auth**: Supabase Auth (password reset, magic links, OAuth ready)
+- **QuickBooks**: Production OAuth connected (realm: 9130349982666256)
+- **QB API**: All CRUD operations working (customers, invoices, vendors, items)
 
-### Next Session
-- **Focus**: Production testing and Phase B.3 - AI Precheck
+### Architecture Simplified
+**Authentication Stack**:
+- Frontend: Supabase client (@supabase/supabase-js)
+- Backend: Supabase JWT verification
+- Authorization: `users` table (roles: admin, pm, inspector, client, finance)
+- Features: Password reset, magic links, email verification
+
+**QuickBooks Integration**:
+- OAuth2: v2 service (quickbooks_service_v2.py) - Database token storage
+- API Operations: Legacy service (quickbooks_service.py) - 16 CRUD methods
+- Routes: All endpoints using helper function pattern
+- Token Storage: PostgreSQL `quickbooks_tokens` table
+
+### Next Session (Dec 13)
+- **Focus**: Chat integration testing with QuickBooks + Production frontend testing
 - **Tasks**:
-  1. Test end-to-end login on production
-  2. Verify password reset flow
-  3. Implement PDF extraction service (OpenAI Vision API)
-  4. Add precheck logic for inspections
+  1. Test AI chat with QB queries ("Show me all customers", "Create invoice for Ajay Nair")
+  2. Verify smart context loading pulls QB data correctly
+  3. Test production frontend login with Supabase Auth
+  4. Verify password reset flow works end-to-end
+  5. Clean up old Supabase code from appStore (if any remains)
 - **Blockers**: None
+
+### Previous Session (Dec 11)
+✅ Supabase Auth Integration COMPLETE - Email templates, SMTP, frontend integration
 
 ---
 

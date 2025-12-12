@@ -747,6 +747,654 @@ class DBService:
         except:
             return None
     
+    # ==================== CLIENT CRUD METHODS ====================
+    
+    async def create_client(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Create a new client.
+        
+        Args:
+            data: Dict with client fields (full_name, email, phone, etc.)
+        
+        Returns:
+            Created client as dict
+        """
+        async with AsyncSessionLocal() as session:
+            client = Client(
+                full_name=data.get("full_name"),
+                email=data.get("email"),
+                phone=data.get("phone"),
+                address=data.get("address"),
+                city=data.get("city"),
+                state=data.get("state"),
+                zip_code=data.get("zip_code"),
+                status=data.get("status", "Active"),
+                client_type=data.get("client_type", "Residential"),
+                extra=data.get("extra")
+            )
+            
+            session.add(client)
+            await session.commit()
+            await session.refresh(client)
+            
+            # Invalidate cache
+            self.cache.clear()
+            
+            logger.info(f"[DB_SERVICE] Created client {client.client_id}")
+            return await self.get_client_by_id(client.client_id)
+    
+    async def update_client(self, client_id: str, data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Update an existing client.
+        
+        Args:
+            client_id: UUID of client
+            data: Dict with fields to update
+        
+        Returns:
+            Updated client as dict
+        """
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(Client).where(Client.client_id == client_id)
+            )
+            client = result.scalar_one_or_none()
+            
+            if not client:
+                raise ValueError(f"Client {client_id} not found")
+            
+            # Update fields if provided
+            if "full_name" in data:
+                client.full_name = data["full_name"]
+            if "email" in data:
+                client.email = data["email"]
+            if "phone" in data:
+                client.phone = data["phone"]
+            if "address" in data:
+                client.address = data["address"]
+            if "city" in data:
+                client.city = data["city"]
+            if "state" in data:
+                client.state = data["state"]
+            if "zip_code" in data:
+                client.zip_code = data["zip_code"]
+            if "status" in data:
+                client.status = data["status"]
+            if "client_type" in data:
+                client.client_type = data["client_type"]
+            if "extra" in data:
+                client.extra = data["extra"]
+            
+            await session.commit()
+            await session.refresh(client)
+            
+            # Invalidate cache
+            self.cache.invalidate(f"client_{client_id}")
+            self.cache.clear()
+            
+            logger.info(f"[DB_SERVICE] Updated client {client_id}")
+            return await self.get_client_by_id(client_id)
+    
+    async def delete_client(self, client_id: str) -> bool:
+        """
+        Delete a client.
+        
+        Args:
+            client_id: UUID of client
+        
+        Returns:
+            True if deleted, False if not found
+        """
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                delete(Client).where(Client.client_id == client_id)
+            )
+            await session.commit()
+            
+            deleted = result.rowcount > 0
+            
+            if deleted:
+                # Invalidate cache
+                self.cache.invalidate(f"client_{client_id}")
+                self.cache.clear()
+                logger.info(f"[DB_SERVICE] Deleted client {client_id}")
+            
+            return deleted
+    
+    # ==================== PROJECT CRUD METHODS ====================
+    
+    async def create_project(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a new project."""
+        from app.db.models import Project
+        
+        async with AsyncSessionLocal() as session:
+            project = Project(
+                client_id=data.get("client_id"),
+                project_name=data.get("project_name"),
+                project_address=data.get("project_address"),
+                city=data.get("city"),
+                state=data.get("state"),
+                zip_code=data.get("zip_code"),
+                status=data.get("status", "Planning"),
+                description=data.get("description"),
+                start_date=data.get("start_date"),
+                target_completion=data.get("target_completion"),
+                extra=data.get("extra")
+            )
+            
+            session.add(project)
+            await session.commit()
+            await session.refresh(project)
+            
+            self.cache.clear()
+            logger.info(f"[DB_SERVICE] Created project {project.project_id}")
+            return await self.get_project_by_id(project.project_id)
+    
+    async def update_project(self, project_id: str, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Update an existing project."""
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(Project).where(Project.project_id == project_id)
+            )
+            project = result.scalar_one_or_none()
+            
+            if not project:
+                raise ValueError(f"Project {project_id} not found")
+            
+            # Update fields
+            for key in ["client_id", "project_name", "project_address", "city", "state", "zip_code", "status", "description", "start_date", "target_completion", "extra"]:
+                if key in data:
+                    setattr(project, key, data[key])
+            
+            await session.commit()
+            await session.refresh(project)
+            
+            self.cache.clear()
+            logger.info(f"[DB_SERVICE] Updated project {project_id}")
+            return await self.get_project_by_id(project_id)
+    
+    async def delete_project(self, project_id: str) -> bool:
+        """Delete a project."""
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                delete(Project).where(Project.project_id == project_id)
+            )
+            await session.commit()
+            
+            deleted = result.rowcount > 0
+            if deleted:
+                self.cache.clear()
+                logger.info(f"[DB_SERVICE] Deleted project {project_id}")
+            
+            return deleted
+    
+    # ==================== INVOICE CRUD METHODS ====================
+    
+    async def get_invoices_data(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
+        """Get all invoices."""
+        from app.db.models import Invoice
+        
+        cache_key = f"invoices_all_{limit}"
+        cached = self.cache.get(cache_key)
+        if cached is not None:
+            return cached
+        
+        async with AsyncSessionLocal() as session:
+            query = select(Invoice).order_by(Invoice.created_at.desc())
+            if limit:
+                query = query.limit(limit)
+            
+            result = await session.execute(query)
+            invoices = result.scalars().all()
+            
+            invoices_data = []
+            for invoice in invoices:
+                invoices_data.append({
+                    "invoice_id": invoice.invoice_id,
+                    "business_id": invoice.business_id,
+                    "project_id": invoice.project_id,
+                    "client_id": invoice.client_id,
+                    "invoice_number": invoice.invoice_number,
+                    "invoice_date": invoice.invoice_date.isoformat() if invoice.invoice_date else None,
+                    "due_date": invoice.due_date.isoformat() if invoice.due_date else None,
+                    "subtotal": float(invoice.subtotal) if invoice.subtotal else 0,
+                    "tax_amount": float(invoice.tax_amount) if invoice.tax_amount else 0,
+                    "total_amount": float(invoice.total_amount) if invoice.total_amount else 0,
+                    "amount_paid": float(invoice.amount_paid) if invoice.amount_paid else 0,
+                    "balance_due": float(invoice.balance_due) if invoice.balance_due else 0,
+                    "status": invoice.status,
+                    "line_items": invoice.line_items,
+                    "qb_invoice_id": invoice.qb_invoice_id,
+                    "sync_status": invoice.sync_status,
+                    "notes": invoice.notes,
+                    "created_at": invoice.created_at.isoformat() if invoice.created_at else None,
+                })
+            
+            self.cache.set(cache_key, invoices_data)
+            return invoices_data
+    
+    async def get_invoice_by_id(self, invoice_id: str) -> Optional[Dict[str, Any]]:
+        """Get single invoice by ID."""
+        from app.db.models import Invoice
+        
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(Invoice).where(Invoice.invoice_id == invoice_id)
+            )
+            invoice = result.scalar_one_or_none()
+            
+            if not invoice:
+                return None
+            
+            return {
+                "invoice_id": invoice.invoice_id,
+                "business_id": invoice.business_id,
+                "project_id": invoice.project_id,
+                "client_id": invoice.client_id,
+                "invoice_number": invoice.invoice_number,
+                "invoice_date": invoice.invoice_date.isoformat() if invoice.invoice_date else None,
+                "due_date": invoice.due_date.isoformat() if invoice.due_date else None,
+                "subtotal": float(invoice.subtotal) if invoice.subtotal else 0,
+                "tax_amount": float(invoice.tax_amount) if invoice.tax_amount else 0,
+                "total_amount": float(invoice.total_amount) if invoice.total_amount else 0,
+                "amount_paid": float(invoice.amount_paid) if invoice.amount_paid else 0,
+                "balance_due": float(invoice.balance_due) if invoice.balance_due else 0,
+                "status": invoice.status,
+                "line_items": invoice.line_items,
+                "notes": invoice.notes,
+            }
+    
+    async def create_invoice(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a new invoice."""
+        from app.db.models import Invoice
+        
+        async with AsyncSessionLocal() as session:
+            invoice = Invoice(
+                project_id=data.get("project_id"),
+                client_id=data.get("client_id"),
+                invoice_number=data.get("invoice_number"),
+                invoice_date=data.get("invoice_date"),
+                due_date=data.get("due_date"),
+                subtotal=data.get("subtotal"),
+                tax_amount=data.get("tax_amount", 0),
+                total_amount=data.get("total_amount"),
+                amount_paid=data.get("amount_paid", 0),
+                balance_due=data.get("balance_due"),
+                status=data.get("status", "Draft"),
+                line_items=data.get("line_items"),
+                notes=data.get("notes"),
+            )
+            
+            session.add(invoice)
+            await session.commit()
+            await session.refresh(invoice)
+            
+            self.cache.clear()
+            logger.info(f"[DB_SERVICE] Created invoice {invoice.invoice_id}")
+            return await self.get_invoice_by_id(invoice.invoice_id)
+    
+    async def update_invoice(self, invoice_id: str, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Update an existing invoice."""
+        from app.db.models import Invoice
+        
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(Invoice).where(Invoice.invoice_id == invoice_id)
+            )
+            invoice = result.scalar_one_or_none()
+            
+            if not invoice:
+                raise ValueError(f"Invoice {invoice_id} not found")
+            
+            # Update fields
+            for key in ["invoice_date", "due_date", "status", "line_items", "tax_amount", "subtotal", "total_amount", "balance_due", "notes"]:
+                if key in data:
+                    setattr(invoice, key, data[key])
+            
+            await session.commit()
+            await session.refresh(invoice)
+            
+            self.cache.clear()
+            logger.info(f"[DB_SERVICE] Updated invoice {invoice_id}")
+            return await self.get_invoice_by_id(invoice_id)
+    
+    async def delete_invoice(self, invoice_id: str) -> bool:
+        """Delete an invoice."""
+        from app.db.models import Invoice
+        
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                delete(Invoice).where(Invoice.invoice_id == invoice_id)
+            )
+            await session.commit()
+            
+            deleted = result.rowcount > 0
+            if deleted:
+                self.cache.clear()
+                logger.info(f"[DB_SERVICE] Deleted invoice {invoice_id}")
+            
+            return deleted
+    
+    async def get_invoices_by_project(self, project_id: str) -> List[Dict[str, Any]]:
+        """Get all invoices for a specific project."""
+        from app.db.models import Invoice
+        
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(Invoice).where(Invoice.project_id == project_id).order_by(Invoice.invoice_date.desc())
+            )
+            invoices = result.scalars().all()
+            
+            return [await self.get_invoice_by_id(inv.invoice_id) for inv in invoices]
+    
+    # ==================== SITE VISIT CRUD METHODS ====================
+    
+    async def get_site_visits_data(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
+        """Get all site visits."""
+        from app.db.models import SiteVisit
+        
+        async with AsyncSessionLocal() as session:
+            query = select(SiteVisit).order_by(SiteVisit.visit_date.desc())
+            if limit:
+                query = query.limit(limit)
+            
+            result = await session.execute(query)
+            visits = result.scalars().all()
+            
+            return [{
+                "visit_id": v.visit_id,
+                "business_id": v.business_id,
+                "project_id": v.project_id,
+                "visit_date": v.visit_date.isoformat() if v.visit_date else None,
+                "purpose": v.purpose,
+                "attendees": v.attendees,
+                "observations": v.observations,
+                "action_items": v.action_items,
+                "photos": v.photos,
+                "created_at": v.created_at.isoformat() if v.created_at else None,
+            } for v in visits]
+    
+    async def get_site_visit_by_id(self, visit_id: str) -> Optional[Dict[str, Any]]:
+        """Get single site visit by ID."""
+        from app.db.models import SiteVisit
+        
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(SiteVisit).where(SiteVisit.visit_id == visit_id)
+            )
+            visit = result.scalar_one_or_none()
+            
+            if not visit:
+                return None
+            
+            return {
+                "visit_id": visit.visit_id,
+                "project_id": visit.project_id,
+                "visit_date": visit.visit_date.isoformat() if visit.visit_date else None,
+                "purpose": visit.purpose,
+                "attendees": visit.attendees,
+                "observations": visit.observations,
+                "action_items": visit.action_items,
+            }
+    
+    async def create_site_visit(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a new site visit."""
+        from app.db.models import SiteVisit
+        
+        async with AsyncSessionLocal() as session:
+            visit = SiteVisit(
+                project_id=data.get("project_id"),
+                visit_date=data.get("visit_date"),
+                purpose=data.get("purpose"),
+                attendees=data.get("attendees"),
+                observations=data.get("observations"),
+                action_items=data.get("action_items"),
+            )
+            
+            session.add(visit)
+            await session.commit()
+            await session.refresh(visit)
+            
+            logger.info(f"[DB_SERVICE] Created site visit {visit.visit_id}")
+            return await self.get_site_visit_by_id(visit.visit_id)
+    
+    async def update_site_visit(self, visit_id: str, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Update a site visit."""
+        from app.db.models import SiteVisit
+        
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(SiteVisit).where(SiteVisit.visit_id == visit_id)
+            )
+            visit = result.scalar_one_or_none()
+            
+            if not visit:
+                raise ValueError(f"Site visit {visit_id} not found")
+            
+            for key in ["visit_date", "purpose", "attendees", "observations", "action_items"]:
+                if key in data:
+                    setattr(visit, key, data[key])
+            
+            await session.commit()
+            await session.refresh(visit)
+            
+            logger.info(f"[DB_SERVICE] Updated site visit {visit_id}")
+            return await self.get_site_visit_by_id(visit_id)
+    
+    async def delete_site_visit(self, visit_id: str) -> bool:
+        """Delete a site visit."""
+        from app.db.models import SiteVisit
+        
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                delete(SiteVisit).where(SiteVisit.visit_id == visit_id)
+            )
+            await session.commit()
+            
+            return result.rowcount > 0
+    
+    async def get_site_visits_by_project(self, project_id: str) -> List[Dict[str, Any]]:
+        """Get all site visits for a project."""
+        from app.db.models import SiteVisit
+        
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(SiteVisit).where(SiteVisit.project_id == project_id).order_by(SiteVisit.visit_date.desc())
+            )
+            visits = result.scalars().all()
+            
+            return [await self.get_site_visit_by_id(v.visit_id) for v in visits]
+    
+    # ==================== JURISDICTION CRUD METHODS ====================
+    
+    async def get_jurisdictions_data(self) -> List[Dict[str, Any]]:
+        """Get all jurisdictions."""
+        async with AsyncSessionLocal() as session:
+            # Note: jurisdictions table uses 'id' not 'jurisdiction_id'
+            from sqlalchemy import text
+            result = await session.execute(text("SELECT id, name, state, requirements, created_at FROM jurisdictions ORDER BY name"))
+            rows = result.fetchall()
+            
+            return [{
+                "id": str(row[0]),
+                "name": row[1],
+                "state": row[2],
+                "requirements": row[3],
+                "created_at": row[4].isoformat() if row[4] else None,
+            } for row in rows]
+    
+    async def get_jurisdiction_by_id(self, jurisdiction_id: str) -> Optional[Dict[str, Any]]:
+        """Get single jurisdiction by ID."""
+        async with AsyncSessionLocal() as session:
+            from sqlalchemy import text
+            result = await session.execute(
+                text("SELECT id, name, state, requirements FROM jurisdictions WHERE id = :id"),
+                {"id": jurisdiction_id}
+            )
+            row = result.fetchone()
+            
+            if not row:
+                return None
+            
+            return {
+                "id": str(row[0]),
+                "name": row[1],
+                "state": row[2],
+                "requirements": row[3],
+            }
+    
+    async def create_jurisdiction(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a new jurisdiction."""
+        async with AsyncSessionLocal() as session:
+            from sqlalchemy import text
+            result = await session.execute(
+                text("INSERT INTO jurisdictions (name, state, requirements) VALUES (:name, :state, :requirements) RETURNING id"),
+                {
+                    "name": data.get("name"),
+                    "state": data.get("state"),
+                    "requirements": data.get("requirements", {}),
+                }
+            )
+            jurisdiction_id = result.fetchone()[0]
+            await session.commit()
+            
+            logger.info(f"[DB_SERVICE] Created jurisdiction {jurisdiction_id}")
+            return await self.get_jurisdiction_by_id(str(jurisdiction_id))
+    
+    async def update_jurisdiction(self, jurisdiction_id: str, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Update a jurisdiction."""
+        async with AsyncSessionLocal() as session:
+            from sqlalchemy import text
+            
+            # Build update query dynamically
+            updates = []
+            params = {"id": jurisdiction_id}
+            
+            if "name" in data:
+                updates.append("name = :name")
+                params["name"] = data["name"]
+            if "state" in data:
+                updates.append("state = :state")
+                params["state"] = data["state"]
+            if "requirements" in data:
+                updates.append("requirements = :requirements")
+                params["requirements"] = data["requirements"]
+            
+            if not updates:
+                raise ValueError("No updates provided")
+            
+            query = f"UPDATE jurisdictions SET {', '.join(updates)}, updated_at = CURRENT_TIMESTAMP WHERE id = :id"
+            result = await session.execute(text(query), params)
+            await session.commit()
+            
+            if result.rowcount == 0:
+                raise ValueError(f"Jurisdiction {jurisdiction_id} not found")
+            
+            logger.info(f"[DB_SERVICE] Updated jurisdiction {jurisdiction_id}")
+            return await self.get_jurisdiction_by_id(jurisdiction_id)
+    
+    async def delete_jurisdiction(self, jurisdiction_id: str) -> bool:
+        """Delete a jurisdiction."""
+        async with AsyncSessionLocal() as session:
+            from sqlalchemy import text
+            result = await session.execute(
+                text("DELETE FROM jurisdictions WHERE id = :id"),
+                {"id": jurisdiction_id}
+            )
+            await session.commit()
+            
+            return result.rowcount > 0
+    
+    # ==================== USER CRUD METHODS ====================
+    
+    async def get_users_data(self) -> List[Dict[str, Any]]:
+        """Get all users."""
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(User).order_by(User.created_at.desc())
+            )
+            users = result.scalars().all()
+            
+            return [{
+                "id": u.id,
+                "supabase_user_id": u.supabase_user_id,
+                "email": u.email,
+                "full_name": u.full_name,
+                "phone": u.phone,
+                "role": u.role,
+                "is_active": u.is_active,
+                "created_at": u.created_at.isoformat() if u.created_at else None,
+            } for u in users]
+    
+    async def get_user_by_id(self, user_id: str) -> Optional[Dict[str, Any]]:
+        """Get single user by ID."""
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(User).where(User.id == user_id)
+            )
+            user = result.scalar_one_or_none()
+            
+            if not user:
+                return None
+            
+            return {
+                "id": user.id,
+                "email": user.email,
+                "full_name": user.full_name,
+                "phone": user.phone,
+                "role": user.role,
+                "is_active": user.is_active,
+            }
+    
+    async def create_user(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a new user."""
+        async with AsyncSessionLocal() as session:
+            user = User(
+                email=data.get("email"),
+                full_name=data.get("full_name"),
+                phone=data.get("phone"),
+                role=data.get("role", "client"),
+                is_active=True,
+            )
+            
+            session.add(user)
+            await session.commit()
+            await session.refresh(user)
+            
+            logger.info(f"[DB_SERVICE] Created user {user.id}")
+            return await self.get_user_by_id(user.id)
+    
+    async def update_user(self, user_id: str, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Update a user."""
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(User).where(User.id == user_id)
+            )
+            user = result.scalar_one_or_none()
+            
+            if not user:
+                raise ValueError(f"User {user_id} not found")
+            
+            for key in ["full_name", "phone", "role", "is_active"]:
+                if key in data:
+                    setattr(user, key, data[key])
+            
+            await session.commit()
+            await session.refresh(user)
+            
+            logger.info(f"[DB_SERVICE] Updated user {user_id}")
+            return await self.get_user_by_id(user_id)
+    
+    async def delete_user(self, user_id: str) -> bool:
+        """Delete a user."""
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                delete(User).where(User.id == user_id)
+            )
+            await session.commit()
+            
+            return result.rowcount > 0
+    
     async def append_sheet_data(self, sheet_name: str, values: List[List[Any]]):
         """
         Backwards-compatible method for appending data (like GoogleService).

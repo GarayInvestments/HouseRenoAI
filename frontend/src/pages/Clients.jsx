@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Search, Phone, Mail, MapPin, User, Loader2, AlertCircle } from 'lucide-react';
+import { Search, Phone, Mail, MapPin, User, Loader2, AlertCircle, Plus, Edit2, Trash2 } from 'lucide-react';
 import api from '../lib/api';
 import useAppStore from '../stores/appStore';
+import Modal from '../components/Modal';
+import FormField from '../components/FormField';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 export default function Clients() {
   // Clients page with card layout
@@ -11,6 +14,24 @@ export default function Clients() {
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const navigateToClient = useAppStore((state) => state.navigateToClient);
+
+  // CRUD state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingClient, setEditingClient] = useState(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deletingClient, setDeletingClient] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [formData, setFormData] = useState({
+    full_name: '',
+    email: '',
+    phone: '',
+    address: '',
+    city: '',
+    state: '',
+    zip_code: '',
+    client_type: 'Residential',
+    status: 'Active',
+  });
 
   useEffect(() => {
     fetchClients();
@@ -31,6 +52,87 @@ export default function Clients() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleOpenCreate = () => {
+    setEditingClient(null);
+    setFormData({
+      full_name: '',
+      email: '',
+      phone: '',
+      address: '',
+      city: '',
+      state: '',
+      zip_code: '',
+      client_type: 'Residential',
+      status: 'Active',
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEdit = (client, e) => {
+    e.stopPropagation(); // Prevent card click
+    setEditingClient(client);
+    setFormData({
+      full_name: client['Full Name'] || client['Client Name'] || '',
+      email: client['Email'] || '',
+      phone: client['Phone'] || '',
+      address: client['Address'] || '',
+      city: client['City'] || '',
+      state: client['State'] || '',
+      zip_code: client['Zip'] || '',
+      client_type: client['Client Type'] || 'Residential',
+      status: client['Status'] || 'Active',
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleOpenDelete = (client, e) => {
+    e.stopPropagation(); // Prevent card click
+    setDeletingClient(client);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    try {
+      setSaving(true);
+      
+      if (editingClient) {
+        const clientId = editingClient['Client ID'] || editingClient['ID'];
+        await api.updateClient(clientId, formData);
+      } else {
+        await api.createClient(formData);
+      }
+      
+      await fetchClients();
+      setIsModalOpen(false);
+      setEditingClient(null);
+    } catch (err) {
+      console.error('Failed to save client:', err);
+      alert('Failed to save client. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      const clientId = deletingClient['Client ID'] || deletingClient['ID'];
+      await api.deleteClient(clientId);
+      await fetchClients();
+      setIsDeleteDialogOpen(false);
+      setDeletingClient(null);
+    } catch (err) {
+      console.error('Failed to delete client:', err);
+      alert('Failed to delete client. Please try again.');
+    }
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const getProjectCount = (clientId) => {
@@ -201,20 +303,49 @@ export default function Clients() {
         boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)'
       }}>
         <div style={{
-          marginBottom: '16px'
+          marginBottom: '16px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start'
         }}>
-          <h1 style={{
-            fontSize: '24px',
-            fontWeight: '600',
-            color: '#1E293B',
-            marginBottom: '4px'
-          }}>Clients</h1>
-          <p style={{
-            color: '#64748B',
-            fontSize: '14px'
-          }}>
-            {filteredClients.length} {filteredClients.length === 1 ? 'client' : 'clients'}
-          </p>
+          <div>
+            <h1 style={{
+              fontSize: '24px',
+              fontWeight: '600',
+              color: '#1E293B',
+              marginBottom: '4px'
+            }}>Clients</h1>
+            <p style={{
+              color: '#64748B',
+              fontSize: '14px'
+            }}>
+              {filteredClients.length} {filteredClients.length === 1 ? 'client' : 'clients'}
+            </p>
+          </div>
+          
+          {/* New Client Button */}
+          <button
+            onClick={handleOpenCreate}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '10px 16px',
+              backgroundColor: '#2563EB',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: '500',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+            onMouseEnter={(e) => e.target.style.backgroundColor = '#1D4ED8'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = '#2563EB'}
+          >
+            <Plus size={18} />
+            New Client
+          </button>
         </div>
 
         {/* Search Bar */}
@@ -338,6 +469,46 @@ export default function Clients() {
                       boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.3)'
                     }}>
                       <User size={24} style={{ color: '#FFFFFF' }} />
+                    </div>
+                    
+                    {/* Edit/Delete Buttons */}
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        onClick={(e) => handleOpenEdit(client, e)}
+                        style={{
+                          padding: '8px',
+                          backgroundColor: '#F1F5F9',
+                          border: 'none',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.target.style.backgroundColor = '#E2E8F0'}
+                        onMouseLeave={(e) => e.target.style.backgroundColor = '#F1F5F9'}
+                      >
+                        <Edit2 size={16} style={{ color: '#475569' }} />
+                      </button>
+                      <button
+                        onClick={(e) => handleOpenDelete(client, e)}
+                        style={{
+                          padding: '8px',
+                          backgroundColor: '#FEE2E2',
+                          border: 'none',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.target.style.backgroundColor = '#FECACA'}
+                        onMouseLeave={(e) => e.target.style.backgroundColor = '#FEE2E2'}
+                      >
+                        <Trash2 size={16} style={{ color: '#DC2626' }} />
+                      </button>
                     </div>
                   </div>
 
@@ -485,6 +656,147 @@ export default function Clients() {
           </div>
         )}
       </div>
+
+      {/* Create/Edit Modal */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => !saving && setIsModalOpen(false)}
+        title={editingClient ? 'Edit Client' : 'New Client'}
+        size="md"
+      >
+        <form onSubmit={handleSubmit}>
+          <FormField
+            label="Full Name"
+            name="full_name"
+            value={formData.full_name}
+            onChange={handleChange}
+            required
+            placeholder="John Doe"
+          />
+
+          <FormField
+            label="Email"
+            name="email"
+            type="email"
+            value={formData.email}
+            onChange={handleChange}
+            required
+            placeholder="john@example.com"
+          />
+
+          <FormField
+            label="Phone"
+            name="phone"
+            type="tel"
+            value={formData.phone}
+            onChange={handleChange}
+            placeholder="(555) 123-4567"
+          />
+
+          <FormField
+            label="Address"
+            name="address"
+            value={formData.address}
+            onChange={handleChange}
+            placeholder="123 Main St"
+          />
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+            <FormField
+              label="City"
+              name="city"
+              value={formData.city}
+              onChange={handleChange}
+              placeholder="New York"
+            />
+
+            <FormField
+              label="State"
+              name="state"
+              value={formData.state}
+              onChange={handleChange}
+              placeholder="NY"
+            />
+
+            <FormField
+              label="Zip Code"
+              name="zip_code"
+              value={formData.zip_code}
+              onChange={handleChange}
+              placeholder="10001"
+            />
+          </div>
+
+          <FormField
+            label="Client Type"
+            name="client_type"
+            type="select"
+            value={formData.client_type}
+            onChange={handleChange}
+            options={['Residential', 'Commercial']}
+          />
+
+          <FormField
+            label="Status"
+            name="status"
+            type="select"
+            value={formData.status}
+            onChange={handleChange}
+            options={['Active', 'Inactive', 'Lead']}
+          />
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(false)}
+              disabled={saving}
+              style={{
+                padding: '10px 20px',
+                border: '1px solid #E2E8F0',
+                borderRadius: '8px',
+                backgroundColor: 'white',
+                color: '#475569',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              style={{
+                padding: '10px 20px',
+                border: 'none',
+                borderRadius: '8px',
+                backgroundColor: '#2563EB',
+                color: 'white',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                opacity: saving ? 0.7 : 1
+              }}
+            >
+              {saving ? 'Saving...' : editingClient ? 'Update Client' : 'Create Client'}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        isOpen={isDeleteDialogOpen}
+        onConfirm={handleDelete}
+        onCancel={() => setIsDeleteDialogOpen(false)}
+        title="Delete Client"
+        message={`Are you sure you want to delete ${deletingClient?.['Full Name'] || deletingClient?.['Client Name'] || 'this client'}? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+      />
     </div>
   );
 }

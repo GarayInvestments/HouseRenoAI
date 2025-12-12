@@ -1,12 +1,46 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, status
 from typing import List, Dict, Any, Optional
 from datetime import datetime
+from pydantic import BaseModel
 import logging
 
 from app.services.db_service import db_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+# ==================== REQUEST/RESPONSE MODELS ====================
+
+class ProjectCreate(BaseModel):
+    """Request model for creating a project."""
+    client_id: str
+    project_name: str
+    project_address: str
+    city: Optional[str] = None
+    state: Optional[str] = None
+    zip_code: Optional[str] = None
+    status: Optional[str] = "Planning"
+    description: Optional[str] = None
+    start_date: Optional[datetime] = None
+    target_completion: Optional[datetime] = None
+
+
+class ProjectUpdate(BaseModel):
+    """Request model for updating a project."""
+    client_id: Optional[str] = None
+    project_name: Optional[str] = None
+    project_address: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    zip_code: Optional[str] = None
+    status: Optional[str] = None
+    description: Optional[str] = None
+    start_date: Optional[datetime] = None
+    target_completion: Optional[datetime] = None
+
+
+# ==================== ROUTES ====================
 
 @router.get("/")
 async def get_all_projects():
@@ -46,31 +80,62 @@ async def get_project(project_id: str):
         raise HTTPException(status_code=500, detail=f"Failed to retrieve project: {str(e)}")
 
 @router.put("/{project_id}")
-async def update_project(project_id: str, update_data: Dict[str, Any]):
+async def update_project(project_id: str, project_data: ProjectUpdate):
     """
     Update a specific project
     """
     try:
-        updates = update_data.get("updates", {})
-        notify_team = update_data.get("notify_team", True)
+        update_dict = project_data.model_dump(exclude_none=True)
         
-        if not updates:
+        if not update_dict:
             raise HTTPException(status_code=400, detail="No updates provided")
         
-        # Verify project exists first
-        project = await db_service.get_project_by_id(project_id)
+        updated_project = await db_service.update_project(project_id, update_dict)
+        return updated_project
         
-        if not project:
-            raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
-        
-        # TODO: Implement update in db_service
-        raise HTTPException(status_code=501, detail="Update project not yet implemented for database backend")
-        
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Failed to update project {project_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to update project: {str(e)}")
+
+
+@router.post("/", status_code=status.HTTP_201_CREATED)
+async def create_project(project_data: ProjectCreate):
+    """
+    Create a new project
+    """
+    try:
+        project_dict = project_data.model_dump(exclude_none=True)
+        new_project = await db_service.create_project(project_dict)
+        return new_project
+        
+    except Exception as e:
+        logger.error(f"Failed to create project: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to create project: {str(e)}")
+
+
+@router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_project(project_id: str):
+    """
+    Delete a project by ID
+    """
+    try:
+        deleted = await db_service.delete_project(project_id)
+        
+        if not deleted:
+            raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
+        
+        return None  # 204 No Content
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to delete project {project_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete project: {str(e)}")
+
 
 @router.get("/search/")
 async def search_projects(

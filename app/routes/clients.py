@@ -1,5 +1,6 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, status
 from typing import List, Dict, Any, Optional
+from pydantic import BaseModel, EmailStr
 import logging
 
 from app.services.db_service import db_service
@@ -7,7 +8,39 @@ from app.services.db_service import db_service
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+
+# ==================== REQUEST/RESPONSE MODELS ====================
+
+class ClientCreate(BaseModel):
+    """Request model for creating a client."""
+    full_name: str
+    email: EmailStr
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    zip_code: Optional[str] = None
+    status: Optional[str] = "Active"
+    client_type: Optional[str] = "Residential"
+
+
+class ClientUpdate(BaseModel):
+    """Request model for updating a client."""
+    full_name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    zip_code: Optional[str] = None
+    status: Optional[str] = None
+    client_type: Optional[str] = None
+
+
+# ==================== ROUTES ====================
+
 @router.get("/")
+async def get_all_clients():
 async def get_all_clients():
     """
     Get all clients from PostgreSQL database
@@ -168,20 +201,50 @@ async def update_client(client_id: str, updates: Dict[str, Any]):
     Update a specific client by ID
     """
     try:
-        # Verify client exists first
-        client = await db_service.get_client_by_id(client_id)
+        updated_client = await db_service.update_client(client_id, updates)
+        return updated_client
         
-        if not client:
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Failed to update client {client_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to update client: {str(e)}")
+
+
+@router.post("/", status_code=status.HTTP_201_CREATED)
+async def create_client(client_data: ClientCreate):
+    """
+    Create a new client
+    """
+    try:
+        client_dict = client_data.model_dump(exclude_none=True)
+        new_client = await db_service.create_client(client_dict)
+        return new_client
+        
+    except Exception as e:
+        logger.error(f"Failed to create client: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to create client: {str(e)}")
+
+
+@router.delete("/{client_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_client(client_id: str):
+    """
+    Delete a client by ID
+    """
+    try:
+        deleted = await db_service.delete_client(client_id)
+        
+        if not deleted:
             raise HTTPException(status_code=404, detail=f"Client {client_id} not found")
         
-        # TODO: Implement update in db_service
-        raise HTTPException(status_code=501, detail="Update client not yet implemented for database backend")
+        return None  # 204 No Content
         
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to update client {client_id}: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to update client: {str(e)}")
+        logger.error(f"Failed to delete client {client_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete client: {str(e)}")
+
 
 @router.get("/by-business-id/{business_id}")
 async def get_client_by_business_id(business_id: str):
