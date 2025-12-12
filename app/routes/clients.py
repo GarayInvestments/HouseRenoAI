@@ -41,7 +41,6 @@ class ClientUpdate(BaseModel):
 
 @router.get("/")
 async def get_all_clients():
-async def get_all_clients():
     """
     Get all clients from PostgreSQL database
     """
