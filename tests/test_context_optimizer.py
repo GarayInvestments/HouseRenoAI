@@ -208,7 +208,7 @@ def test_truncate_payments_empty_list():
     result = truncate_payments([], "show payments")
     
     assert result["payments"] == []
-    assert result["summary"]["total_amount"] == 0
+    assert result["summary"] == {}
 
 
 def test_truncate_payments_recent_only():
@@ -296,8 +296,9 @@ def test_truncate_quickbooks_customers_active_only():
     
     # Should only include active customers
     assert all(c.get("Active") for c in result["customers"])
-    assert result["summary"]["active_count"] == 2
-    assert result["summary"]["inactive_count"] == 1
+    assert result["summary"]["shown"] == 2
+    assert result["summary"]["total"] == 3
+    assert result["summary"]["active_only"] == True
 
 
 def test_truncate_quickbooks_customers_specific_filter():
@@ -324,7 +325,8 @@ def test_truncate_quickbooks_customers_max_limit():
     
     assert len(result["customers"]) == 20
     assert result["summary"]["shown"] == 20
-    assert result["summary"]["active_count"] == 30
+    assert result["summary"]["total"] == 30
+    assert result["summary"]["active_only"] == True
 
 
 # ==================== QUICKBOOKS INVOICE TRUNCATION TESTS ====================

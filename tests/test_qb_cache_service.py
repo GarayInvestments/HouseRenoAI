@@ -244,7 +244,7 @@ async def test_get_cached_invoices_with_filters(cache_service, mock_db):
     mock_result.scalars.return_value.all.return_value = cached_invoices
     mock_db.execute.return_value = mock_result
     
-    invoices = await cache_service.get_cached_invoices(qb_customer_id='QB123')
+    invoices = await cache_service.get_cached_invoices(customer_id='QB123')
     
     assert len(invoices) == 1
     assert invoices[0]['qb_customer_id'] == 'QB123'
@@ -283,7 +283,7 @@ async def test_get_cached_payments_with_filters(cache_service, mock_db):
     mock_result.scalars.return_value.all.return_value = cached_payments
     mock_db.execute.return_value = mock_result
     
-    payments = await cache_service.get_cached_payments(qb_customer_id='QB123')
+    payments = await cache_service.get_cached_payments(customer_id='QB123')
     
     assert len(payments) == 1
     assert payments[0]['qb_customer_id'] == 'QB123'
