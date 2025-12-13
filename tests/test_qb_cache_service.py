@@ -317,7 +317,8 @@ async def test_is_cache_fresh_expired(cache_service, mock_db):
     mock_result.scalar_one_or_none.return_value = mock_customer
     mock_db.execute.return_value = mock_result
 
-    is_fresh = await cache_service.is_customers_cache_fresh()    assert is_fresh is False
+    is_fresh = await cache_service.is_customers_cache_fresh()
+    assert is_fresh is False
 
 
 @pytest.mark.asyncio
@@ -328,7 +329,8 @@ async def test_is_cache_fresh_empty(cache_service, mock_db):
     mock_result.scalar_one_or_none.return_value = None
     mock_db.execute.return_value = mock_result
 
-    is_fresh = await cache_service.is_customers_cache_fresh()    assert is_fresh is False
+    is_fresh = await cache_service.is_customers_cache_fresh()
+    assert is_fresh is False
 
 
 # ==================== CACHE INVALIDATION TESTS ====================
