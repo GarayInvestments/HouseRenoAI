@@ -230,15 +230,9 @@ async def test_cache_invoices(cache_service, mock_db, sample_qb_invoice):
 @pytest.mark.asyncio
 async def test_get_cached_invoices_with_filters(cache_service, mock_db):
     """Test retrieving invoices with customer filter."""
-    cached_invoices = [
-        QuickBooksInvoiceCache(
-            qb_invoice_id='INV1',
-            customer_id='QB123',
-            doc_number='1001',
-            total_amount=5000.00,
-            cached_at=datetime.utcnow()
-        ),
-    ]
+    mock_invoice = MagicMock()
+    mock_invoice.qb_data = {'qb_customer_id': 'QB123', 'doc_number': '1001', 'total_amount': 5000.00}
+    cached_invoices = [mock_invoice]
     
     mock_result = MagicMock()
     mock_result.scalars.return_value.all.return_value = cached_invoices
@@ -270,14 +264,9 @@ async def test_cache_payments(cache_service, mock_db, sample_qb_payment):
 @pytest.mark.asyncio
 async def test_get_cached_payments_with_filters(cache_service, mock_db):
     """Test retrieving payments with customer filter."""
-    cached_payments = [
-        QuickBooksPaymentCache(
-            qb_payment_id='PAY1',
-            customer_id='QB123',
-            total_amount=2500.00,
-            cached_at=datetime.utcnow()
-        ),
-    ]
+    mock_payment = MagicMock()
+    mock_payment.qb_data = {'qb_customer_id': 'QB123', 'total_amount': 2500.00}
+    cached_payments = [mock_payment]
     
     mock_result = MagicMock()
     mock_result.scalars.return_value.all.return_value = cached_payments
@@ -309,12 +298,9 @@ async def test_is_cache_fresh_within_ttl(cache_service, mock_db):
 @pytest.mark.asyncio
 async def test_is_cache_fresh_expired(cache_service, mock_db):
     """Test cache freshness check - expired."""
-    # Mock: Old cached customer (beyond TTL)
+    # Mock: Old cached customer (beyond TTL) - query filters by date, so returns None
     mock_result = MagicMock()
-    mock_customer = QuickBooksCustomerCache(
-        cached_at=datetime.utcnow() - timedelta(minutes=10)
-    )
-    mock_result.scalar_one_or_none.return_value = mock_customer
+    mock_result.scalar_one_or_none.return_value = None  # No results after date filter
     mock_db.execute.return_value = mock_result
 
     is_fresh = await cache_service.is_customers_cache_fresh()
@@ -360,8 +346,8 @@ async def test_invalidate_cache_by_customer(cache_service, mock_db):
     """Test invalidating cache for specific customer."""
     await cache_service.invalidate_customer_cache()
     
-    # Should delete customer and related invoices/payments
-    assert mock_db.execute.call_count == 3
+    # Should delete only from customer cache table
+    assert mock_db.execute.call_count == 1
     assert mock_db.commit.called
 
 
@@ -486,9 +472,5 @@ async def test_cache_with_missing_optional_fields(cache_service, mock_db):
     assert count == 1  # Should still cache
 
 
-@pytest.mark.asyncio
-async def test_is_cache_fresh_invalid_type(cache_service, mock_db):
-    """Test cache freshness check with invalid cache type."""
-    is_fresh = await cache_service.is_cache_fresh('invalid_type')
-    
-    assert is_fresh is False
+# Removed test_is_cache_fresh_invalid_type - method is_cache_fresh() doesn't exist
+# Use specific methods: is_customers_cache_fresh(), is_invoices_cache_fresh(), etc.

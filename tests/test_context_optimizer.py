@@ -381,8 +381,10 @@ def test_optimize_context_all_types():
         "permits": [{"business_id": f"PER-{str(i).zfill(5)}"} for i in range(25)],
         "payments": [{"business_id": f"PAY-{str(i).zfill(5)}", "Amount": 1000.00} for i in range(30)],
         "clients": [{"business_id": f"CL-{str(i).zfill(5)}"} for i in range(15)],
-        "quickbooks_customers": [{"Id": f"QB{i}", "Active": True} for i in range(40)],
-        "quickbooks_invoices": [{"Id": f"INV{i}", "TotalAmt": 5000.00, "Balance": 2500.00} for i in range(8)],
+        "quickbooks": {
+            "customers": [{"Id": f"QB{i}", "Active": True} for i in range(40)],
+            "invoices": [{"Id": f"INV{i}", "TotalAmt": 5000.00, "Balance": 2500.00} for i in range(8)],
+        }
     }
     
     result = optimize_context(context, "Show me recent projects")
@@ -395,11 +397,13 @@ def test_optimize_context_all_types():
     # QB customers/invoices go under "quickbooks" key
     assert "quickbooks" in result
     assert "customers" in result["quickbooks"]
-    assert "invoices" in result["quickbooks"]    # Verify truncation occurred
+    assert "invoices" in result["quickbooks"]
+    
+    # Verify truncation occurred
     assert len(result["projects"]) <= 10  # Max recent
     assert len(result["permits"]) <= 15
     assert len(result["payments"]) <= 20
-    assert len(result["quickbooks_customers"]) <= 20
+    assert len(result["quickbooks"]["customers"]) <= 20
 
 
 def test_optimize_context_query_relevant_filtering():
