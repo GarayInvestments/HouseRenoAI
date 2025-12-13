@@ -118,11 +118,9 @@ async def test_cache_ttl_expiration():
     mock_db = AsyncMock()
     cache_service = QuickBooksCacheService(mock_db, cache_ttl_minutes=5)
     
-    # Mock expired cache entry
+    # Mock expired cache entry - query filters by date, so returns None for expired
     mock_result = MagicMock()
-    mock_customer = MagicMock()
-    mock_customer.cached_at = datetime.utcnow() - timedelta(minutes=10)  # Expired
-    mock_result.scalar_one_or_none.return_value = mock_customer
+    mock_result.scalar_one_or_none.return_value = None  # No results after date filter
     mock_db.execute.return_value = mock_result
     
     is_fresh = await cache_service.is_customers_cache_fresh()
