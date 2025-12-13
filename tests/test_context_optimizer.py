@@ -314,17 +314,17 @@ def test_truncate_quickbooks_customers_specific_filter():
 
 
 def test_truncate_quickbooks_customers_max_limit():
-    \"\"\"Test limiting active customers to max count.\"\"\"
+    """Test limiting active customers to max count."""
     customers = [
-        {\"Id\": f\"QB{i}\", \"DisplayName\": f\"Customer {i}\", \"Active\": True}
+        {"Id": f"QB{i}", "DisplayName": f"Customer {i}", "Active": True}
         for i in range(30)
     ]
     
-    result = truncate_quickbooks_customers(customers, \"Show customers\", max_customers=20)
+    result = truncate_quickbooks_customers(customers, "Show customers", max_customers=20)
     
-    assert len(result[\"customers\"]) == 20
-    assert result[\"summary\"][\"shown\"] == 20
-    assert result[\"summary\"][\"active_count\"] == 30
+    assert len(result["customers"]) == 20
+    assert result["summary"]["shown"] == 20
+    assert result["summary"]["active_count"] == 30
 
 
 # ==================== QUICKBOOKS INVOICE TRUNCATION TESTS ====================

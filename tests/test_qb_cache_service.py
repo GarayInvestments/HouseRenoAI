@@ -302,7 +302,8 @@ async def test_is_cache_fresh_within_ttl(cache_service, mock_db):
     mock_result.scalar_one_or_none.return_value = mock_customer
     mock_db.execute.return_value = mock_result
 
-    is_fresh = await cache_service.is_customers_cache_fresh()    assert is_fresh is True
+    is_fresh = await cache_service.is_customers_cache_fresh()
+    assert is_fresh is True
 
 
 @pytest.mark.asyncio
