@@ -30,7 +30,7 @@ const useInvoicesStore = create((set, get) => ({
     set({ loading: true, error: null });
     try {
       // Fetch from cache endpoint
-      const response = await fetch('/v1/quickbooks/sync/invoices/cached', {
+      const response = await fetch('/v1/quickbooks/sync/cache/invoices', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('supabase_token')}`
         }
