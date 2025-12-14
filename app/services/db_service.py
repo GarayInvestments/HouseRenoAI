@@ -1094,7 +1094,7 @@ class DBService:
         from app.db.models import SiteVisit
         
         async with AsyncSessionLocal() as session:
-            query = select(SiteVisit).order_by(SiteVisit.visit_date.desc())
+            query = select(SiteVisit).order_by(SiteVisit.scheduled_date.desc())
             if limit:
                 query = query.limit(limit)
             
@@ -1105,13 +1105,21 @@ class DBService:
                 "visit_id": v.visit_id,
                 "business_id": v.business_id,
                 "project_id": v.project_id,
-                "visit_date": v.visit_date.isoformat() if v.visit_date else None,
-                "purpose": v.purpose,
+                "client_id": v.client_id,
+                "visit_type": v.visit_type,
+                "status": v.status,
+                "scheduled_date": v.scheduled_date.isoformat() if v.scheduled_date else None,
+                "start_time": v.start_time.isoformat() if v.start_time else None,
+                "end_time": v.end_time.isoformat() if v.end_time else None,
                 "attendees": v.attendees,
-                "observations": v.observations,
-                "action_items": v.action_items,
+                "gps_location": v.gps_location,
                 "photos": v.photos,
+                "notes": v.notes,
+                "weather": v.weather,
+                "deficiencies": v.deficiencies,
+                "follow_up_actions": v.follow_up_actions,
                 "created_at": v.created_at.isoformat() if v.created_at else None,
+                "updated_at": v.updated_at.isoformat() if v.updated_at else None,
             } for v in visits]
     
     async def get_site_visit_by_id(self, visit_id: str) -> Optional[Dict[str, Any]]:
@@ -1129,12 +1137,23 @@ class DBService:
             
             return {
                 "visit_id": visit.visit_id,
+                "business_id": visit.business_id,
                 "project_id": visit.project_id,
-                "visit_date": visit.visit_date.isoformat() if visit.visit_date else None,
-                "purpose": visit.purpose,
+                "client_id": visit.client_id,
+                "visit_type": visit.visit_type,
+                "status": visit.status,
+                "scheduled_date": visit.scheduled_date.isoformat() if visit.scheduled_date else None,
+                "start_time": visit.start_time.isoformat() if visit.start_time else None,
+                "end_time": visit.end_time.isoformat() if visit.end_time else None,
                 "attendees": visit.attendees,
-                "observations": visit.observations,
-                "action_items": visit.action_items,
+                "gps_location": visit.gps_location,
+                "photos": visit.photos,
+                "notes": visit.notes,
+                "weather": visit.weather,
+                "deficiencies": visit.deficiencies,
+                "follow_up_actions": visit.follow_up_actions,
+                "created_at": visit.created_at.isoformat() if visit.created_at else None,
+                "updated_at": visit.updated_at.isoformat() if visit.updated_at else None,
             }
     
     async def create_site_visit(self, data: Dict[str, Any]) -> Dict[str, Any]:
@@ -1144,11 +1163,19 @@ class DBService:
         async with AsyncSessionLocal() as session:
             visit = SiteVisit(
                 project_id=data.get("project_id"),
-                visit_date=data.get("visit_date"),
-                purpose=data.get("purpose"),
+                client_id=data.get("client_id"),
+                visit_type=data.get("visit_type"),
+                status=data.get("status", "scheduled"),
+                scheduled_date=data.get("scheduled_date"),
+                start_time=data.get("start_time"),
+                end_time=data.get("end_time"),
                 attendees=data.get("attendees"),
-                observations=data.get("observations"),
-                action_items=data.get("action_items"),
+                gps_location=data.get("gps_location"),
+                photos=data.get("photos"),
+                notes=data.get("notes"),
+                weather=data.get("weather"),
+                deficiencies=data.get("deficiencies"),
+                follow_up_actions=data.get("follow_up_actions"),
             )
             
             session.add(visit)
@@ -1171,7 +1198,13 @@ class DBService:
             if not visit:
                 raise ValueError(f"Site visit {visit_id} not found")
             
-            for key in ["visit_date", "purpose", "attendees", "observations", "action_items"]:
+            updateable_fields = [
+                "client_id", "visit_type", "status", "scheduled_date", "start_time", 
+                "end_time", "attendees", "gps_location", "photos", "notes", 
+                "weather", "deficiencies", "follow_up_actions"
+            ]
+            
+            for key in updateable_fields:
                 if key in data:
                     setattr(visit, key, data[key])
             
@@ -1199,7 +1232,7 @@ class DBService:
         
         async with AsyncSessionLocal() as session:
             result = await session.execute(
-                select(SiteVisit).where(SiteVisit.project_id == project_id).order_by(SiteVisit.visit_date.desc())
+                select(SiteVisit).where(SiteVisit.project_id == project_id).order_by(SiteVisit.scheduled_date.desc())
             )
             visits = result.scalars().all()
             

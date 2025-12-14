@@ -21,8 +21,8 @@ export default function AppLayout({ children }) {
 
       {/* Main Content Area with Sidebar */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Desktop Sidebar - Hidden on mobile */}
-        {!isMobile && <Sidebar />}
+        {/* Desktop Sidebar - Only shows on screens >= 1024px (handled by Sidebar component) */}
+        <Sidebar />
 
         {/* Main Content - Scrollable */}
         <main className="flex-1 overflow-y-auto bg-gray-50">
@@ -33,8 +33,8 @@ export default function AppLayout({ children }) {
       {/* Bottom Navigation - Mobile only */}
       {isMobile && <BottomNav />}
 
-      {/* Mobile Drawer - Overlay sidebar for mobile */}
-      {isMobile && drawerOpen && <MobileDrawer />}
+      {/* Mobile Drawer - Shows when opened on mobile/tablet (< 1024px) */}
+      {drawerOpen && <MobileDrawer />}
     </div>
   );
 }

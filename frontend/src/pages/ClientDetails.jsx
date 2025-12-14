@@ -13,6 +13,9 @@ export default function ClientDetails() {
   const [permits, setPermits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedClient, setEditedClient] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
   const currentClientId = useAppStore((state) => state.currentClientId);
   const navigateToClients = useAppStore((state) => state.navigateToClients);
   const setCurrentView = useAppStore((state) => state.setCurrentView);
@@ -74,6 +77,30 @@ export default function ClientDetails() {
 
   const handleBackClick = () => {
     window.history.back();
+  };
+
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      await api.updateClient(currentClientId, editedClient);
+      setClient({ ...client, ...editedClient });
+      setIsEditing(false);
+      setEditedClient(null);
+    } catch (error) {
+      console.error('Failed to save client:', error);
+      alert('Failed to save changes. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    setEditedClient(null);
+  };
+
+  const handleEditChange = (field, value) => {
+    setEditedClient(prev => ({ ...prev, [field]: value }));
   };
 
   const handleRetry = async () => {
@@ -147,28 +174,86 @@ export default function ClientDetails() {
       height: '100%',
       backgroundColor: '#F8FAFC'
     }}>
-      {/* Back Button */}
-      <button
-        onClick={handleBackClick}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          color: '#64748B',
-          background: 'none',
-          border: 'none',
-          padding: '16px 32px',
-          fontSize: '14px',
-          fontWeight: '500',
-          cursor: 'pointer',
-          transition: 'color 0.2s ease'
-        }}
-        onMouseEnter={(e) => e.currentTarget.style.color = '#1E293B'}
-        onMouseLeave={(e) => e.currentTarget.style.color = '#64748B'}
-      >
-        <ArrowLeft size={20} />
-        <span>Back to Clients</span>
-      </button>
+      {/* Back Button & Edit Controls */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 32px' }}>
+        <button
+          onClick={handleBackClick}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            color: '#64748B',
+            background: 'none',
+            border: 'none',
+            padding: '0',
+            fontSize: '14px',
+            fontWeight: '500',
+            cursor: 'pointer',
+            transition: 'color 0.2s ease'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.color = '#1E293B'}
+          onMouseLeave={(e) => e.currentTarget.style.color = '#64748B'}
+        >
+          <ArrowLeft size={20} />
+          <span>Back to Clients</span>
+        </button>
+
+        {!isEditing ? (
+          <button
+            onClick={() => {
+              setIsEditing(true);
+              setEditedClient(client);
+            }}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: '#2563EB',
+              color: '#FFFFFF',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: '500',
+              cursor: 'pointer'
+            }}
+          >
+            Edit Client
+          </button>
+        ) : (
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              onClick={handleCancel}
+              disabled={isSaving}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#FFFFFF',
+                color: '#64748B',
+                border: '1px solid #E2E8F0',
+                borderRadius: '8px',
+                fontSize: '14px',
+                cursor: isSaving ? 'not-allowed' : 'pointer',
+                opacity: isSaving ? 0.5 : 1
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#059669',
+                color: '#FFFFFF',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '14px',
+                cursor: isSaving ? 'not-allowed' : 'pointer',
+                opacity: isSaving ? 0.5 : 1
+              }}
+            >
+              {isSaving ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Content */}
       <div style={{
@@ -249,19 +334,33 @@ export default function ClientDetails() {
               flexDirection: 'column',
               gap: '16px'
             }}>
-              {email && (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '12px'
-                }}>
-                  <Mail size={20} style={{ color: '#94A3B8', flexShrink: 0, marginTop: '2px' }} />
-                  <div>
-                    <p style={{
-                      fontSize: '12px',
-                      color: '#94A3B8',
-                      marginBottom: '4px'
-                    }}>Email</p>
+              <div style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '12px'
+              }}>
+                <Mail size={20} style={{ color: '#94A3B8', flexShrink: 0, marginTop: '2px' }} />
+                <div style={{ flex: 1 }}>
+                  <p style={{
+                    fontSize: '12px',
+                    color: '#94A3B8',
+                    marginBottom: '4px'
+                  }}>Email</p>
+                  {isEditing ? (
+                    <input
+                      type="email"
+                      value={editedClient?.Email || ''}
+                      onChange={(e) => handleEditChange('Email', e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        border: '1px solid #D1D5DB',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        outline: 'none'
+                      }}
+                    />
+                  ) : (
                     <a href={`mailto:${email}`} style={{
                       color: '#2563EB',
                       fontSize: '14px',
@@ -271,24 +370,38 @@ export default function ClientDetails() {
                     onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
                     onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
                     >
-                      {email}
+                      {email || 'Not set'}
                     </a>
-                  </div>
+                  )}
                 </div>
-              )}
-              {phone && (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '12px'
-                }}>
-                  <Phone size={20} style={{ color: '#94A3B8', flexShrink: 0, marginTop: '2px' }} />
-                  <div>
-                    <p style={{
-                      fontSize: '12px',
-                      color: '#94A3B8',
-                      marginBottom: '4px'
-                    }}>Phone</p>
+              </div>
+              <div style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '12px'
+              }}>
+                <Phone size={20} style={{ color: '#94A3B8', flexShrink: 0, marginTop: '2px' }} />
+                <div style={{ flex: 1 }}>
+                  <p style={{
+                    fontSize: '12px',
+                    color: '#94A3B8',
+                    marginBottom: '4px'
+                  }}>Phone</p>
+                  {isEditing ? (
+                    <input
+                      type="tel"
+                      value={editedClient?.Phone || ''}
+                      onChange={(e) => handleEditChange('Phone', e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        border: '1px solid #D1D5DB',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        outline: 'none'
+                      }}
+                    />
+                  ) : (
                     <a href={`tel:${phone}`} style={{
                       color: '#2563EB',
                       fontSize: '14px',
@@ -297,11 +410,11 @@ export default function ClientDetails() {
                     onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
                     onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
                     >
-                      {phone}
+                      {phone || 'Not set'}
                     </a>
-                  </div>
+                  )}
                 </div>
-              )}
+              </div>
               {preferredContact && (
                 <div style={{
                   display: 'flex',

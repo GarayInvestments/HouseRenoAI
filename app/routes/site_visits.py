@@ -2,13 +2,15 @@
 API routes for site visit management.
 """
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from typing import Optional
 from datetime import datetime
 from pydantic import BaseModel
 import logging
 
 from app.services.db_service import db_service
+from app.routes.auth_supabase import get_current_user
+from app.db.models import User
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -16,26 +18,44 @@ router = APIRouter()
 
 class SiteVisitCreate(BaseModel):
     project_id: str
-    visit_date: datetime
-    purpose: str
-    attendees: Optional[str] = None
-    observations: Optional[str] = None
-    action_items: Optional[str] = None
+    client_id: Optional[str] = None
+    visit_type: Optional[str] = None
+    status: Optional[str] = "scheduled"
+    scheduled_date: Optional[datetime] = None
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    attendees: Optional[list] = None
+    gps_location: Optional[str] = None
+    photos: Optional[list] = None
+    notes: Optional[str] = None
+    weather: Optional[str] = None
+    deficiencies: Optional[list] = None
+    follow_up_actions: Optional[list] = None
 
 
 class SiteVisitUpdate(BaseModel):
-    visit_date: Optional[datetime] = None
-    purpose: Optional[str] = None
-    attendees: Optional[str] = None
-    observations: Optional[str] = None
-    action_items: Optional[str] = None
+    client_id: Optional[str] = None
+    visit_type: Optional[str] = None
+    status: Optional[str] = None
+    scheduled_date: Optional[datetime] = None
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    attendees: Optional[list] = None
+    gps_location: Optional[str] = None
+    photos: Optional[list] = None
+    notes: Optional[str] = None
+    weather: Optional[str] = None
+    deficiencies: Optional[list] = None
+    follow_up_actions: Optional[list] = None
 
 
 @router.get("/")
-async def get_all_site_visits():
+async def get_all_site_visits(current_user: User = Depends(get_current_user)):
     """Get all site visits"""
     try:
+        logger.info(f"Fetching all site visits for user {current_user.email}")
         visits = await db_service.get_site_visits_data()
+        logger.info(f"Retrieved {len(visits) if isinstance(visits, list) else 'unknown'} site visits")
         return visits
     except Exception as e:
         logger.error(f"Failed to get site visits: {e}")
@@ -43,7 +63,7 @@ async def get_all_site_visits():
 
 
 @router.get("/{visit_id}")
-async def get_site_visit(visit_id: str):
+async def get_site_visit(visit_id: str, current_user: User = Depends(get_current_user)):
     """Get a specific site visit"""
     try:
         visit = await db_service.get_site_visit_by_id(visit_id)
@@ -57,7 +77,7 @@ async def get_site_visit(visit_id: str):
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-async def create_site_visit(visit_data: SiteVisitCreate):
+async def create_site_visit(visit_data: SiteVisitCreate, current_user: User = Depends(get_current_user)):
     """Create a new site visit"""
     try:
         visit_dict = visit_data.model_dump(exclude_none=True)
@@ -69,7 +89,7 @@ async def create_site_visit(visit_data: SiteVisitCreate):
 
 
 @router.put("/{visit_id}")
-async def update_site_visit(visit_id: str, visit_data: SiteVisitUpdate):
+async def update_site_visit(visit_id: str, visit_data: SiteVisitUpdate, current_user: User = Depends(get_current_user)):
     """Update a site visit"""
     try:
         update_dict = visit_data.model_dump(exclude_none=True)
@@ -85,7 +105,7 @@ async def update_site_visit(visit_id: str, visit_data: SiteVisitUpdate):
 
 
 @router.delete("/{visit_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_site_visit(visit_id: str):
+async def delete_site_visit(visit_id: str, current_user: User = Depends(get_current_user)):
     """Delete a site visit"""
     try:
         deleted = await db_service.delete_site_visit(visit_id)

@@ -1,4 +1,4 @@
-import { X, LayoutDashboard, MessageSquare, FileText, FolderKanban, Users, FolderOpen, Settings } from 'lucide-react';
+import { X, LayoutDashboard, MessageSquare, FileText, FolderKanban, Users, FolderOpen, Settings, ClipboardCheck, Receipt, DollarSign, MapPin } from 'lucide-react';
 import { useAppStore } from '../stores/appStore';
 import { useEffect } from 'react';
 
@@ -6,6 +6,10 @@ const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'ai-assistant', label: 'AI Assistant', icon: MessageSquare },
   { id: 'permits', label: 'Permits', icon: FileText },
+  { id: 'inspections', label: 'Inspections', icon: ClipboardCheck },
+  { id: 'invoices', label: 'Invoices', icon: Receipt },
+  { id: 'payments', label: 'Payments', icon: DollarSign },
+  { id: 'site-visits', label: 'Site Visits', icon: MapPin },
   { id: 'projects', label: 'Projects', icon: FolderKanban },
   { id: 'clients', label: 'Clients', icon: Users },
   { id: 'documents', label: 'Documents', icon: FolderOpen },
@@ -45,7 +49,6 @@ export default function MobileDrawer() {
           transition: 'opacity 0.3s ease',
           animation: 'fadeIn 0.3s ease'
         }}
-        className="lg:hidden"
         onClick={() => setDrawerOpen(false)}
       />
 
@@ -66,7 +69,6 @@ export default function MobileDrawer() {
           transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           animation: 'slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
         }}
-        className="lg:hidden"
       >
         {/* Header */}
         <div style={{

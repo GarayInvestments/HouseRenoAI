@@ -1,4 +1,4 @@
-import { LayoutDashboard, MessageSquare, FileText, FolderKanban, Users, FolderOpen, Settings, ClipboardCheck } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, FileText, FolderKanban, Users, FolderOpen, Settings, ClipboardCheck, Receipt, DollarSign, MapPin } from 'lucide-react';
 import { useAppStore } from '../stores/appStore';
 
 const navItems = [
@@ -6,6 +6,9 @@ const navItems = [
   { id: 'ai-assistant', label: 'AI Assistant', icon: MessageSquare },
   { id: 'permits', label: 'Permits', icon: FileText },
   { id: 'inspections', label: 'Inspections', icon: ClipboardCheck },
+  { id: 'invoices', label: 'Invoices', icon: Receipt },
+  { id: 'payments', label: 'Payments', icon: DollarSign },
+  { id: 'site-visits', label: 'Site Visits', icon: MapPin },
   { id: 'projects', label: 'Projects', icon: FolderKanban },
   { id: 'clients', label: 'Clients', icon: Users },
   { id: 'documents', label: 'Documents', icon: FolderOpen },

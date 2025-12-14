@@ -1,9 +1,9 @@
 # Database Schema Reference
 
-> **Date**: December 11, 2025  
+> **Date**: December 14, 2025  
 > **Database**: PostgreSQL (Supabase) - `dtfjzjhxtojkgfofrmrr.supabase.co`  
 > **ORM**: SQLAlchemy 2.0.35 (async with asyncpg)  
-> **Source**: Extracted from `app/db/models.py`
+> **Source**: Extracted from `app/db/models.py` + migration `20251214_0100_add_qualifier_compliance_tables.py`
 
 ---
 
@@ -603,9 +603,209 @@ alembic current
 
 ---
 
+## Qualifier Compliance Tables (Phase Q.1 - Added Dec 14, 2025)
+
+### 9. Licensed Businesses (`licensed_businesses`)
+
+**Purpose**: Business entities holding NCLBGC licenses qualified by individuals
+
+**Primary Key**: `id` (UUID)  
+**Business ID**: `business_id` (LB-00001, LB-00002, ...)  
+**Foreign Keys**:
+- `qualifying_user_id` → `users.id` (DENORMALIZED - UI only, never use for enforcement)
+
+**Indexes**:
+- `ix_licensed_businesses_business_id` (UNIQUE)
+- `ix_licensed_businesses_license_number` (UNIQUE)
+- `ix_licensed_businesses_qualifying_user_id` (B-tree)
+
+**Enforcement**: None (junction table `licensed_business_qualifiers` enforces capacity)
+
+**Typed Columns**:
+```python
+id: UUID (PK)                         # gen_random_uuid()
+business_id: String(50) (UNIQUE)      # LB-00001, LB-00002 (trigger-generated)
+business_name: String(255)            # DBA/trade name (NOT unique - DBAs can collide)
+legal_name: String(255)               # Legal entity name
+dba_name: String(255) (nullable)      # Doing Business As name
+license_number: String(100) (UNIQUE)  # NCLBGC license number
+license_type: String(100)             # Unlimited, Intermediate, Limited
+license_status: String(50)            # active, inactive, suspended, revoked (CHECK constraint)
+license_issue_date: Date (nullable)   # License issue date
+license_expiration_date: Date (nullable) # License expiration
+qualifying_user_id: UUID (nullable)   # DENORMALIZED / UI ONLY - NEVER use in enforcement
+fee_model: String(50) (nullable)      # FLAT, MATRIX, HYBRID
+active: Boolean                       # default=true
+address, phone, email, notes: Text/String (nullable)
+created_at, updated_at: DateTime(TZ)
+```
+
+---
+
+### 10. Qualifiers (`qualifiers`)
+
+**Purpose**: Individuals with qualifier status who can qualify licensed businesses
+
+**Primary Key**: `id` (UUID)  
+**Business ID**: `qualifier_id` (QF-00001, QF-00002, ...)  
+**Foreign Keys**:
+- `user_id` → `users.id` (UNIQUE, CASCADE delete - 1:1 relationship)
+
+**Indexes**:
+- `ix_qualifiers_qualifier_id` (UNIQUE)
+- `ix_qualifiers_user_id` (UNIQUE)
+
+**Enforcement**: Capacity limit enforced via `licensed_business_qualifiers` trigger
+
+**Typed Columns**:
+```python
+id: UUID (PK)                         # gen_random_uuid()
+qualifier_id: String(50) (UNIQUE)     # QF-00001, QF-00002 (trigger-generated)
+user_id: UUID (FK, UNIQUE)            # 1:1 link to operational user account
+max_licenses_allowed: Integer         # Override for max businesses (default=2, NCLBGC rule)
+license_number: String(100) (nullable) # Individual qualifier license (if separate from business)
+license_issue_date, expiration_date: Date (nullable)
+active: Boolean                       # default=true
+notes: Text (nullable)
+created_at, updated_at: DateTime(TZ)
+```
+
+---
+
+### 11. Licensed Business Qualifiers (`licensed_business_qualifiers`)
+
+**Purpose**: Many-to-many junction with time bounds and capacity enforcement
+
+**Primary Key**: `id` (UUID)  
+**Foreign Keys**:
+- `licensed_business_id` → `licensed_businesses.id` (CASCADE delete)
+- `qualifier_id` → `qualifiers.id` (CASCADE delete)
+
+**Indexes**:
+- `ix_lbq_licensed_business_id`, `ix_lbq_qualifier_id` (B-tree)
+- `ix_lbq_active` (partial: WHERE end_date IS NULL)
+- `ix_lbq_active_dates` (composite: qualifier_id, start_date, end_date)
+- **`uq_lbq_active_pair`** (UNIQUE partial: WHERE end_date IS NULL) - prevents duplicate active relationships
+
+**Enforcement Triggers**:
+- **`licensed_business_qualifiers_capacity_trigger`** - Blocks INSERT/UPDATE if qualifier serves >max_licenses_allowed with overlapping dates
+- Uses `daterange()` operator for overlap detection
+- Handles UPDATE properly (excludes OLD.id when counting)
+
+**Typed Columns**:
+```python
+id: UUID (PK)                         # gen_random_uuid()
+licensed_business_id: UUID (FK)       # Business being qualified
+qualifier_id: UUID (FK)               # Qualifier providing supervision
+relationship_type: String(50)         # QUALIFYING, SECONDARY, ADVISOR (CHECK constraint)
+start_date: Date                      # Relationship start
+end_date: Date (nullable)             # Relationship end (NULL = active)
+cutoff_date: DateTime(TZ) (nullable)  # Hard cutoff after resignation (blocks oversight actions)
+notes: Text (nullable)
+created_at, updated_at: DateTime(TZ)
+```
+
+---
+
+### 12. Oversight Actions (`oversight_actions`)
+
+**Purpose**: Canonical compliance records for qualifier oversight activities
+
+**Primary Key**: `id` (UUID)  
+**Business ID**: `action_id` (OA-00001, OA-00002, ...)  
+**Foreign Keys**:
+- `project_id` → `projects.project_id` (CASCADE delete)
+- `licensed_business_id` → `licensed_businesses.id` (CASCADE delete)
+- `qualifier_id` → `qualifiers.id` (CASCADE delete)
+- `licensed_business_qualifier_id` → `licensed_business_qualifiers.id` (SET NULL - immutable audit trail)
+- `created_by` → `users.id` (SET NULL)
+
+**Indexes**:
+- `ix_oversight_actions_action_id` (UNIQUE)
+- `ix_oversight_actions_project_id`, `ix_oversight_actions_licensed_business_id`, `ix_oversight_actions_qualifier_id` (B-tree)
+- `ix_oversight_actions_project_date` (composite: project_id, action_date)
+
+**Enforcement Triggers**:
+- **`oversight_actions_cutoff_trigger`** - Blocks INSERT if action_date > relationship.cutoff_date or relationship.end_date
+- Uses `action_date` (not CURRENT_DATE) for historical correctness
+- Includes guard clauses for NULL project context during backfill
+
+**Typed Columns**:
+```python
+id: UUID (PK)                         # gen_random_uuid()
+action_id: String(50) (UNIQUE)        # OA-00001, OA-00002 (trigger-generated)
+project_id: UUID (FK)                 # Project being supervised
+licensed_business_id: UUID (FK)       # Business context for audit trail
+qualifier_id: UUID (FK)               # Qualifier performing oversight
+licensed_business_qualifier_id: UUID (FK, nullable) # Hard FK to exact relationship (Phase Q.2: NOT NULL)
+action_type: String(100)              # site_visit, plan_review, permit_review, client_meeting, etc. (CHECK constraint)
+action_date: DateTime(TZ)             # When oversight occurred
+duration_minutes: Integer (nullable)  # Duration of oversight
+location, notes: Text (nullable)
+attendees: JSONB (nullable)           # Array of attendee objects
+photos: JSONB (nullable)              # Array of photo objects
+created_by: UUID (FK, nullable)
+created_at, updated_at: DateTime(TZ)
+```
+
+**Oversight Hierarchy**: `oversight_actions` is THE CANONICAL COMPLIANCE RECORD. `site_visits` and `inspections` are SUPPORTING EVIDENCE ONLY.
+
+---
+
+### 13. Compliance Justifications (`compliance_justifications`)
+
+**Purpose**: Audit log for rule overrides with approval workflow
+
+**Primary Key**: `id` (UUID)  
+**Business ID**: `justification_id` (CJ-00001, CJ-00002, ...)  
+**Foreign Keys**:
+- `approved_by` → `users.id` (SET NULL)
+- `created_by` → `users.id` (SET NULL)
+
+**Indexes**:
+- `ix_compliance_justifications_justification_id` (UNIQUE)
+
+**Typed Columns**:
+```python
+id: UUID (PK)                         # gen_random_uuid()
+justification_id: String(50) (UNIQUE) # CJ-00001, CJ-00002 (trigger-generated)
+rule_violated: String(255)            # Which compliance rule was overridden
+reason: Text                          # Justification explanation
+approved_by: UUID (FK, nullable)      # User who approved override
+approval_date: DateTime(TZ) (nullable)
+created_by: UUID (FK, nullable)
+created_at, updated_at: DateTime(TZ)
+```
+
+---
+
+### Enhanced Existing Tables (Phase Q.1)
+
+**Projects**:
+- Added: `licensed_business_id` (UUID FK), `qualifier_id` (UUID FK), `engagement_model` (VARCHAR CHECK), `oversight_required` (BOOLEAN), `compliance_notes` (TEXT)
+- FKs: → `licensed_businesses.id`, → `qualifiers.id`
+- Indexes: `ix_projects_licensed_business_id`, `ix_projects_qualifier_id`, `ix_projects_engagement_model`
+
+**Permits**:
+- Added: `licensed_business_id` (UUID FK), `qualifier_id` (UUID FK), `license_number_used` (VARCHAR), `responsibility_role` (VARCHAR CHECK)
+- FKs: → `licensed_businesses.id`, → `qualifiers.id`
+
+**Site Visits**:
+- Added: `oversight_type` (VARCHAR CHECK), `qualifier_id` (UUID FK), `qualifier_present` (BOOLEAN), `oversight_justification` (TEXT)
+- FK: → `qualifiers.id`
+
+**Inspections**:
+- Added: `qualifier_attended` (BOOLEAN), `oversight_site_visit_id` (UUID FK)
+- FK: → `site_visits.visit_id`
+
+**Users**:
+- Added: `is_qualifier` (BOOLEAN) - UI convenience flag only, NOT compliance authority
+
+---
+
 ## Table Statistics
 
-| Table | Data Volume (Dec 11, 2025) | Business ID Prefix | QuickBooks Sync |
+| Table | Data Volume (Dec 14, 2025) | Business ID Prefix | QuickBooks Sync |
 |-------|---------------------------|--------------------|-----------------|
 | clients | 8 | CL- | ✅ Yes (customers) |
 | projects | 13 | PRJ- | ⚠️ Partial (estimates/invoices) |
@@ -614,7 +814,11 @@ alembic current
 | invoices | 0 | INV- | ✅ Yes (invoices) |
 | inspections | 0 | INS- | ❌ No |
 | site_visits | 0 | SV- | ❌ No |
-| quickbooks_tokens | 0 (still in Sheets) | N/A | N/A |
+| **licensed_businesses** | 0 | LB- | ❌ No |
+| **qualifiers** | 0 | QF- | ❌ No |
+| **licensed_business_qualifiers** | 0 | N/A | ❌ No |
+| **oversight_actions** | 0 | OA- | ❌ No |
+| **compliance_justifications** | 0 | CJ- | ❌ No |
 
 ---
 
@@ -628,6 +832,6 @@ alembic current
 
 ---
 
-**Last Updated**: December 11, 2025  
-**Schema Version**: PostgreSQL 15 (Supabase)  
+**Last Updated**: December 14, 2025  
+**Schema Version**: PostgreSQL 15 (Supabase) - Phase Q.1 Complete (5 new compliance tables + 14 new columns)  
 **ORM Version**: SQLAlchemy 2.0.35

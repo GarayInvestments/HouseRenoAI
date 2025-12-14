@@ -22,10 +22,29 @@ export default function ProjectDetails() {
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedProject, setEditedProject] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [businesses, setBusinesses] = useState([]);
+  const [qualifiers, setQualifiers] = useState([]);
 
   useEffect(() => {
     fetchProjectDetails();
+    fetchComplianceData();
   }, [currentProjectId]);
+
+  const fetchComplianceData = async () => {
+    try {
+      const [businessesData, qualifiersData] = await Promise.all([
+        api.get('/v1/licensed-businesses'),
+        api.get('/v1/qualifiers')
+      ]);
+      setBusinesses(businessesData || []);
+      setQualifiers(qualifiersData || []);
+    } catch (error) {
+      console.error('Failed to load compliance data:', error);
+    }
+  };
 
   // Handle browser back button
   useEffect(() => {
@@ -63,6 +82,30 @@ export default function ProjectDetails() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      await api.updateProject(currentProjectId, editedProject, false);
+      setProject({ ...project, ...editedProject });
+      setIsEditing(false);
+      setEditedProject(null);
+    } catch (error) {
+      console.error('Failed to save project:', error);
+      alert('Failed to save changes. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    setEditedProject(null);
+  };
+
+  const handleEditChange = (field, value) => {
+    setEditedProject(prev => ({ ...prev, [field]: value }));
   };
 
   const formatDate = (dateString) => {
@@ -129,35 +172,97 @@ export default function ProjectDetails() {
         maxWidth: '1200px',
         margin: '0 auto'
       }}>
-        {/* Back Button */}
-        <button
-          onClick={navigateToProjects}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '8px 16px',
-            backgroundColor: '#FFFFFF',
-            border: '1px solid #E2E8F0',
-            borderRadius: '8px',
-            fontSize: '14px',
-            color: '#64748B',
-            cursor: 'pointer',
-            marginBottom: '24px',
-            transition: 'all 0.2s ease'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#F8FAFC';
-            e.currentTarget.style.color = '#2563EB';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = '#FFFFFF';
-            e.currentTarget.style.color = '#64748B';
-          }}
-        >
-          <ArrowLeft size={16} />
-          Back to Projects
-        </button>
+        {/* Back Button & Edit Controls */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <button
+            onClick={navigateToProjects}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '8px 16px',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #E2E8F0',
+              borderRadius: '8px',
+              fontSize: '14px',
+              color: '#64748B',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#F8FAFC';
+              e.currentTarget.style.color = '#2563EB';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#FFFFFF';
+              e.currentTarget.style.color = '#64748B';
+            }}
+          >
+            <ArrowLeft size={16} />
+            Back to Projects
+          </button>
+
+          {!isEditing ? (
+            <button
+              onClick={() => {
+                setIsEditing(true);
+                setEditedProject(project);
+              }}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#2563EB',
+                color: '#FFFFFF',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1D4ED8'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2563EB'}
+            >
+              Edit Project
+            </button>
+          ) : (
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={handleCancel}
+                disabled={isSaving}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: '#FFFFFF',
+                  color: '#64748B',
+                  border: '1px solid #E2E8F0',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: isSaving ? 'not-allowed' : 'pointer',
+                  opacity: isSaving ? 0.5 : 1
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={isSaving}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: '#059669',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: isSaving ? 'not-allowed' : 'pointer',
+                  opacity: isSaving ? 0.5 : 1
+                }}
+              >
+                {isSaving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* Header Card */}
         <div style={{
@@ -445,8 +550,138 @@ export default function ProjectDetails() {
           </div>
         )}
 
+        {/* Compliance Section (Phase Q) */}
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '12px',
+          padding: '24px',
+          border: '1px solid #E2E8F0',
+          marginTop: '24px',
+          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)'
+        }}>
+          <h2 style={{
+            fontSize: '18px',
+            fontWeight: '600',
+            color: '#1E293B',
+            marginBottom: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <FileText size={20} style={{ color: '#2563EB' }} />
+            Compliance Information
+          </h2>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+            gap: '16px'
+          }}>
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: '14px',
+                fontWeight: '500',
+                color: '#374151',
+                marginBottom: '4px'
+              }}>Licensed Business</label>
+              {isEditing ? (
+                <select
+                  value={editedProject?.licensed_business_id || ''}
+                  onChange={(e) => handleEditChange('licensed_business_id', e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    border: '1px solid #D1D5DB',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    outline: 'none'
+                  }}
+                >
+                  <option value="">Select Business...</option>
+                  {businesses.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.business_name} ({b.license_number})
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <p style={{ color: '#111827', fontSize: '14px' }}>
+                  {project.licensed_business_id || 'Not assigned'}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: '14px',
+                fontWeight: '500',
+                color: '#374151',
+                marginBottom: '4px'
+              }}>Qualifier</label>
+              {isEditing ? (
+                <select
+                  value={editedProject?.qualifier_id || ''}
+                  onChange={(e) => handleEditChange('qualifier_id', e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    border: '1px solid #D1D5DB',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    outline: 'none'
+                  }}
+                >
+                  <option value="">Select Qualifier...</option>
+                  {qualifiers.map((q) => (
+                    <option key={q.id} value={q.id}>
+                      {q.full_name} ({q.qualifier_id_number})
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <p style={{ color: '#111827', fontSize: '14px' }}>
+                  {project.qualifier_id || 'Not assigned'}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: '14px',
+                fontWeight: '500',
+                color: '#374151',
+                marginBottom: '4px'
+              }}>Engagement Model</label>
+              {isEditing ? (
+                <select
+                  value={editedProject?.engagement_model || ''}
+                  onChange={(e) => handleEditChange('engagement_model', e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    border: '1px solid #D1D5DB',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    outline: 'none'
+                  }}
+                >
+                  <option value="">Select Model...</option>
+                  <option value="DIRECT_GC">Direct GC</option>
+                  <option value="THIRD_PARTY_QUALIFIER">Third-Party Qualifier</option>
+                </select>
+              ) : (
+                <p style={{ color: '#111827', fontSize: '14px' }}>
+                  {project.engagement_model || 'Not set'}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
         {/* Notes */}
-        {project.Notes && (
+        {(project.Notes || isEditing) && (
           <div style={{
             backgroundColor: '#FFFFFF',
             borderRadius: '12px',
@@ -467,14 +702,33 @@ export default function ProjectDetails() {
               <FileText size={20} style={{ color: '#D97706' }} />
               Notes
             </h2>
-            <p style={{
-              fontSize: '14px',
-              color: '#475569',
-              lineHeight: '1.6',
-              whiteSpace: 'pre-wrap'
-            }}>
-              {project.Notes}
-            </p>
+            {isEditing ? (
+              <textarea
+                value={editedProject?.Notes || ''}
+                onChange={(e) => handleEditChange('Notes', e.target.value)}
+                style={{
+                  width: '100%',
+                  minHeight: '100px',
+                  padding: '12px',
+                  border: '1px solid #D1D5DB',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  outline: 'none',
+                  fontFamily: 'inherit',
+                  resize: 'vertical'
+                }}
+                placeholder="Add project notes..."
+              />
+            ) : (
+              <p style={{
+                fontSize: '14px',
+                color: '#475569',
+                lineHeight: '1.6',
+                whiteSpace: 'pre-wrap'
+              }}>
+                {project.Notes}
+              </p>
+            )}
           </div>
         )}
 

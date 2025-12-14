@@ -14,6 +14,7 @@ This document defines:
 - The official `/docs` folder structure
 - The rules for adding, moving, merging, or deleting documentation
 - The classification system used to triage existing docs
+- **Document lifecycle and update frequency expectations**
 - The instructions Copilot must follow when touching documentation
 
 **No documentation changes should be made without following this policy.**
@@ -27,12 +28,14 @@ docs/
 ├─ README.md                     # This document (governance policy)
 │
 ├─ roadmap/
-│  └─ PROJECT_ROADMAP.md
+│  ├─ PROJECT_ROADMAP.md
+│  └─ QUALIFIER_COMPLIANCE_MIGRATION_PLAN.md  # **Migration roadmap for compliance features**
 │
 ├─ operations/
 │  └─ IMPLEMENTATION_TRACKER.md
 │
 ├─ architecture/
+│  ├─ QUALIFIER_COMPLIANCE_SYSTEM_OVERVIEW.md  # **Strategic Intent - READ FIRST**
 │  ├─ FRONTEND_ARCHITECTURE.md
 │  ├─ AUTHENTICATION_MODEL.md
 │  └─ (future: BACKEND_ARCHITECTURE.md)
@@ -157,7 +160,80 @@ Copilot and humans must follow:
 
 ---
 
-## 6. Copilot Instructions (Non-Negotiable)
+## 6. Document Lifecycle & Update Frequency
+
+### Update Frequency by Folder
+
+| Folder | Frequency | Trigger | Examples |
+|--------|-----------|---------|----------|
+| `operations/` | **Daily** | Task starts/completes, blockers found | IMPLEMENTATION_TRACKER.md |
+| `roadmap/` | **Weekly** | Priorities shift, phases planned | PROJECT_ROADMAP.md |
+| `guides/` | **As needed** | New issues discovered, features added | TROUBLESHOOTING.md, API_DOCUMENTATION.md |
+| `setup/` | **As needed** | New dependencies, env vars, tools | SETUP_GUIDE.md |
+| `technical/` | **During development** | Feature design, schema changes | PAYMENTS_FEATURE_DESIGN.md |
+| `audits/` | **One-time** | After audit completes → archive | PYDANTIC_VALIDATION_DEBUGGING.md (canonical) |
+| `architecture/` | **Rarely** | Major system redesigns only | AUTHENTICATION_MODEL.md |
+| `business/` | **Rarely** | Business rules change | BUSINESS_ENTITY_AND_BILLING_MODEL.md |
+| `deployment/` | **Rarely** | Platform migrations, process changes | DEPLOYMENT.md |
+| `frontend/` | **As needed** | UI changes, component updates | FRONTEND_BACKLOG.md |
+| `history/` | **Never** | Read-only archive | All files |
+
+### When to Archive Documents
+
+**Move to `history/` when document has ANY of these signals:**
+
+🔴 **Status Indicators**:
+- Contains "Status: ✅ COMPLETED" or "Status: DONE"
+- Title includes "Complete", "Completion", "Progress Report", "Status Report"
+- Has completion date in past tense (e.g., "Completed: December 10, 2025")
+
+🔴 **Content Indicators**:
+- All tasks marked complete (no forward-looking work)
+- Describes past work in past tense ("we implemented...")
+- Contains metrics/results from specific dates
+- References "before/after" comparisons
+
+🔴 **Folder-Specific Rules**:
+- **operations/**: Status reports, progress docs → archive when phase complete
+- **technical/**: Design docs → archive when feature shipped
+- **audits/**: Audit reports → archive immediately after completion
+- **operations/**: Implementation plans → archive when all items done
+
+**Examples that MUST be archived**:
+- ❌ `operations/CRUD_PROGRESS_REPORT.md` (completion report)
+- ❌ `technical/BUSINESS_ID_COMPLETE.md` (completion doc)
+- ❌ `technical/BASELINE_METRICS.md` (dated metrics)
+- ❌ `audits/SCHEMA_MODEL_AUDIT.md` (one-time audit)
+
+**Examples that STAY active**:
+- ✅ `operations/IMPLEMENTATION_TRACKER.md` (living tracker)
+- ✅ `roadmap/PROJECT_ROADMAP.md` (forward-looking)
+- ✅ `guides/TROUBLESHOOTING.md` (continuously updated)
+- ✅ `audits/PYDANTIC_VALIDATION_DEBUGGING.md` (canonical reference)
+
+### Document Types by Update Pattern
+
+**Living Documents** (never archived):
+- Trackers with ongoing tasks
+- How-to guides that accumulate solutions
+- Roadmaps with future phases
+- Canonical troubleshooting references
+
+**Completion Documents** (archive immediately):
+- Progress reports
+- Status summaries with completion dates
+- Audit reports after resolution
+- Phase completion summaries
+
+**Reference Documents** (archive when superseded):
+- Design specs after implementation
+- Baseline metrics after comparison complete
+- Implementation plans after execution
+- Migration guides after migration done
+
+---
+
+## 7. Copilot Instructions (Non-Negotiable)
 
 When working with documentation, Copilot must:
 
@@ -166,12 +242,14 @@ When working with documentation, Copilot must:
 3. ✅ **Prefer updating existing canonical docs**
 4. ✅ **Flag duplication instead of creating new files**
 5. ✅ **Ask before introducing new top-level docs**
+6. ✅ **Archive completed work immediately** (use signals from Section 6)
+7. ✅ **Update `IMPLEMENTATION_TRACKER.md` after completing tasks**
 
 **If unsure, Copilot must stop and ask.**
 
 ---
 
-## 7. Enforcement Principle
+## 8. Enforcement Principle
 
 > **Documentation clarity is more important than documentation volume.**
 > 
@@ -179,7 +257,7 @@ When working with documentation, Copilot must:
 
 ---
 
-## 8. Canonical Documents
+## 9. Canonical Documents
 
 **If you are looking for:**
 
@@ -196,7 +274,7 @@ When working with documentation, Copilot must:
 
 ---
 
-## 9. Quick Navigation
+## 10. Quick Navigation
 
 ### 🎯 I need to...
 
@@ -243,7 +321,7 @@ When working with documentation, Copilot must:
 
 ---
 
-## 10. Current Triage Status
+## 11. Current Triage Status
 
 **Date**: December 13, 2025  
 **Status**: ✅ Complete
@@ -259,7 +337,7 @@ When working with documentation, Copilot must:
 
 ---
 
-## 11. Backup & Recovery
+## 12. Backup & Recovery
 
 **Navigation Backup**: The original navigation README is preserved at `_triage/README_NAVIGATION_BACKUP.md` and will be archived after triage completion.
 

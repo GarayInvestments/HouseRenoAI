@@ -1,5 +1,129 @@
 # House Renovators AI Portal - Copilot Instructions
 
+## 🎯 STRATEGIC SYSTEM IDENTITY (READ THIS FIRST)
+
+**CRITICAL REFRAME**: This is not a general construction management system.
+
+**System Definition (Canonical)**:
+> This platform exists to manage **qualifier-based permit compliance** across multiple Licensed Businesses while maintaining clear regulatory accountability and defensible oversight records.
+
+### What This Means for Copilot
+
+**Think in terms of:**
+- ✅ **Enforcement over validation** - Block illegal states at write-time, don't just warn
+- ✅ **Correct entity hierarchy**: Licensed Business → Qualifier → Project (not Project → Qualifier)
+- ✅ **Qualifier capacity limits** - Max 2 Licensed Businesses per Qualifier (NCLBGC rule)
+- ✅ **Qualifier cutoff dates** - Hard enforcement after exit (no actions allowed)
+- ✅ **Oversight minimums** - Block permits if not met
+- ✅ Compliance responsibility and regulatory defensibility
+- ✅ "Would this survive a North Carolina Licensing Board audit?"
+- ✅ Proof over convenience
+
+**Do NOT think primarily in terms of:**
+- ❌ Generic "projects and tasks"
+- ❌ Standard CRUD operations without compliance context
+- ❌ Validation warnings instead of blocking enforcement
+- ❌ General construction workflows
+- ❌ Direct Project → Qualifier relationships (Projects belong to Licensed Businesses)
+
+**Key Questions Before Suggesting Features:**
+1. Does this strengthen or weaken compliance clarity?
+2. Can this be explained to a regulator?
+3. Does this avoid "license rental" risk?
+4. Does this make qualifier responsibility explicit?
+
+**Two Operating Scenarios:**
+- **Scenario A**: House Renovators as GC (internal qualifier, direct permit compliance)
+- **Scenario B**: Third-party contractor qualification (HR provides compliance services, not labor)
+
+**Regulatory Context**: North Carolina Licensing Board for General Contractors (NCLBGC)
+- Licenses belong to people, not companies
+- Qualifiers must have bona fide relationships with companies
+- Qualifiers must exercise real oversight (not just lend their license)
+- Documentation and consistency are critical
+
+**See Full Context**: `docs/architecture/QUALIFIER_COMPLIANCE_SYSTEM_OVERVIEW.md`
+
+---
+
+## ⚡ CODE QUALITY STANDARD (READ THIS FIRST)
+
+**CRITICAL**: Accuracy > Speed  
+Assumptions are the #1 source of production failures. Slow down and verify.
+
+---
+
+## 🔒 Database Safety Rules (MANDATORY)
+
+Before writing or modifying **ANY** database-related code (migrations, models, seeds, scripts, queries):
+
+### 1. Live Schema Verification (Required)
+- ALWAYS inspect the **actual Postgres schema** using `psql`
+  - `\d table_name`
+  - `\d+ table_name`
+- ORM models are **NOT authoritative** unless confirmed against the live database.
+- NEVER rely on memory, inference, or naming conventions.
+
+### 2. Zero Assumptions Rule
+- NEVER assume column names.
+- NEVER assume primary key names.
+- NEVER assume foreign key targets.
+- Common traps (always verify):
+  - `id` vs `project_id`
+  - `active` vs `is_active`
+  - JSONB object vs JSONB array
+  - Sync vs async driver limitations (asyncpg)
+
+### 3. Mandatory Verification Declaration
+For **all database-related work**, Copilot MUST explicitly state what was verified **before writing code**.
+
+**Required format**:
+```text
+Verified:
+- users.is_active exists
+- projects.project_id is the primary key
+- qualifiers table structure confirmed via psql
+Proceeding with implementation.
+
+
+---
+
+## 🎯 SYSTEM ARCHITECTURE TRUTH
+
+**Deployment Platform**:
+- Backend is deployed on **Fly.io** (`houserenovators-api.fly.dev`)
+- Any Render references in this document exist only for **historical context** and must **not be used for new work**
+
+**Authentication System**:
+- Authentication is handled by **Supabase Auth** (hosted service)
+- Backend validates Supabase-issued JWTs via `supabase_auth_service.py`
+- Routes use `get_current_user` dependency from `app/routes/auth_supabase.py`
+- **No auth middleware active** - protection happens at route level via `Depends(get_current_user)`
+- Legacy custom JWT system exists in codebase but is **DISABLED** (auth.py commented out in main.py)
+
+**Database**:
+- PostgreSQL (Supabase) is the **primary and only** data store
+- Google Sheets are **no longer used** for core application data
+- Any Google Sheets references below are **historical unless explicitly stated**
+
+**Required Tooling Prerequisites** (Verify Before Debugging):
+1. **Fly CLI must be installed and functional**:
+   ```powershell
+   fly version
+   ```
+   If this fails: User must install Fly CLI or fix permissions before proceeding. No backend debugging should continue until resolved.
+
+2. **Supabase Auth token must be present** for protected endpoints
+3. **Backend health must be verified** before debugging endpoints:
+   ```powershell
+   fly status --app houserenovators-api
+   ```
+
+**Workflow Order** (Non-Negotiable):
+1. Verify Fly CLI → 2. Verify Supabase Auth token → 3. Verify backend health → 4. Proceed with debugging
+
+---
+
 ## 📘 CRITICAL: Documentation Governance (MUST READ FIRST)
 
 **READ FIRST**: `docs/README.md` - Canonical documentation governance policy
@@ -39,6 +163,174 @@ When you want to add documentation:
 
 ---
 
+## 📝 CRITICAL: Progress Tracking & Documentation Updates
+
+**REQUIRED BEHAVIOR**: Proactively update `docs/operations/IMPLEMENTATION_TRACKER.md` after completing ANY work.
+
+### Tracker Update Pattern with Timestamps
+
+**Use EST timestamps** in format: `MMM DD h:mm AM/PM EST`
+
+**Examples**:
+```markdown
+- [x] Implemented QuickBooks sync (Completed: Dec 13 3:45 PM EST)
+- [ ] Add payment reconciliation (Started: Dec 13 2:30 PM EST)
+- [x] Fixed CORS issue (Completed: Dec 12 11:20 PM EST)
+```
+
+**Tracker structure**:
+```markdown
+# Implementation Tracker
+
+**Last Updated**: December 13, 2025 3:45 PM EST
+
+## 🔴 Active Blockers
+- [Blocker with discovery timestamp]
+
+## 🟡 In Progress Now
+- [ ] Task (Started: [timestamp])
+
+## 🟢 Up Next
+- [ ] Upcoming priorities
+
+## ✅ Recently Completed (Last 48 Hours)
+- [x] Task (Completed: [timestamp])
+(Archive when 10+ items or major milestone completes)
+```
+
+### After Completing Work (NON-NEGOTIABLE)
+
+**Immediately suggest**:
+```
+"✅ Completed [specific task] (Dec 13 3:45 PM EST). 
+Should I update IMPLEMENTATION_TRACKER.md?"
+```
+
+### When to Update IMPLEMENTATION_TRACKER.md
+
+✅ **ALWAYS update after**:
+- Completing a task or subtask (add timestamp)
+- Hitting a blocker (add discovery timestamp)
+- Starting new work (add start timestamp)
+- Major milestone completes (suggest archiving old items)
+
+❌ **NEVER create separate status files**:
+- No `PROGRESS_REPORT.md`
+- No `STATUS_UPDATE.md`
+- No `COMPLETION_SUMMARY.md`
+- All progress goes in ONE place: `docs/operations/IMPLEMENTATION_TRACKER.md`
+
+### Archive Triggers (Volume-Based, Not Time-Based)
+
+**Suggest archiving when**:
+- ✅ Major milestone/phase completes
+- ✅ "Recently Completed" has 10+ items
+- ✅ Tracker feels cluttered with old completions
+- ✅ User requests cleanup
+
+### Phase Completion File Standard (Strict)
+
+**📁 Canonical Location**: `docs/history/PHASE_COMPLETIONS/` only
+
+**🧱 Naming Format (Mandatory)**:
+```
+PHASE_<PHASE_CODE>_<SHORT_DESCRIPTION>_<YYYY_MM_DD>.md
+```
+
+**Examples**:
+```
+PHASE_D_INSPECTIONS_API_2025_12_13.md
+PHASE_D_AUTH_MIGRATION_2025_12_10.md
+PHASE_E_PAYMENTS_FEATURE_2025_11_10.md
+```
+
+**🔑 Rules (Non-Negotiable)**:
+
+1. **Phase code is mandatory**
+   - Must match roadmap phase exactly (PHASE_C, PHASE_D, PHASE_E, etc.)
+   - ❌ `INSPECTIONS_COMPLETE.md`
+   - ✅ `PHASE_D_INSPECTIONS_API_2025_12_13.md`
+
+2. **Description is short, functional, uppercase**
+   - 2-4 words max
+   - What shipped, not how
+   - ✅ `INSPECTIONS_API`, `AUTH_MIGRATION`, `QUICKBOOKS_SYNC`
+   - ❌ `INSPECTIONS_FEATURE_FINAL_VERSION`
+
+3. **Date = completion date**
+   - Format: `YYYY_MM_DD`
+   - Use date milestone was functionally complete
+   - No timestamps in filenames (timestamps go inside file)
+
+4. **One file = one milestone**
+   - Not per commit, not per day, not per task list
+   - Multiple milestones same day = multiple files
+
+**📄 Internal File Structure (Required)**:
+```markdown
+# Phase D – Inspections API
+
+**Completion Date**: December 13, 2025 (EST)  
+**Phase**: D  
+**Status**: ✅ Complete
+
+---
+
+## What Was Delivered
+- /v1/inspections CRUD endpoints
+- JSONB photos and deficiencies support
+- Supabase-auth protected routes
+
+---
+
+## Key Decisions
+- JSONB arrays used instead of relational tables
+- Route-level auth enforcement only
+
+---
+
+## Files Touched (High-Level)
+- app/routes/inspections.py
+- app/db/models.py
+
+---
+
+## Follow-Ups (If Any)
+- None
+```
+
+**🚦 Create Phase Completion File Only When**:
+- Roadmap phase item is fully shipped
+- Major subsystem is complete
+- Migration is finished
+- Feature crosses from "in progress" → "done forever"
+
+**Never for**:
+- Bug fixes
+- Partial work
+- Refactors without functional change
+
+**After creating phase completion file**:
+1. Remove completed items from `IMPLEMENTATION_TRACKER.md`
+2. Tracker becomes forward-looking immediately
+
+### Proactive Documentation Suggestions
+
+**After major milestones (not every task), suggest**:
+
+1. **New API endpoints** → "Update `docs/guides/API_DOCUMENTATION.md` with new routes?"
+2. **Bug fixes** → "Add solution to `docs/guides/TROUBLESHOOTING.md`?"
+3. **Architecture changes** → "Update `docs/architecture/[relevant].md`?"
+4. **Setup changes** → "Update `docs/setup/SETUP_GUIDE.md` with new dependency/env var?"
+5. **Completed features** → "Move design docs to `docs/history/archive/`?"
+6. **Debugging discoveries** → "Document in `docs/audits/` as canonical reference?"
+
+### Key Principle
+
+**Always ask, never auto-create**. Make specific suggestions with exact file paths, but get approval before creating/updating docs.
+
+---
+
 ## ⚠️ CRITICAL: Server Terminal Management
 **READ FIRST**: `docs/guides/TERMINAL_MANAGEMENT.md` - Complete guide to preventing server shutdowns
 
@@ -56,9 +348,9 @@ When you want to add documentation:
 ### When Asked to "Test Chat"
 1. **Read test procedures**: `docs/guides/CHAT_TESTING_SOP.md` (6 standard tests, log patterns, troubleshooting)
 2. **Use test scripts**: `scripts/testing/chat-tests/test_sync_production.py` or similar
-3. **Check Render logs**: `render logs -r srv-d44ak76uk2gs73a3psig --limit 50 --confirm -o text`
+3. **Check Fly logs**: `fly logs --app houserenovators-api --follow`
 4. **Look for patterns**: `[METRICS]`, `Smart context loading:`, error traces
-5. **Verify in Sheets**: Check if data actually updated (QB sync, client data, etc.)
+5. **Verify in database**: Check if data actually updated (QB sync, client data, etc.)
 
 ### When Adding New AI Function
 1. **Add function handler**: `app/handlers/ai_functions.py` (handle_* pattern)
@@ -66,22 +358,22 @@ When you want to add documentation:
 3. **Add OpenAI definition**: `app/services/openai_service.py` in `tools` array
 4. **Update context loading**: `app/utils/context_builder.py` if needs new data source
 5. **Test via chat**: Use test script from `scripts/testing/chat-tests/`
-6. **Deploy and verify logs**: Check Render for execution traces
+6. **Deploy and verify logs**: Check Fly.io logs for execution traces
 
 ### When Deploying Changes
 1. **Commit with clear message**: `git commit -m "Feature: ..." or "Fix: ..."`
-2. **Push to main**: `git push origin main` (auto-deploys to Render + Cloudflare)
-3. **Monitor deployment**: `render services list` then check service status
-4. **Watch logs**: `render logs -r srv-d44ak76uk2gs73a3psig --tail --confirm`
+2. **Push to main**: `git push origin main` (auto-deploys to Fly.io + Cloudflare)
+3. **Monitor deployment**: `fly status --app houserenovators-api`
+4. **Watch logs**: `fly logs --app houserenovators-api --follow`
 5. **Test endpoint**: Run relevant test from `scripts/testing/chat-tests/`
 
 ### When Investigating Bugs
-1. **Check recent logs**: `render logs -r srv-d44ak76uk2gs73a3psig --limit 200 --confirm -o text`
-2. **Search for errors**: Pipe through `Select-String -Pattern "ERROR|CRITICAL|Exception"`
+1. **Check recent logs**: `fly logs --app houserenovators-api | Select-Object -Last 200`
+2. **Search for errors**: `fly logs --app houserenovators-api | Select-String "ERROR|CRITICAL|Exception"`
 3. **Review context loading**: Look for `Smart context loading:` to verify data sources
 4. **Check function execution**: Search for function name in logs
-5. **Verify data in Sheets**: Ensure Google Sheets has expected data/columns
-6. **Reference docs**: `docs/guides/TROUBLESHOOTING.md` for common issues
+5. **Verify data in database**: Use `psql` to check PostgreSQL data/schema
+6. **Reference docs**: `docs/guides/TROUBLESHOOTING.md` and `docs/audits/PYDANTIC_VALIDATION_DEBUGGING.md`
 
 ### When Setting Up New Machine
 1. **Follow setup guide**: `docs/setup/SETUP_GUIDE.md` (comprehensive, covers all steps)
@@ -111,29 +403,20 @@ When you want to add documentation:
 - **Backend** (`app/`): FastAPI with async routes in `routes/`, services in `services/`
 - **Frontend** (`frontend/src/`): React 19 + Vite, Zustand for state, pages in `pages/`
 - **Database**: PostgreSQL (Supabase) - all data operations via SQLAlchemy ORM with async
-- **Auth**: Supabase Auth with JWT tokens
+- **Auth**: Supabase Auth service (hosted authentication with JWT tokens)
 - **Deployments**: Backend auto-deploys to Fly.io, frontend to Cloudflare Pages on `main` push
 
-### Data Migration Status (Dec 11, 2025)
-- ✅ **Clients, Projects, Permits, Payments**: Migrated to PostgreSQL
+### Data Migration Status (Dec 13, 2025)
+- ✅ **All Data Migrated to PostgreSQL**: Clients, Projects, Permits, Payments, Inspections, QuickBooks tokens
 - ✅ **AI Chat Context**: Uses `db_service` via `context_builder.py`
-- ⚠️ **QuickBooks Tokens**: Still in Google Sheets (TODO: migrate to database)
-- 🗑️ **Google Sheets**: No longer used for operational data (only QB token storage)
+- 🗑️ **Google Sheets**: Fully deprecated (removed from operational use)
 
 ## 🔑 Critical Patterns
 
-### Backend Service Initialization (app/main.py)
-```python
-# Services initialize on startup from env vars or files
-# GOOGLE_SERVICE_ACCOUNT_BASE64 → decoded → service-account.json
-# google_service is a module-level singleton in services/google_service.py
-```
-**Why**: Render doesn't persist files, so credentials load from env vars on every cold start.
-
-### Authentication Pattern (Modern JWT with Refresh Tokens)
+### Authentication Pattern (Supabase Auth)
 ```python
 # Protected routes use get_current_user dependency
-from app.routes.auth_v2 import get_current_user
+from app.routes.auth_supabase import get_current_user
 from app.db.models import User
 
 @router.get("/protected")
@@ -141,34 +424,17 @@ async def protected_route(current_user: User = Depends(get_current_user)):
     # current_user is User model from database
     return {"message": f"Hello {current_user.full_name}"}
 
-# Frontend must send: Authorization: Bearer <access_token>
-# Access tokens expire after 15 minutes (refresh via /v1/auth/refresh)
-# Refresh tokens expire after 30 days with automatic rotation
-# JWTAuthMiddleware automatically protects all routes except PUBLIC_ROUTES
+# Frontend must send: Authorization: Bearer <supabase_access_token>
+# Backend validates Supabase-issued JWT via supabase_auth_service.verify_jwt()
+# User identity comes from Supabase 'sub' claim mapped to app users table
+# No middleware - protection via route dependencies
 ```
-**Why**: Short-lived access tokens (15 min) with refresh token rotation for security. Token revocation via blacklist. Session management for multi-device support. Users stored in PostgreSQL `users` table.
+**Why**: Supabase Auth handles token issuance, refresh, and rotation. Backend validates JWTs using Supabase JWT secret and maps to app users. Users stored in PostgreSQL `users` table.
+
+**Legacy Auth Note**: `app/routes/auth.py` and `app/services/auth_service.py` exist but are disabled (custom JWT with refresh tokens, blacklist). Only Supabase Auth is active.
 
 **Auth System Documentation**:
 - **Complete Reference**: `docs/architecture/AUTHENTICATION_MODEL.md` (endpoints, flows, security, troubleshooting)
-
-### API Route Structure
-```python
-# All routes follow this pattern:
-from app.services import google_service_module
-
-def get_google_service():
-    """Helper with proper error handling"""
-    if not google_service_module.google_service or google_service_module.google_service is None:
-        raise HTTPException(status_code=503, detail="Google service not initialized")
-    return google_service_module.google_service
-
-@router.get("/")
-async def get_data():
-    google_service = get_google_service()
-    data = await google_service.get_sheet_data()
-    return data
-```
-**Why**: Ensures service is initialized before use; consistent error handling across routes.
 
 ### QuickBooks Integration Pattern
 ```python
@@ -179,7 +445,7 @@ from app.services.quickbooks_service import quickbooks_service
 if not quickbooks_service.is_authenticated():
     # Redirect to /v1/quickbooks/connect for OAuth flow
     
-# 2. Tokens stored in Google Sheets (QB_Tokens tab)
+# 2. Tokens stored in PostgreSQL (encrypted)
 # 3. Auto-refresh when expired (60-day refresh token)
 # 4. Supports sandbox + production environments
 
@@ -188,7 +454,7 @@ customers = await quickbooks_service.get_customers()
 invoices = await quickbooks_service.get_invoices()
 invoice = await quickbooks_service.create_invoice(customer_id, line_items)
 ```
-**Why**: OAuth tokens persist across deployments via Google Sheets. Service auto-refreshes expired access tokens.
+**Why**: OAuth tokens persist across deployments in PostgreSQL. Service auto-refreshes expired access tokens.
 
 ### Smart Context Loading (Performance Critical)
 ```python
@@ -197,14 +463,14 @@ from app.utils.context_builder import build_context
 
 context = await build_context(
     message=user_message,
-    google_service=google_service,
+    db_service=db_service,
     qb_service=quickbooks_service,
     session_memory=memory_manager.get_all(session_id)
 )
 
 # Examples:
-# "Show me Temple project" → Loads Sheets only (no QB API calls)
-# "Create invoice for Temple" → Loads Sheets + QB
+# "Show me Temple project" → Loads PostgreSQL only (no QB API calls)
+# "Create invoice for Temple" → Loads PostgreSQL + QB
 # "Hello" → Loads nothing (returns {'none'})
 
 # Performance: 80% fewer API calls, 60% less tokens
@@ -234,15 +500,6 @@ last_client = memory_manager.get(session_id, "last_client_id")
 ```
 **Why**: Simple, no routing library - view changes via state, enabling browser back/forward support.
 
-### Field Name Handling (CRITICAL)
-```javascript
-// Google Sheets columns vary: 'Full Name' vs 'Client Name', 'Client ID' vs 'ID'
-// ALWAYS check multiple field variations:
-const name = client['Full Name'] || client['Client Name'] || 'Unnamed Client';
-const id = client['Client ID'] || client['ID'] || index;
-```
-**Why**: Sheet structure evolved; multiple fallbacks prevent "Unnamed" or blank data.
-
 ## 🛠️ Development Workflow
 
 ### Running Locally
@@ -257,8 +514,12 @@ cd frontend
 npm run dev
 # Runs on http://localhost:5173
 
-# Frontend connects to PRODUCTION backend by default (see frontend/.env)
-VITE_API_URL=https://houserenoai.onrender.com
+# Frontend uses environment-based config (see frontend/.env)
+# By default, local dev points to PRODUCTION backend on Fly.io
+# Override in frontend/.env.local to point to local backend:
+VITE_API_URL=https://houserenovators-api.fly.dev  # Production Fly.io backend (default)
+# VITE_API_URL=http://localhost:8000  # Uncomment for local backend testing
+VITE_ENV=development
 ```
 
 ### PostgreSQL Access (REQUIRED for Database Work)
@@ -300,36 +561,32 @@ psql "postgresql://postgres@db.dtfjzjhxtojkgfofrmrr.supabase.co:5432/postgres"
 - Testing business ID triggers
 - Verifying data after service operations
 
-**⚠️ CRITICAL: Server Terminal Management**
-- **Backend and Frontend servers MUST run in DEDICATED terminals**
-- **NEVER run other commands in a terminal that's running a server**
-- Running commands in server terminals will kill the server process
-- **Always open a NEW terminal** for git commands, testing, log checks, etc.
-- If you need to run a command and only have server terminals, open Terminal 3+
-- Pattern: Terminal 1 = Backend (blocked), Terminal 2 = Frontend (blocked), Terminal 3+ = Commands
-
 **Note**: venv is at root level, not in a backend/ subdirectory. Most API endpoints require JWT authentication (send `Authorization: Bearer <token>` header).
 
 ### Environment Files
-- **Backend** (`.env` at root): `SHEET_ID`, `GOOGLE_SERVICE_ACCOUNT_FILE`, `OPENAI_API_KEY`
-- **Frontend** (`frontend/.env`): `VITE_API_URL` (defaults to production Render URL)
+- **Backend** (`.env` at root): Database connection, `OPENAI_API_KEY`, Supabase credentials
+- **Frontend** (`frontend/.env`): `VITE_API_URL` (defaults to production Fly.io backend)
 
 ### Deployment
-- **Push to `main`** → Auto-deploys backend (Render) + frontend (Cloudflare Pages)
-- **No manual build steps** - CI/CD handles everything
-- **Backend credentials**: Set in Render dashboard as `GOOGLE_SERVICE_ACCOUNT_BASE64`
+- **Push to `main`** → Auto-deploys backend (Fly.io) + frontend (Cloudflare Pages)
+- **No manual build steps** - CI/CD handles everything via GitHub Actions
+- **Backend secrets**: Set via `fly secrets set` or Fly.io dashboard
 
 ## 🐛 Common Issues & Solutions
 
-### "Unnamed Client" / Missing Data
-→ Check field name variations (see Field Name Handling above). Add console.log to see actual keys from API.
-
-### "Google service not initialized"
-→ Backend needs `.env` with `GOOGLE_SERVICE_ACCOUNT_FILE=config/house-renovators-credentials.json` and `SHEET_ID=...`
-→ In production, Render uses `GOOGLE_SERVICE_ACCOUNT_BASE64` env var
+### Database Connection Issues
+→ Check PostgreSQL connection string in `.env`
+→ Verify Supabase credentials are correct
+→ In production, Fly.io uses secrets set via `fly secrets set`
 
 ### CORS errors from frontend
 → Backend `app/config.py` has explicit CORS origins. Add new domains there + in `app/main.py` CORSMiddleware.
+
+### Pydantic ValidationError with JSONB fields
+→ Database stores JSONB as arrays: `[{...}, {...}]`
+→ Pydantic model must match structure: `Optional[List[dict]]` not `Optional[dict]`
+→ SQLAlchemy type hints don't enforce JSONB shape - always verify actual data structure
+→ See `docs/audits/PYDANTIC_VALIDATION_DEBUGGING.md` for complete debugging guide
 
 ### Objects rendering in React
 → Use `typeof value === 'object' ? JSON.stringify(value) : value` before rendering unknown data
@@ -338,29 +595,33 @@ psql "postgresql://postgres@db.dtfjzjhxtojkgfofrmrr.supabase.co:5432/postgres"
 
 ### Backend
 - **API structure**: `app/main.py` (startup logic), `app/routes/` (all endpoints)
-- **Authentication**: `app/routes/auth.py` (JWT endpoints), `app/middleware/auth_middleware.py` (protection)
-- **Services**: `app/services/google_service.py` (Sheets), `app/services/quickbooks_service.py` (QB OAuth), `app/services/auth_service.py` (JWT + bcrypt)
-- **Smart loading**: `app/utils/context_builder.py` (80% API reduction logic)
+- **Authentication**: `app/routes/auth_supabase.py` (Supabase Auth integration), `app/services/supabase_auth_service.py` (JWT validation)
+- **Services**: `app/services/db_service.py` (PostgreSQL), `app/services/quickbooks_service.py` (QB OAuth)
+- **Smart loading**: `app/utils/context_builder.py` (reduces API calls by 90%, token usage by 40-50%)
 - **Session memory**: `app/memory/memory_manager.py` (TTL-based context storage)
 - **Config**: `app/config.py` (all env vars + CORS origins)
+- **Legacy (disabled)**: `app/routes/auth.py`, `app/services/auth_service.py`, `app/middleware/auth_middleware.py`
 
 ### Frontend
 - **State management**: `frontend/src/stores/appStore.js` (navigation + global state)
 - **Component patterns**: `frontend/src/pages/ClientDetails.jsx` (shows field fallbacks + data handling)
 
-### Google Sheets API Access
-- **Backend Service** (`google_service`): Use in API routes, chat functions (requires FastAPI context)
-- **Direct API Access**: Use in standalone scripts (`scripts/setup_*.py`, migrations, admin tools)
-- **Complete Guide**: `docs/GOOGLE_SHEETS_API_ACCESS.md` (when to use each approach, patterns, troubleshooting)
 ### Available Routes
-- `/v1/auth/*` - Login, register, token refresh, user info
+- `/v1/auth/supabase/*` - Supabase Auth integration (user management, /me endpoint)
 - `/v1/chat` - AI chat with smart context loading
-- `/v1/clients` - Client data from Google Sheets
+- `/v1/clients` - Client data from PostgreSQL
 - `/v1/projects` - Project management
 - `/v1/permits` - Permit tracking
+- `/v1/inspections` - Inspection management with photos/deficiencies (JSONB arrays)
 - `/v1/documents` - Document upload/management
 - `/v1/quickbooks/*` - OAuth flow, customers, invoices, estimates, bills
-- `/v1/payments` - Payment tracking and QB sync (NEW: Nov 10, 2025)
+- `/v1/payments` - Payment tracking and QB sync
+- `/v1/invoices` - Invoice management
+- `/v1/site-visits` - Site visit tracking
+- `/v1/jurisdictions` - Jurisdiction data
+- `/v1/users` - User management
+
+**Note**: Legacy `/v1/auth/legacy/*` exists in codebase but is disabled in production
 
 ## 🔐 Secrets Management
 
@@ -408,13 +669,13 @@ git commit -m "Add teammate to secrets"
 1. **No TypeScript**: Stick to JavaScript for frontend (existing codebase decision)
 2. **Inline styles over CSS**: Many components use React inline styles for specific layouts
 3. **PowerShell scripts**: DevOps uses `.ps1` files (Windows-first environment)
-4. **Google Sheets as database**: All CRUD operations go through Google Sheets API, no SQL
-5. **Module singleton pattern**: Services like `google_service` are module-level instances, not class instantiation per request
+4. **PostgreSQL as primary database**: All CRUD operations use SQLAlchemy ORM with async. Google Sheets fully deprecated (Phase D.3, Dec 2025).
+5. **Module singleton pattern**: Services are module-level instances, not class instantiation per request
 6. **API versioning**: All routes prefixed with `/v1/` (see `settings.API_VERSION`)
-7. **JWT everywhere**: All routes protected by default except PUBLIC_ROUTES in `JWTAuthMiddleware`
-8. **Smart context loading**: ALWAYS use `context_builder.py` for chat - never load all data blindly
+7. **Supabase Auth**: Routes protected via `Depends(get_current_user)` from `auth_supabase.py` (no middleware)
+8. **Smart context loading**: ALWAYS use `context_builder.py` for chat - 90% fewer API calls, 40-50% less tokens
 9. **Session-based memory**: Use `memory_manager` for conversational context (10-min TTL)
-10. **Structured logging**: Use `logger.info("[METRICS] ...")` for performance tracking in Render logs
+10. **Structured logging**: Use `logger.info("[METRICS] ...")` for performance tracking in Fly.io logs
 
 ## 📊 Logging & Monitoring
 
@@ -423,33 +684,33 @@ git commit -m "Add teammate to secrets"
 import logging
 logger = logging.getLogger(__name__)
 
-# Performance metrics (visible in Render logs)
+# Performance metrics (visible in Fly.io logs)
 logger.info(f"[METRICS] API call took {duration}ms, tokens: {token_count}")
 
 # Context loading
 logger.info(f"Smart context loading: {contexts} for message: '{message[:50]}...'")
 
 # Errors with context
-logger.error(f"Google Sheets error: {e}", exc_info=True)
+logger.error(f"Database error: {e}", exc_info=True)
 ```
 
 ### Viewing Logs
 ```powershell
-# Render CLI (CORRECT SYNTAX)
-# Service ID: srv-d44ak76uk2gs73a3psig
-render logs -r srv-d44ak76uk2gs73a3psig --limit 200 --confirm -o text
+# Fly CLI - View recent logs
+fly logs --app houserenovators-api
 
 # Stream live logs
-render logs -r srv-d44ak76uk2gs73a3psig --tail --confirm
+fly logs --app houserenovators-api --follow
 
-# Search for specific text
-render logs -r srv-d44ak76uk2gs73a3psig --text "error,warning" --limit 100 --confirm -o text
+# Search for specific text (use grep/Select-String)
+fly logs --app houserenovators-api | Select-String "error|warning"
 
-# Programmatic access via Render API
-# See docs/RENDER_API_DEPLOYMENT_GUIDE.md and docs/RENDER_LOGS_GUIDE.md
-# See docs/LOGGING_SECURITY.md for security monitoring patterns
+# View logs from specific instance
+fly logs --app houserenovators-api --instance <instance-id>
+
+# See docs/deployment/DEPLOYMENT.md for complete Fly.io guide
+# See docs/technical/LOGGING_SECURITY.md for security monitoring patterns
 ```
-**Note**: Use `-r` (resources) flag with service ID, NOT `-s` (service name). Old CLI syntax (`-s`) no longer works.
 
 **What to look for**:
 - `[METRICS]` prefix = Performance data
@@ -462,16 +723,20 @@ render logs -r srv-d44ak76uk2gs73a3psig --text "error,warning" --limit 100 --con
 
 - **New backend route**: Create in `app/routes/`, add auth with `Depends(get_current_user)` if protected, register in `app/main.py`
 - **New frontend page**: Add to `pages/`, update `App.jsx` switch statement, add navigation in `appStore.js`
-- **New Google Sheets column**: Update field fallbacks in frontend components to handle old/new column names
+- **New database model**: Create in `app/db/models.py`, generate migration with Alembic, apply to Supabase
 - **New data source for chat**: Add keywords to `context_builder.py` → add loading function → update `build_context()`
 - **New QuickBooks operation**: Add method to `quickbooks_service.py`, ensure `is_authenticated()` check, handle token refresh
-- **Environment variable**: Add to `app/config.py`, document in README, set in Render/Cloudflare dashboard
+- **Environment variable**: Add to `app/config.py`, document in README, set via `fly secrets set`
 - **Performance logging**: Add `logger.info("[METRICS] ...")` for operations > 100ms or using external APIs
 
 ## 🧪 Testing Patterns
 
 ### Testing Protected Endpoints
+
+**Note**: The example below uses the legacy `/v1/auth/login` endpoint for **local testing only**. This endpoint exists in the codebase but is **disabled in production** (commented out in `app/main.py` line 123). Production applications should use the **Supabase Auth SDK** directly (see `frontend/src/lib/supabase.js`).
+
 ```powershell
+# LEGACY AUTH (Local Testing Only) - Not available in production
 # 1. Login to get token
 $response = Invoke-RestMethod -Uri "http://localhost:8000/v1/auth/login" `
     -Method Post `
@@ -483,6 +748,10 @@ $token = $response.access_token
 # 2. Call protected endpoint
 $headers = @{ "Authorization" = "Bearer $token" }
 Invoke-RestMethod -Uri "http://localhost:8000/v1/clients" -Headers $headers
+
+# PRODUCTION AUTH - Use Supabase SDK
+# See frontend/src/lib/supabase.js for reference implementation
+# Frontend obtains token from Supabase Auth service, sends as: Authorization: Bearer <supabase_access_token>
 ```
 
 ### Testing QuickBooks Integration
@@ -525,17 +794,14 @@ curl http://localhost:8000/v1/quickbooks/customers -H "Authorization: Bearer $to
 - **`docs/setup/SETUP_QUICK_REFERENCE.md`** - Environment variables and quick commands
 
 ### Deployment & Operations
-- **`docs/deployment/DEPLOYMENT.md`** - Render and Cloudflare deployment process
-- **`docs/deployment/RENDER_API_DEPLOYMENT_GUIDE.md`** - Programmatic deployments via Render API
-- **`docs/deployment/RENDER_LOGS_GUIDE.md`** - Log access and monitoring
-- **`docs/technical/LOGGING_SECURITY.md`** - Security logging patterns and monitoring
+- **`docs/deployment/DEPLOYMENT.md`** - Fly.io and Cloudflare deployment process
+- **`docs/deployment/FLY_IO_DEPLOYMENT.md`** - Detailed Fly.io deployment guide
 
 ### Reference & Troubleshooting
 - **`docs/guides/TROUBLESHOOTING.md`** - Common issues and solutions
-- **`docs/guides/FIELD_MAPPING.md`** - Google Sheets column mappings
-- **`docs/technical/GOOGLE_SHEETS_STRUCTURE.md`** - Sheets structure and field definitions
-- **`docs/technical/GOOGLE_SHEETS_API_ACCESS.md`** - API access patterns and best practices
-- **`docs/technical/BASELINE_METRICS.md`** - Performance benchmarks
+- **`docs/audits/PYDANTIC_VALIDATION_DEBUGGING.md`** - Debugging Pydantic + JSONB validation issues
+- **`docs/technical/LOGGING_SECURITY.md`** - Security logging patterns
+- **`docs/technical/DATABASE_SCHEMA.md`** - PostgreSQL schema reference
 
 ### Scripts Organization
 - **`scripts/testing/chat-tests/`** - All chat and integration tests

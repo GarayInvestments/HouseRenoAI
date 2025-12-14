@@ -38,6 +38,12 @@ class ProjectUpdate(BaseModel):
     description: Optional[str] = None
     start_date: Optional[datetime] = None
     target_completion: Optional[datetime] = None
+    # Compliance fields (Phase Q)
+    licensed_business_id: Optional[str] = None
+    qualifier_id: Optional[str] = None
+    engagement_model: Optional[str] = None  # DIRECT_GC or THIRD_PARTY_QUALIFIER
+    oversight_required: Optional[bool] = None
+    compliance_notes: Optional[str] = None
 
 
 # ==================== ROUTES ====================

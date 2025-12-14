@@ -23,6 +23,9 @@ export default function PermitDetails() {
   const [client, setClient] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedPermit, setEditedPermit] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     const fetchPermitDetails = async () => {
@@ -100,6 +103,30 @@ export default function PermitDetails() {
     if (!dateString) return 'Not set';
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  };
+
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      await api.updatePermit(currentPermitId, editedPermit);
+      setPermit({ ...permit, ...editedPermit });
+      setIsEditing(false);
+      setEditedPermit(null);
+    } catch (error) {
+      console.error('Failed to save permit:', error);
+      alert('Failed to save changes. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    setEditedPermit(null);
+  };
+
+  const handleEditChange = (field, value) => {
+    setEditedPermit(prev => ({ ...prev, [field]: value }));
   };
 
   const getStatusColor = (status) => {
@@ -189,35 +216,92 @@ export default function PermitDetails() {
         maxWidth: '1200px',
         margin: '0 auto'
       }}>
-        {/* Back Button */}
-        <button
-          onClick={navigateToPermits}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '8px 16px',
-            backgroundColor: '#FFFFFF',
-            border: '1px solid #E2E8F0',
-            borderRadius: '8px',
-            fontSize: '14px',
-            color: '#64748B',
-            cursor: 'pointer',
-            marginBottom: '24px',
-            transition: 'all 0.2s ease'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#F8FAFC';
-            e.currentTarget.style.color = '#2563EB';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = '#FFFFFF';
-            e.currentTarget.style.color = '#64748B';
-          }}
-        >
-          <ArrowLeft size={16} />
-          Back to Permits
-        </button>
+        {/* Back Button & Edit Controls */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <button
+            onClick={navigateToPermits}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '8px 16px',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #E2E8F0',
+              borderRadius: '8px',
+              fontSize: '14px',
+              color: '#64748B',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#F8FAFC';
+              e.currentTarget.style.color = '#2563EB';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#FFFFFF';
+              e.currentTarget.style.color = '#64748B';
+            }}
+          >
+            <ArrowLeft size={16} />
+            Back to Permits
+          </button>
+
+          {!isEditing ? (
+            <button
+              onClick={() => {
+                setIsEditing(true);
+                setEditedPermit(permit);
+              }}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#2563EB',
+                color: '#FFFFFF',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: 'pointer'
+              }}
+            >
+              Edit Permit
+            </button>
+          ) : (
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={handleCancel}
+                disabled={isSaving}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: '#FFFFFF',
+                  color: '#64748B',
+                  border: '1px solid #E2E8F0',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  cursor: isSaving ? 'not-allowed' : 'pointer',
+                  opacity: isSaving ? 0.5 : 1
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={isSaving}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: '#059669',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  cursor: isSaving ? 'not-allowed' : 'pointer',
+                  opacity: isSaving ? 0.5 : 1
+                }}
+              >
+                {isSaving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* Header Card */}
         <div style={{
@@ -292,11 +376,27 @@ export default function PermitDetails() {
               }}>
                 <Calendar size={20} style={{ color: '#2563EB' }} />
               </div>
-              <div>
+              <div style={{ flex: 1 }}>
                 <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '2px' }}>Date Submitted</p>
-                <p style={{ fontSize: '14px', color: '#1E293B', fontWeight: '500' }}>
-                  {formatDate(dateSubmitted)}
-                </p>
+                {isEditing ? (
+                  <input
+                    type="date"
+                    value={editedPermit?.['Date Submitted'] || editedPermit?.application_date || ''}
+                    onChange={(e) => handleEditChange('Date Submitted', e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '6px 10px',
+                      border: '1px solid #D1D5DB',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      outline: 'none'
+                    }}
+                  />
+                ) : (
+                  <p style={{ fontSize: '14px', color: '#1E293B', fontWeight: '500' }}>
+                    {formatDate(dateSubmitted)}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -312,11 +412,27 @@ export default function PermitDetails() {
               }}>
                 <CheckCircle size={20} style={{ color: '#059669' }} />
               </div>
-              <div>
+              <div style={{ flex: 1 }}>
                 <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '2px' }}>Date Approved</p>
-                <p style={{ fontSize: '14px', color: '#1E293B', fontWeight: '500' }}>
-                  {formatDate(dateApproved)}
-                </p>
+                {isEditing ? (
+                  <input
+                    type="date"
+                    value={editedPermit?.['Date Approved'] || editedPermit?.approval_date || ''}
+                    onChange={(e) => handleEditChange('Date Approved', e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '6px 10px',
+                      border: '1px solid #D1D5DB',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      outline: 'none'
+                    }}
+                  />
+                ) : (
+                  <p style={{ fontSize: '14px', color: '#1E293B', fontWeight: '500' }}>
+                    {formatDate(dateApproved)}
+                  </p>
+                )}
               </div>
             </div>
 

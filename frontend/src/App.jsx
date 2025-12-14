@@ -10,6 +10,11 @@ import Permits from './pages/Permits';
 import PermitDetails from './pages/PermitDetails';
 import Inspections from './pages/Inspections';
 import InspectionDetails from './pages/InspectionDetails';
+import Invoices from './pages/Invoices';
+import InvoiceDetails from './pages/InvoiceDetails';
+import Payments from './pages/Payments';
+import SiteVisits from './pages/SiteVisits';
+import SiteVisitDetails from './pages/SiteVisitDetails';
 import Projects from './pages/Projects';
 import ProjectDetails from './pages/ProjectDetails';
 import Clients from './pages/Clients';
@@ -24,7 +29,7 @@ import AuthResetPassword from './pages/AuthResetPassword';
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
-  const { currentView, currentProjectId, currentPermitId, currentInspectionId, currentClientId, setCurrentView, setIsMobile } = useAppStore();
+  const { currentView, currentProjectId, currentPermitId, currentInspectionId, currentInvoiceId, currentSiteVisitId, currentClientId, setCurrentView, setIsMobile } = useAppStore();
   const { initAuth, isAuthenticated } = useAuthStore();
 
   // Handle window resize for mobile detection
@@ -122,6 +127,16 @@ function App() {
       return <InspectionDetails />;
     }
 
+    // If viewing invoice details
+    if (currentView === 'invoice-details' && currentInvoiceId) {
+      return <InvoiceDetails />;
+    }
+
+    // If viewing site visit details
+    if (currentView === 'site-visit-details' && currentSiteVisitId) {
+      return <SiteVisitDetails />;
+    }
+
     // If viewing client details
     if (currentView === 'client-details' && currentClientId) {
       return <ClientDetails />;
@@ -142,6 +157,12 @@ function App() {
         return <Permits />;
       case 'inspections':
         return <Inspections />;
+      case 'invoices':
+        return <Invoices />;
+      case 'payments':
+        return <Payments />;
+      case 'site-visits':
+        return <SiteVisits />;
       case 'projects':
         return <Projects />;
       case 'clients':

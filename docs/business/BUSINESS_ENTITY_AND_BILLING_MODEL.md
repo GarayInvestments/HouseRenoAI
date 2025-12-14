@@ -2,7 +2,9 @@
 
 ## Purpose
 
-This document defines how **business entities, qualifiers, projects, and variable permit compliance fees** are modeled in the system. It is the authoritative source for licensing responsibility, billing logic, and reporting alignment. This document complements (but does not replace) the technical roadmap and implementation tracker.
+This document defines how **business entities, qualifiers, projects, and variable permit compliance fees** are modeled in the system. It provides the detailed implementation guidance for the strategic vision defined in the [Qualifier Compliance System Overview](../architecture/QUALIFIER_COMPLIANCE_SYSTEM_OVERVIEW.md).
+
+**Strategic Context**: This is the **implementation detail** document. For the high-level system intent and regulatory framing, see `docs/architecture/QUALIFIER_COMPLIANCE_SYSTEM_OVERVIEW.md` first.
 
 ---
 
@@ -13,6 +15,7 @@ This document defines how **business entities, qualifiers, projects, and variabl
 3. **Fees are variable and per-project**: There is no global or fixed permit compliance fee.
 4. **Billing is auditable**: Every fee must be traceable to a project, entity, and invoice.
 5. **Additive, not destructive**: This model extends the current system without breaking existing data.
+6. **Compliance over convenience**: Data structure reflects legal reality, not operational shortcuts.
 
 ---
 
