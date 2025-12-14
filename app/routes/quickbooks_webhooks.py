@@ -14,7 +14,7 @@ from typing import Any, Dict
 from fastapi import APIRouter, Request, HTTPException, Depends, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.database import get_async_session
+from app.db.database import get_db
 from app.config import settings
 from app.services.db_service import db_service
 
@@ -54,7 +54,7 @@ def verify_webhook_signature(payload: str, signature: str, webhook_token: str) -
 async def receive_webhook(
     request: Request,
     intuit_signature: str = Header(None, alias="Intuit-Signature"),
-    db: AsyncSession = Depends(get_async_session)
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Receive and process QuickBooks webhook events.
@@ -191,7 +191,7 @@ async def list_webhook_events(
     limit: int = 50,
     processed: bool = None,
     entity_type: str = None,
-    db: AsyncSession = Depends(get_async_session)
+    db: AsyncSession = Depends(get_db)
 ):
     """
     List recent webhook events for debugging and monitoring.
@@ -246,7 +246,7 @@ async def list_webhook_events(
 @router.post("/webhook/events/{event_id}/reprocess")
 async def reprocess_webhook_event(
     event_id: int,
-    db: AsyncSession = Depends(get_async_session)
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Manually reprocess a failed webhook event.
