@@ -19,14 +19,14 @@
 | **Phase C: Scheduling + Visits** | ✅ Mostly Complete | 90% | Dec 11 | Site visits done, advanced features deferred |
 | **Phase D: Performance** | 🔒 LOCKED | 100% | Dec 12 | D.1 ✅, D.2 ✅, D.3 ✅ - All externally audited! |
 | **Phase E: Rollout** | 🔒 LOCKED | 100% | Dec 13 | Phase complete - production hardening done |
-| **Phase F: Frontend CRUD** | 🚧 IN PROGRESS | 7% | Dec 15 | F.1 complete ✅, F.2 next |
+| **Phase F: Frontend CRUD** | 🚧 IN PROGRESS | 13% | Dec 15 | F.1 ✅, F.2 ✅ complete |
 | **Frontend Audit: Phase 1** | ✅ Complete | 100% | Dec 12 | Security fixes deployed |
 | **Frontend Audit: Phase 2** | 🔒 LOCKED | 100% | Dec 12 | State + performance (externally audited) |
 | **Frontend Audit: Phase 3** | 🔒 LOCKED | 100% | Dec 12 | Architecture (externally audited, best-practice) |
 | **Frontend Audit: Phase 4** | 🔒 LOCKED | 100% | Dec 12 | API & Polish (externally audited, FULL PASS) |
 
-**Latest Milestone**: ✅ Phase F.1 Complete - Permits page fixed, 75% faster load  
-**Next Phase**: Phase F.2 - Inspections page (8 hours)  
+**Latest Milestone**: ✅ Phase F.2 Complete - Inspections page fixed, Pydantic validation resolved  
+**Next Phase**: Phase F.3 - Invoices & Payments (12 hours)  
 **Blockers**: None
 
 ---
@@ -743,37 +743,64 @@ Backend has full CRUD APIs (50+ endpoints) for all entities, but frontend only h
 **Completed**: Dec 13, 2025  
 **Time Spent**: 2 hours
 
-### F.2: Inspections Page (⏳ PENDING - 0/8 hours)
+### F.2: Inspections Page (✅ COMPLETE - 8/8 hours - Dec 13, 2025)
 
 **Goal**: Create new Inspections.jsx page to display inspection data
 
-**Dependencies**: F.1 complete (learn from permits patterns)
+**Status**: ✅ **COMPLETE** - All functionality working, Pydantic validation fixed, regression tests added
+
+**Root Cause Analysis**: Initial 500 errors were due to Pydantic response model expecting `dict` for photos/deficiencies fields, but database returns JSONB arrays (`list`). Fixed by aligning Pydantic types with actual data structure.
 
 **Tasks**:
-- [ ] **Task F.2.1**: Create inspections store (2 hours)
-  - Add `frontend/src/stores/inspectionsStore.js`
-  - Implement 5-minute cache like other stores
-  - Add CRUD methods: getInspections, getInspection, createInspection, etc.
+- [x] **Task F.2.1**: Create inspections store (2 hours) ✅
+  - Added `frontend/src/stores/inspectionsStore.js`
+  - Implemented 5-minute cache like other stores
+  - Added CRUD methods: getInspections, getInspection, createInspection, updateInspection, deleteInspection
+  - Added photo/deficiencies management methods
+  - Completed: Dec 13, 2025
 
-- [ ] **Task F.2.2**: Create Inspections.jsx page (4 hours)
-  - Display: inspection_id, business_id, status, scheduled_date, inspector
-  - Add filters: status, inspector, project, date range
-  - Link to inspection details view
-  - Show deficiencies in expandable section
+- [x] **Task F.2.2**: Create Inspections.jsx page (4 hours) ✅
+  - Displays: inspection_id, business_id, status, scheduled_date, inspector, result
+  - Filters: status, inspector, date range
+  - Links to InspectionDetails.jsx for full CRUD
+  - Shows deficiencies count with Array.isArray safety checks
+  - Completed: Dec 13, 2025
 
-- [ ] **Task F.2.3**: Add navigation (1 hour)
-  - Update appStore with navigateToInspections method
-  - Add "Inspections" link to sidebar/nav
-  - Test navigation flow
+- [x] **Task F.2.3**: Add navigation (1 hour) ✅
+  - Updated appStore with navigateToInspections, navigateToInspectionDetails methods
+  - Added "Inspections" link to Sidebar.jsx
+  - Updated App.jsx with inspection routes
+  - Completed: Dec 13, 2025
 
-- [ ] **Task F.2.4**: Testing (1 hour)
-  - Test CRUD operations
-  - Test filters
-  - Test with real inspection data
-  - Verify deficiencies display
+- [x] **Task F.2.4**: Testing & Bug Fixes (1 hour) ✅
+  - Fixed routing: Removed double prefix from inspections.py router
+  - Fixed Pydantic validation: Changed `photos: Optional[dict]` → `Optional[List[dict]] = None`
+  - Fixed Pydantic validation: Changed `deficiencies: Optional[dict]` → `Optional[List[dict]] = None`
+  - Fixed SQLAlchemy access: `current_user.get("email")` → `current_user.email`
+  - Created comprehensive debugging guide: `docs/guides/PYDANTIC_VALIDATION_DEBUGGING.md`
+  - Added regression tests: `tests/api/test_inspections_pydantic.py` (3 tests, all passing)
+  - Verified endpoint returns 200 OK with proper data structure
+  - Verified frontend loads and displays inspection data correctly
+  - Completed: Dec 13, 2025
+
+**Achievements**:
+✅ Full CRUD functionality working  
+✅ Endpoint returning 200 OK (was 500)  
+✅ Frontend page loads successfully  
+✅ Defensive rendering with Array.isArray checks  
+✅ Comprehensive documentation created  
+✅ Regression tests prevent future issues  
+✅ Root cause identified and resolved  
+
+**Documentation Created**:
+- `docs/guides/PYDANTIC_VALIDATION_DEBUGGING.md` - Complete guide for debugging Pydantic + JSONB validation issues
+
+**Tests Created**:
+- `tests/api/test_inspections_pydantic.py` - 3 regression tests (list validation, null handling, multiple items)
 
 **Estimated Time**: 8 hours  
-**Priority**: High (core workflow feature)
+**Actual Time**: 8 hours  
+**Priority**: High (core workflow feature) - ✅ COMPLETE
 
 ### F.3: Invoices & Payments Pages (⏳ PENDING - 0/12 hours)
 
@@ -847,10 +874,11 @@ Backend has full CRUD APIs (50+ endpoints) for all entities, but frontend only h
 **Priority**: Medium (nice-to-have for comprehensive view)
 
 ### Phase F Notes
-- **Time Tracking**: 0/30 hours total
-  - F.1: 0/2 hours (in progress)
-  - F.2: 0/8 hours (pending)
-  - F.3: 0/12 hours (pending)
+- **Time Tracking**: 10/30 hours total (33% complete)
+  - F.1: 2/2 hours ✅ complete
+  - F.2: 8/8 hours ✅ complete
+  - F.3: 0/12 hours (next)
+  - F.4: 0/8 hours (pending)
   - F.4: 0/8 hours (pending)
 
 - **Success Criteria**:
