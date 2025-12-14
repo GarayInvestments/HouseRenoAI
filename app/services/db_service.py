@@ -901,8 +901,16 @@ class DBService:
             if not project:
                 raise ValueError(f"Project {project_id} not found")
             
-            # Update fields
-            for key in ["client_id", "project_name", "project_address", "city", "state", "zip_code", "status", "description", "start_date", "target_completion", "extra"]:
+            # Update fields - include all updatable project fields
+            for key in [
+                "client_id", "project_name", "project_address", "project_type",
+                "city", "state", "zip_code", "status", "description", "notes",
+                "budget", "actual_cost", "start_date", "end_date", "completion_date",
+                "target_completion", "extra",
+                # Phase Q compliance fields
+                "licensed_business_id", "qualifier_id", "engagement_model",
+                "oversight_required", "compliance_notes"
+            ]:
                 if key in data:
                     setattr(project, key, data[key])
             
