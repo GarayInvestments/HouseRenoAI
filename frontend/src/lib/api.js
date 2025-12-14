@@ -211,10 +211,7 @@ class ApiService {
   async updateProject(projectId, updates, notifyTeam = true) {
     return this.request(`/projects/${projectId}`, {
       method: 'PUT',
-      body: JSON.stringify({
-        updates,
-        notify_team: notifyTeam,
-      }),
+      body: JSON.stringify(updates),
     });
   }
 
