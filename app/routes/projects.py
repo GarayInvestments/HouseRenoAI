@@ -31,12 +31,18 @@ class ProjectUpdate(BaseModel):
     client_id: Optional[str] = None
     project_name: Optional[str] = None
     project_address: Optional[str] = None
+    project_type: Optional[str] = None
     city: Optional[str] = None
     state: Optional[str] = None
     zip_code: Optional[str] = None
     status: Optional[str] = None
     description: Optional[str] = None
+    notes: Optional[str] = None
+    budget: Optional[float] = None
+    actual_cost: Optional[float] = None
     start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    completion_date: Optional[datetime] = None
     target_completion: Optional[datetime] = None
     # Compliance fields (Phase Q)
     licensed_business_id: Optional[str] = None

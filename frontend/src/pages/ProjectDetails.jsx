@@ -92,27 +92,28 @@ export default function ProjectDetails() {
       const fieldMapping = {
         'Project Name': 'project_name',
         'Project Status': 'status',
-        'Project Type': 'type',
+        'Project Type': 'project_type',
         'Project Address': 'project_address',
         'Start Date': 'start_date',
-        'Project Cost (Materials + Labor)': 'project_cost',
-        'HR Service Fee': 'service_fee',
         'City': 'city',
-        'County': 'county',
-        'Jurisdiction': 'jurisdiction',
-        'Primary Inspector': 'primary_inspector',
         'Licensed Business': 'licensed_business_id',
         'Qualifier': 'qualifier_id',
         'Engagement Model': 'engagement_model',
-        'Notes': 'compliance_notes'
+        'Notes': 'notes'
       };
       
       // Convert editedProject keys from display names to database column names
+      // Only send fields that exist in the database
       const mappedData = {};
       Object.keys(editedProject).forEach(key => {
-        const dbFieldName = fieldMapping[key] || key;
-        mappedData[dbFieldName] = editedProject[key];
+        const dbFieldName = fieldMapping[key];
+        if (dbFieldName) {
+          mappedData[dbFieldName] = editedProject[key];
+        }
       });
+      
+      console.log('Sending mapped data to API:', mappedData);
+      console.log('Original editedProject:', editedProject);
       
       await api.updateProject(currentProjectId, mappedData, false);
       setProject({ ...project, ...editedProject });
