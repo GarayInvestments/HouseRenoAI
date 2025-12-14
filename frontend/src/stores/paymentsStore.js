@@ -29,16 +29,27 @@ const usePaymentsStore = create((set, get) => ({
   fetchPayments: async () => {
     set({ loading: true, error: null });
     try {
+      const url = '/v1/quickbooks/sync/cache/payments';
+      console.log('[DEBUG] Fetching payments from:', url);
+      
       // Fetch from cache endpoint
-      const response = await fetch('/v1/quickbooks/sync/cache/payments', {
+      const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('supabase_token')}`
         }
       });
       
-      if (!response.ok) throw new Error('Failed to fetch payments from cache');
+      console.log('[DEBUG] Response status:', response.status);
+      console.log('[DEBUG] Response content-type:', response.headers.get('content-type'));
+      
+      if (!response.ok) {
+        const text = await response.text();
+        console.error('[DEBUG] Error response:', text.substring(0, 200));
+        throw new Error(`Failed to fetch payments from cache: ${response.status}`);
+      }
       
       const data = await response.json();
+      console.log('[DEBUG] Received data:', data);
       const paymentsArray = data?.payments || [];
       
       set({ 
