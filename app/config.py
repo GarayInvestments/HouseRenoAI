@@ -19,6 +19,7 @@ class Settings:
         self.QB_CLIENT_SECRET: str = os.getenv("QB_CLIENT_SECRET", "")
         self.QB_REDIRECT_URI: str = os.getenv("QB_REDIRECT_URI", "http://localhost:8000/v1/quickbooks/callback")
         self.QB_ENVIRONMENT: str = os.getenv("QB_ENVIRONMENT", "sandbox")  # "sandbox" or "production"
+        self.QUICKBOOKS_WEBHOOK_TOKEN: str = os.getenv("QUICKBOOKS_WEBHOOK_TOKEN", "")  # Webhook verifier token for signature validation
         
         # Database Configuration
         self.DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql+asyncpg://user:password@localhost:5432/houserenovators")

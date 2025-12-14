@@ -16,6 +16,7 @@ from app.routes.projects import router as projects_router
 from app.routes.clients import router as clients_router
 from app.routes.documents import router as documents_router
 from app.routes.quickbooks import router as quickbooks_router
+from app.routes.quickbooks_webhooks import router as quickbooks_webhooks_router
 from app.routes.payments import router as payments_router
 from app.routes.invoices import router as invoices_router
 from app.routes.site_visits import router as site_visits_router
@@ -133,6 +134,7 @@ app.include_router(projects_router, prefix=f"/{settings.API_VERSION}/projects", 
 app.include_router(clients_router, prefix=f"/{settings.API_VERSION}/clients", tags=["clients"])
 app.include_router(documents_router, prefix=f"/{settings.API_VERSION}/documents", tags=["documents"])
 app.include_router(quickbooks_router, prefix=f"/{settings.API_VERSION}/quickbooks", tags=["quickbooks"])
+app.include_router(quickbooks_webhooks_router)  # Webhooks use full prefix from router definition
 app.include_router(payments_router, prefix=f"/{settings.API_VERSION}/payments", tags=["payments"])
 app.include_router(invoices_router, prefix=f"/{settings.API_VERSION}/invoices", tags=["invoices"])
 app.include_router(site_visits_router, prefix=f"/{settings.API_VERSION}/site-visits", tags=["site-visits"])
