@@ -123,9 +123,6 @@ export default function ProjectDetails() {
         }
       });
       
-      console.log('Sending mapped data to API:', mappedData);
-      console.log('Original editedProject:', editedProject);
-      
       if (Object.keys(mappedData).length === 0) {
         alert('No changes to save');
         setIsSaving(false);

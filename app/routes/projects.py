@@ -97,10 +97,6 @@ async def update_project(project_id: str, project_data: ProjectUpdate):
     Update a specific project
     """
     try:
-        logger.info(f"[DEBUG] Received project_data model: {project_data}")
-        logger.info(f"[DEBUG] project_data.project_name = {project_data.project_name}")
-        logger.info(f"[DEBUG] project_data.project_type = {project_data.project_type}")
-        
         update_dict = project_data.model_dump(exclude_none=True)
         
         logger.info(f"Updating project {project_id} with data: {update_dict}")
