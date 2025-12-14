@@ -40,8 +40,9 @@ This document clarifies that distinction and establishes the future direction of
   - Plan reviews
   - Permit application reviews
   - Client meetings
-- **Minimum requirement**: System-enforced (blocks permit issuance if not met)
-- **Historical data**: Manual backfill where known, flag as unverified otherwise
+- **Minimum requirement**: Tracked per permit (at least one action required)
+- **Backfilling**: Normal operational workflow (oversight may be recorded after the fact)
+- **Timestamp transparency**: System records both oversight_date (when occurred) and recorded_at (when entered)
 
 ### Project Relationships
 - **Project ↔ Licensed Business**: **1:1** (project belongs to exactly one Licensed Business)
@@ -273,50 +274,70 @@ This standard intentionally:
 
 * * *
 
+### Oversight Recording and Backfilling
+
+Oversight actions may be recorded contemporaneously or entered after the fact based on operational realities. The system permits backdated oversight entries to reflect real-world supervision that was not immediately documented. Once recorded, an oversight action is treated as valid for compliance tracking purposes.
+
+The system retains both the date the oversight occurred and the date it was recorded to preserve an accurate historical record:
+
+- **oversight_date** (or `action_date`) - When the oversight activity occurred in the real world
+- **recorded_at** (or `created_at`) - When the entry was made in the system
+
+**Key Principles**:
+
+1. **Backfilling is explicitly allowed** - Oversight actions may be entered at any time, including past dates
+2. **No compliance tiers** - Once recorded, oversight is treated as valid regardless of entry timing
+3. **Transparency over enforcement** - The system is a recordkeeping tool, not a real-time policing mechanism
+4. **Audit trail preserved** - Timestamp differences provide historical context without blocking operations
+
+**Rationale**: This approach balances compliance recordkeeping with operational flexibility. Construction oversight often involves field work, travel, and delayed documentation. The system accommodates this reality while maintaining clear records for audit purposes.
+
+* * *
+
 ### Qualifier Exit Impact on Active Projects
 
-When a qualifier's relationship with a Licensed Business ends, the following rules apply immediately:
+When a qualifier's relationship with a Licensed Business ends, the system maintains clear historical records to support audit defensibility:
 
-1. **All active projects under that Licensed Business enter a frozen compliance state**
+1. **Qualifier-Business relationship is time-bound**
 
-    - No new permits may be created
-    - No existing permits may advance status
-    - No inspections may be scheduled or completed
-    - No compliance milestones may be closed
+    - Each assignment has a start_date and optional end_date
+    - Cutoff_date (end_date + 30 days) marks the absolute limit for associated oversight actions
+    - These timestamps define the period of legal responsibility
 
-2. **Projects may not be reassigned to a new qualifier**
+2. **Projects retain original qualifier assignment**
 
-    - Mid-project qualifier substitution is prohibited
-    - This prevents retroactive ambiguity of legal responsibility
+    - Mid-project qualifier substitution is not supported
+    - This preserves clarity about who was responsible when work occurred
+    - Historical integrity is maintained regardless of current qualifier status
 
-3. **Permitted continuation requires explicit compliance justification**
+3. **Oversight actions are time-stamped to qualifier assignment**
 
-    - Any action taken on an affected project after qualifier exit requires:
+    - Each oversight action records both the qualifier and the date it occurred
+    - Actions should logically fall within the qualifier's active assignment period
+    - The system tracks these relationships for compliance reporting
 
-        - A logged compliance justification
-        - Identification of interim risk mitigation
-        - Explicit acknowledgement of regulatory exposure
+4. **System reporting clarity**
 
-4. **System responsibility**
+    - Compliance reports show which qualifier was assigned during which time periods
+    - Projects with inactive qualifier assignments are flagged for visibility
+    - Historical oversight records remain intact and attributable
 
-    - The system must surface affected projects immediately upon qualifier exit
-    - Compliance reports must flag all frozen projects as "Qualifier Absent"
+**Recordkeeping Rationale**
 
-**Regulatory Rationale**
+North Carolina licensing enforcement evaluates responsibility based on **who was legally accountable at the time work occurred**. The system's role is to maintain accurate records that answer this question clearly, not to enforce real-time supervision.
 
-North Carolina licensing enforcement evaluates responsibility based on **who was legally accountable at the time work occurred**. Allowing silent continuation after qualifier exit creates indefensible gaps and license rental risk.
+This approach ensures:
 
-This policy ensures:
+- Clear documentation of responsibility timelines
+- Accurate historical attribution of oversight activities
+- Audit-defensible records showing qualifier involvement
+- Operational flexibility while maintaining compliance traceability
 
-- Clear cutoff of responsibility
-- No implied or retroactive supervision
-- Audit-safe documentation of any exceptional continuation
+**System Role**
 
-**Why This Is the Right Line**
-
-- It does **not** invent a new qualifier midstream
-- It forces conscious, documented decisions
-- It mirrors how boards treat suspended or expired license situations
+- The system is a **recordkeeping tool**, not a real-time enforcement mechanism
+- Business owners decide when to assign/remove qualifiers based on legal counsel and business needs
+- The system provides visibility and accurate records to support those decisions
 
 ---
 
