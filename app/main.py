@@ -1,6 +1,8 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
+from pydantic import ValidationError
 import uvicorn
 import logging
 import os
@@ -137,6 +139,17 @@ app.include_router(jurisdictions_router, prefix=f"/{settings.API_VERSION}/jurisd
 app.include_router(users_router, prefix=f"/{settings.API_VERSION}/users", tags=["users"])
 app.include_router(licensed_businesses_router, prefix=f"/{settings.API_VERSION}/licensed-businesses", tags=["compliance"])
 app.include_router(qualifiers_router, prefix=f"/{settings.API_VERSION}/qualifiers", tags=["compliance"])
+
+# Add custom exception handler for Pydantic validation errors
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc):
+    """Log and return detailed validation errors"""
+    logger.error(f"Validation error for {request.method} {request.url}: {exc.errors()}")
+    logger.error(f"Request body: {await request.body()}")
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors(), "body": str(await request.body())}
+    )
 
 @app.get("/")
 async def root():

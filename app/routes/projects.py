@@ -99,6 +99,8 @@ async def update_project(project_id: str, project_data: ProjectUpdate):
     try:
         update_dict = project_data.model_dump(exclude_none=True)
         
+        logger.info(f"Updating project {project_id} with data: {update_dict}")
+        
         if not update_dict:
             raise HTTPException(status_code=400, detail="No updates provided")
         
@@ -106,8 +108,13 @@ async def update_project(project_id: str, project_data: ProjectUpdate):
         return updated_project
         
     except ValueError as e:
+        logger.error(f"ValueError updating project {project_id}: {e}")
         raise HTTPException(status_code=404, detail=str(e))
     except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to update project {project_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to update project: {str(e)}")
         raise
     except Exception as e:
         logger.error(f"Failed to update project {project_id}: {e}")
