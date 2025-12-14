@@ -12,7 +12,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import User
-from app.db.database import get_db
+from app.db.session import get_db
 from app.routes.auth_supabase import get_current_user
 from app.services.quickbooks_sync_service import qb_sync_service
 

@@ -14,7 +14,7 @@ from typing import Any, Dict
 from fastapi import APIRouter, Request, HTTPException, Depends, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.database import get_db
+from app.db.session import get_db
 from app.config import settings
 from app.services.db_service import db_service
 
