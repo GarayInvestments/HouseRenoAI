@@ -36,8 +36,8 @@ export default function ProjectDetails() {
   const fetchComplianceData = async () => {
     try {
       const [businessesData, qualifiersData] = await Promise.all([
-        api.get('/v1/licensed-businesses'),
-        api.get('/v1/qualifiers')
+        api.getLicensedBusinesses(),
+        api.getQualifiers()
       ]);
       setBusinesses(businessesData || []);
       setQualifiers(qualifiersData || []);

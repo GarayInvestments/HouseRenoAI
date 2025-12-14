@@ -564,6 +564,19 @@ class ApiService {
       method: 'GET',
     });
   }
+
+  // Phase Q Compliance endpoints
+  async getLicensedBusinesses() {
+    return this.request('/licensed-businesses', {
+      method: 'GET',
+    });
+  }
+
+  async getQualifiers() {
+    return this.request('/qualifiers', {
+      method: 'GET',
+    });
+  }
 }
 
 export default new ApiService();
