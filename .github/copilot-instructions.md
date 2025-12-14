@@ -1,5 +1,44 @@
 # House Renovators AI Portal - Copilot Instructions
 
+## 📘 CRITICAL: Documentation Governance (MUST READ FIRST)
+
+**READ FIRST**: `docs/README.md` - Canonical documentation governance policy
+
+**Enforcement Rules (Non-Negotiable)**:
+
+When you want to add documentation:
+
+1. **STOP** - Read `docs/README.md` first
+2. **ASK**: Which folder does this belong in?
+   - Current priorities → `roadmap/`
+   - Active work & blockers → `operations/`
+   - System design → `architecture/`
+   - Business rules → `business/`
+   - Debugging rationale → `audits/`
+   - How-to guides → `guides/`
+   - Setup instructions → `setup/`
+   - Completed work → `history/`
+3. **ASK**: Is there already a canonical document for this topic?
+   - Check folder first
+   - Prefer updating existing docs over creating new ones
+4. **IF UNSURE**: Stop and ask the user
+
+**Prohibited Actions**:
+- ❌ Creating new status files (use `operations/IMPLEMENTATION_TRACKER.md`)
+- ❌ Creating phase notes outside `operations/`
+- ❌ Creating one-off debugging docs without approval
+- ❌ Creating docs without checking governance policy first
+
+**Required Actions**:
+- ✅ Check `docs/README.md` before any documentation work
+- ✅ Ask which folder if creating new doc
+- ✅ Ask if canonical doc exists before creating
+- ✅ Update existing docs instead of creating duplicates
+
+**Why This Matters**: Documentation clarity > Documentation volume. A smaller, trusted docs set is always preferred.
+
+---
+
 ## ⚠️ CRITICAL: Server Terminal Management
 **READ FIRST**: `docs/guides/TERMINAL_MANAGEMENT.md` - Complete guide to preventing server shutdowns
 
@@ -57,10 +96,10 @@
 4. **Test operations**: `scripts/testing/chat-tests/test_quickbooks_comprehensive.py`
 
 ### When Updating Documentation
-1. **Check category**: Essential guides vs reference vs config
-2. **Update copilot instructions**: If affects common workflows or patterns
-3. **Update README.md**: If changing doc structure or adding new guides
-4. **Run reorganization script**: `scripts/docs-management/reorganize-docs.ps1` if merging/archiving
+1. **Read governance policy**: `docs/README.md` (MANDATORY - check which folder, check for existing docs)
+2. **Ask before creating**: Which folder? Is there a canonical doc already?
+3. **Prefer updates**: Update existing docs instead of creating new ones
+4. **If unsure**: Stop and ask the user
 
 ---
 
@@ -110,9 +149,7 @@ async def protected_route(current_user: User = Depends(get_current_user)):
 **Why**: Short-lived access tokens (15 min) with refresh token rotation for security. Token revocation via blacklist. Session management for multi-device support. Users stored in PostgreSQL `users` table.
 
 **Auth System Documentation**:
-- **Quick Reference**: `docs/guides/AUTH_QUICK_REFERENCE.md` (endpoints, examples, debugging)
-- **Migration Guide**: `docs/guides/AUTH_MIGRATION_GUIDE.md` (complete setup and migration steps)
-- **System Summary**: `docs/guides/AUTH_SYSTEM_SUMMARY.md` (architecture and security features)
+- **Complete Reference**: `docs/architecture/AUTHENTICATION_MODEL.md` (endpoints, flows, security, troubleshooting)
 
 ### API Route Structure
 ```python
