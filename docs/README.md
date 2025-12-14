@@ -1,143 +1,259 @@
-# House Renovators AI Portal - Documentation
+# 📘 Documentation Governance & Triage Policy
 
-Welcome to the House Renovators AI documentation. This guide will help you navigate all available documentation resources.
-
-## 🎯 Migration Status (December 11, 2025)
-
-**Major Update**: System migrated from Google Sheets to PostgreSQL database and from Render to Fly.io hosting.
-
-- ✅ **Data Layer**: PostgreSQL (Supabase) - All clients, projects, permits, payments migrated
-- ✅ **Backend Host**: Fly.io (houserenovators-api.fly.dev) - 2 machines, auto-deploy
-- ✅ **Authentication**: Supabase Auth with JWT verification
-- ⚠️ **Google Sheets**: Legacy status - Only QuickBooks tokens remain (pending migration)
-
-**See**: [MIGRATION_STATUS.md](MIGRATION_STATUS.md) | [CURRENT_STATUS.md](CURRENT_STATUS.md) | [DATABASE_SCHEMA.md](technical/DATABASE_SCHEMA.md)
-
-## 🚀 Quick Start
-
-**New to the project?** Start here:
-1. **[Setup Guide](setup/SETUP_GUIDE.md)** - Complete environment setup instructions
-2. **[Setup New Machine](setup/SETUP_NEW_MACHINE.md)** - Streamlined setup for new developers
-3. **[Setup Quick Reference](setup/SETUP_QUICK_REFERENCE.md)** - Environment variables and quick commands
-
-**Already set up?** Jump to:
-- **[API Documentation](guides/API_DOCUMENTATION.md)** - Complete API reference
-- **[QuickBooks Guide](guides/QUICKBOOKS_GUIDE.md)** - OAuth2, API usage, sync features
-- **[Workflow Guide](guides/WORKFLOW_GUIDE.md)** - Daily development workflow and git patterns
-
-## �️ Project Planning
-
-**[PROJECT_ROADMAP.md](PROJECT_ROADMAP.md)** - Complete development roadmap and future plans
-- **Phase 0-2 Status** - All completed phases with achievements
-- **Phase 3 Plan** - Performance optimization (QB caching, Sheets batching, context truncation)
-- **Phase 4 Plan** - Advanced features (document intelligence, emails, PWA, reporting)
-- **Phase 5 Plan** - Infrastructure improvements (monitoring, database migration)
-- **Timeline & Priorities** - Recommended schedule and success metrics
-- **Technical Debt Tracking** - Known issues and improvement opportunities
-
-## �📁 Documentation Structure
-
-### 📖 [Guides](guides/)
-Comprehensive guides for using and maintaining the platform:
-- **[API_DOCUMENTATION.md](guides/API_DOCUMENTATION.md)** - Complete API reference with examples
-- **[QUICKBOOKS_GUIDE.md](guides/QUICKBOOKS_GUIDE.md)** - QuickBooks OAuth2, API, sync, troubleshooting
-- **[TROUBLESHOOTING.md](guides/TROUBLESHOOTING.md)** - Common issues and solutions
-- **[CHAT_TESTING_SOP.md](guides/CHAT_TESTING_SOP.md)** - Testing chat features, log monitoring
-- **[FIELD_MAPPING.md](guides/FIELD_MAPPING.md)** - Field mappings *(⚠️ Needs update for database schema)*
-- **[WORKFLOW_GUIDE.md](guides/WORKFLOW_GUIDE.md)** - Daily development workflow and git patterns
-
-### ⚙️ [Setup](setup/)
-Environment setup and configuration:
-- **[SETUP_GUIDE.md](setup/SETUP_GUIDE.md)** - Comprehensive dev environment setup
-- **[SETUP_NEW_MACHINE.md](setup/SETUP_NEW_MACHINE.md)** - Quick setup for new developers
-- **[SETUP_QUICK_REFERENCE.md](setup/SETUP_QUICK_REFERENCE.md)** - Environment variables and quick commands
-- **[GIT_SECRET_SETUP.md](setup/GIT_SECRET_SETUP.md)** - GPG-based secrets encryption
-
-### 🚀 [Deployment](deployment/)
-Deployment guides and operations:
-- **[DEPLOYMENT.md](deployment/DEPLOYMENT.md)** - Deployment process *(⚠️ Needs Fly.io update)*
-- **[FLY_IO_DEPLOYMENT.md](deployment/FLY_IO_DEPLOYMENT.md)** - Fly.io deployment guide *(⏳ Coming soon)*
-- ~~[RENDER_API_DEPLOYMENT_GUIDE.md](deployment/RENDER_API_DEPLOYMENT_GUIDE.md)~~ - *(Archived - Render migration)*
-- ~~[RENDER_LOGS_GUIDE.md](deployment/RENDER_LOGS_GUIDE.md)~~ - *(Archived - Use fly logs)*
-
-### 🔧 [Technical](technical/)
-Technical specifications and design documents:
-- **[GOOGLE_SHEETS_STRUCTURE.md](technical/GOOGLE_SHEETS_STRUCTURE.md)** - Sheets structure and field definitions
-- **[GOOGLE_SHEETS_API_ACCESS.md](technical/GOOGLE_SHEETS_API_ACCESS.md)** - API access patterns and best practices
-- **[PAYMENTS_FEATURE_DESIGN.md](technical/PAYMENTS_FEATURE_DESIGN.md)** - Payments feature implementation details
-- **[CONTEXT_ENHANCEMENT_PROGRESS.md](technical/CONTEXT_ENHANCEMENT_PROGRESS.md)** - Context loading optimization progress
-- **[LOGGING_SECURITY.md](technical/LOGGING_SECURITY.md)** - Security logging patterns and monitoring
-- **[BASELINE_METRICS.md](technical/BASELINE_METRICS.md)** - Performance benchmarks and improvements (Nov 8-10, 2025)
-- **[metrics/](metrics/)** - Performance metrics and baselines
-  - **[baseline/](metrics/baseline/)** - Nov 8-10, 2025 metrics collection
-  - **[COMPARISON_NOV_8_VS_NOV_10.md](metrics/baseline/COMPARISON_NOV_8_VS_NOV_10.md)** - Detailed performance analysis
-
-### 📝 [Session Logs](session-logs/)
-Development session summaries and progress reports:
-- **[SESSION_SUMMARY_NOV_10_2025.md](session-logs/SESSION_SUMMARY_NOV_10_2025.md)** - Latest session summary (Payments feature + context enhancements)
-
-### 📦 [Archive](archive/)
-Historical documentation and deprecated guides (17 files):
-- Old implementation summaries, completed phase docs, deprecated test results
-
-## 🎯 Common Tasks
-
-### Setting Up a New Development Environment
-1. Read [SETUP_GUIDE.md](setup/SETUP_GUIDE.md) for comprehensive instructions
-2. Configure secrets with [GIT_SECRET_SETUP.md](setup/GIT_SECRET_SETUP.md)
-3. Reference [SETUP_QUICK_REFERENCE.md](setup/SETUP_QUICK_REFERENCE.md) for environment variables
-
-### Testing the Chat Feature
-1. Follow procedures in [CHAT_TESTING_SOP.md](guides/CHAT_TESTING_SOP.md)
-2. Use test scripts from `scripts/testing/chat-tests/`
-3. Monitor logs with [RENDER_LOGS_GUIDE.md](deployment/RENDER_LOGS_GUIDE.md)
-
-### Working with QuickBooks
-1. Complete reference in [QUICKBOOKS_GUIDE.md](guides/QUICKBOOKS_GUIDE.md)
-2. Check auth status: `GET /v1/quickbooks/status`
-3. Connect if needed: Navigate to `/v1/quickbooks/connect`
-
-### Deploying Changes
-1. Follow [WORKFLOW_GUIDE.md](guides/WORKFLOW_GUIDE.md) for git patterns
-2. Push to `main` branch (triggers auto-deploy)
-3. Monitor with [RENDER_API_DEPLOYMENT_GUIDE.md](deployment/RENDER_API_DEPLOYMENT_GUIDE.md)
-
-### Troubleshooting Issues
-1. Check [TROUBLESHOOTING.md](guides/TROUBLESHOOTING.md) for common issues
-2. Review [RENDER_LOGS_GUIDE.md](deployment/RENDER_LOGS_GUIDE.md) for log access
-3. Verify field mappings in [FIELD_MAPPING.md](guides/FIELD_MAPPING.md)
-
-## 🏗️ Architecture Overview
-
-**Multi-Cloud Full-Stack App:**
-- **Backend**: FastAPI on Render (auto-deploy from `main`)
-- **Frontend**: React 19 + Vite on Cloudflare Pages (auto-deploy from `main`)
-- **Data Layer**: Google Sheets API (all data operations are async API calls)
-- **Integration**: QuickBooks OAuth2 for invoice/payment sync
-
-**Key Services:**
-- `google_service` - Sheets API operations
-- `quickbooks_service` - QB OAuth2 and API
-- `openai_service` - AI chat with smart context loading
-- `auth_service` - JWT authentication
-
-## 📚 Additional Resources
-
-- **API Routes**: `/v1/auth/*`, `/v1/chat`, `/v1/clients`, `/v1/projects`, `/v1/permits`, `/v1/documents`, `/v1/quickbooks/*`, `/v1/payments`
-- **Test Scripts**: `scripts/testing/chat-tests/`
-- **Setup Scripts**: `scripts/setup/`
-- **Metrics Collection**: `scripts/collect_metrics.py`
-
-## 🤝 Contributing
-
-When adding new documentation:
-1. Place in appropriate category directory (guides/, setup/, deployment/, technical/, session-logs/)
-2. Update this README.md with a link to your new document
-3. Follow existing documentation patterns and formatting
-4. Keep session summaries in `session-logs/` for historical tracking
+**Location**: `/docs/README.md`  
+**Status**: Canonical  
+**Audience**: Humans + Copilot  
+**Last Updated**: December 13, 2025
 
 ---
 
-**Last Updated**: November 12, 2025  
-**Documentation Version**: 2.1 (Added Project Roadmap)  
-**Latest Changes**: Created comprehensive development roadmap with Phase 3-5 plans
+## 1. Purpose
+
+This document defines:
+
+- The official `/docs` folder structure
+- The rules for adding, moving, merging, or deleting documentation
+- The classification system used to triage existing docs
+- The instructions Copilot must follow when touching documentation
+
+**No documentation changes should be made without following this policy.**
+
+---
+
+## 2. Canonical /docs Folder Structure
+
+```
+docs/
+├─ README.md                     # This document (governance policy)
+│
+├─ roadmap/
+│  └─ PROJECT_ROADMAP.md
+│
+├─ operations/
+│  └─ IMPLEMENTATION_TRACKER.md
+│
+├─ architecture/
+│  ├─ FRONTEND_ARCHITECTURE.md
+│  ├─ AUTHENTICATION_MODEL.md
+│  └─ (future: BACKEND_ARCHITECTURE.md)
+│
+├─ business/
+│  └─ BUSINESS_ENTITY_AND_BILLING_MODEL.md
+│
+├─ audits/
+│  └─ PYDANTIC_VALIDATION_DEBUGGING.md
+│
+├─ guides/                       # Operational how-tos
+│  ├─ API_DOCUMENTATION.md
+│  ├─ QUICKBOOKS_GUIDE.md
+│  ├─ TROUBLESHOOTING.md
+│  ├─ CHAT_TESTING_SOP.md
+│  └─ WORKFLOW_GUIDE.md
+│
+├─ setup/                        # Onboarding
+│  ├─ SETUP_GUIDE.md
+│  ├─ SETUP_NEW_MACHINE.md
+│  ├─ SETUP_QUICK_REFERENCE.md
+│  └─ GIT_SECRET_SETUP.md
+│
+├─ deployment/                   # Operations
+│  └─ DEPLOYMENT.md
+│
+├─ technical/                    # Active technical reference
+│  ├─ PAYMENTS_FEATURE_DESIGN.md
+│  └─ LOGGING_SECURITY.md
+│
+├─ frontend/                     # Specialized subdomain
+│  ├─ FRONTEND_IMPLEMENTATION_SUMMARY.md
+│  ├─ FRONTEND_ARCHITECTURE.md
+│  ├─ FRONTEND_AUDIT_LOG.md
+│  └─ FRONTEND_BACKLOG.md
+│
+├─ history/                      # Read-only archive
+│  ├─ PHASE_COMPLETIONS/
+│  ├─ session-logs/
+│  ├─ metrics/
+│  └─ archive/
+│
+└─ _triage/                      # Temporary holding area
+```
+
+---
+
+## 3. Documentation Classification System
+
+Every document must belong to exactly one category.
+
+### 🟢 KEEP (Active, Authoritative)
+
+- Still reflects current or future system behavior
+- Still influences decisions
+- Updated intentionally
+
+**Action**: Move to proper folder, continue maintaining
+
+### 🟡 CONSOLIDATE (Valid but Duplicated)
+
+- Information is correct
+- But exists in multiple places
+- Or mixed with outdated status notes
+
+**Action**:
+1. Merge into a canonical doc
+2. Delete original after merge
+
+### 🔵 ARCHIVE (Historical Only)
+
+- Describes completed work
+- Useful for reference or audits
+- Must not affect current decisions
+
+**Action**:
+1. Move to `/docs/history/`
+2. Freeze permanently
+
+### 🔴 DELETE (Noise)
+
+- Scratch notes
+- Superseded drafts
+- Contradicts current architecture
+- No longer trusted
+
+**Action**: Delete permanently
+
+---
+
+## 4. Triage Workflow (Mandatory Order)
+
+1. Move questionable docs into `/docs/_triage/`
+2. Classify using the system above
+3. Take the required action
+4. **`_triage/` must end empty**
+
+---
+
+## 5. Rules for Creating New Docs
+
+Copilot and humans must follow:
+
+❌ **No new status files**  
+❌ **No phase notes outside IMPLEMENTATION_TRACKER.md**  
+❌ **No one-off debugging docs unless explicitly approved**  
+
+✅ **One doc per concern**  
+✅ **One source of truth per topic**  
+
+### If information belongs in:
+
+- **Daily work** → `operations/IMPLEMENTATION_TRACKER.md`
+- **Strategy** → `roadmap/PROJECT_ROADMAP.md`
+- **System behavior** → `architecture/`
+- **Business rules** → `business/`
+- **How-to guides** → `guides/`
+- **Setup instructions** → `setup/`
+- **Deployment procedures** → `deployment/`
+- **Technical specs** → `technical/`
+- **Completed work** → `history/`
+
+---
+
+## 6. Copilot Instructions (Non-Negotiable)
+
+When working with documentation, Copilot must:
+
+1. ✅ **Check this README first**
+2. ✅ **Never create a new doc without justification**
+3. ✅ **Prefer updating existing canonical docs**
+4. ✅ **Flag duplication instead of creating new files**
+5. ✅ **Ask before introducing new top-level docs**
+
+**If unsure, Copilot must stop and ask.**
+
+---
+
+## 7. Enforcement Principle
+
+> **Documentation clarity is more important than documentation volume.**
+> 
+> **A smaller, trusted docs set is always preferred.**
+
+---
+
+## 8. Quick Navigation
+
+### 🎯 I need to...
+
+**Understand the project plan**  
+→ `roadmap/PROJECT_ROADMAP.md`
+
+**Check current work status**  
+→ `operations/IMPLEMENTATION_TRACKER.md`
+
+**Understand system architecture**  
+→ `architecture/` (frontend, auth, backend)
+
+**Set up my environment**  
+→ `setup/SETUP_GUIDE.md`
+
+**Use an API**  
+→ `guides/API_DOCUMENTATION.md`
+
+**Deploy changes**  
+→ `deployment/DEPLOYMENT.md`
+
+**Troubleshoot an issue**  
+→ `guides/TROUBLESHOOTING.md`
+
+**Find historical context**  
+→ `history/`
+
+### 📂 Directory Purposes
+
+| Directory | Purpose | Examples |
+|-----------|---------|----------|
+| `roadmap/` | Strategic planning | PROJECT_ROADMAP.md |
+| `operations/` | Daily work tracking | IMPLEMENTATION_TRACKER.md |
+| `architecture/` | System design | Frontend, Auth, Backend |
+| `business/` | Business rules | Billing model, entity types |
+| `audits/` | Debugging guides | Pydantic validation |
+| `guides/` | How-to instructions | API docs, QuickBooks, troubleshooting |
+| `setup/` | Onboarding | Environment setup, secrets config |
+| `deployment/` | Operations | Deployment procedures |
+| `technical/` | Active specs | Feature designs, logging patterns |
+| `frontend/` | Frontend subdomain | Summary, architecture, backlog |
+| `history/` | Completed work | Phase summaries, migration status |
+| `_triage/` | Temporary holding | Unclassified docs (must end empty) |
+
+---
+
+## 9. Current Triage Status
+
+**Date**: December 13, 2025  
+**Status**: 🚧 In Progress
+
+See `_triage/TRIAGE_ANALYSIS.md` for complete classification plan.
+
+**Actions Completed**:
+- ✅ Created canonical folder structure
+- ✅ Created governance policy (this document)
+- ✅ Analyzed existing docs for classification
+
+**Actions Pending**:
+- ⏳ Move docs to canonical locations
+- ⏳ Consolidate duplicate auth docs
+- ⏳ Archive historical docs
+- ⏳ Verify _triage/ is empty
+
+---
+
+## 10. Backup & Recovery
+
+**Navigation Backup**: The original navigation README is preserved at `_triage/README_NAVIGATION_BACKUP.md` and will be archived after triage completion.
+
+**Rollback**: If governance policy proves problematic, restore navigation README from backup.
+
+---
+
+**Maintained By**: Development Team  
+**Enforcement**: Copilot + Manual Review  
+**Next Review**: After triage completion
