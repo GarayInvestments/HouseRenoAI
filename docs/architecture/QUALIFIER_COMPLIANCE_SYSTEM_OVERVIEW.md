@@ -167,7 +167,113 @@ These are **hard failures at write-time**, not validation warnings.
 
 ---
 
-## 6. What This Means for the Application and Copilot
+## 6. Minimum Oversight Requirements (System-Enforced)
+
+### Regulatory Basis
+
+North Carolina licensing statutes and the North Carolina Building Code require that licensed contractors **personally superintend work and be present or meaningfully involved in required inspections**, but they do **not prescribe a numeric frequency** of oversight actions. As a result, this system defines a minimum oversight standard that reflects regulatory intent, inspection practice, and audit defensibility rather than arbitrary counts.
+
+* * *
+
+### 1. Oversight Unit of Enforcement
+
+**Oversight is enforced at the permit level, not aggregated solely at the project level.**
+
+- Each permit represents a distinct scope of regulated work.
+- Each permit must independently demonstrate qualifier oversight.
+- Projects with multiple permits must satisfy oversight requirements for **each permit**.
+
+**Rationale**: Building, electrical, plumbing, and mechanical permits are inspected and evaluated independently by code officials.
+
+* * *
+
+### 2. Minimum Oversight Threshold
+
+For each permit:
+
+- **At least one documented oversight action is required**
+- The action must be recorded **after permit issuance and before final permit completion or closure**
+
+This is a **hard enforcement rule**. A permit may not be finalized or relied upon for compliance if this requirement is unmet.
+
+* * *
+
+### 3. Valid Oversight Actions
+
+The following oversight actions are considered equally valid when properly documented:
+
+- Site visit
+- Permit application or revision review
+- Plan review with documented findings or corrections
+- Client or contractor meeting related to permitted work
+
+Each action must include:
+
+- Qualifier identifier
+- Timestamp
+- Oversight type
+- Associated permit and licensed business
+
+* * *
+
+### 4. Plan Review Clarification
+
+- **Plan review actions may count toward minimum oversight** only if they:
+
+    - Occur after the qualifier–business relationship is active, and
+    - Result in documented verification, correction, or compliance guidance
+
+Plan review **does not replace field oversight**, but may satisfy the minimum requirement when field activity has not yet occurred.
+
+* * *
+
+### 5. Time Window Enforcement
+
+Oversight actions are valid only if they occur:
+
+- **On or after the permit issuance date**
+- **Before permit finalization, expiration, or cancellation**
+- **Before the qualifier's exit or cutoff timestamp**
+
+Any oversight action recorded outside this window is invalid for compliance purposes.
+
+* * *
+
+### 6. Enforcement Outcomes
+
+The system must block the following actions if minimum oversight is not satisfied:
+
+- Permit finalization
+- Project compliance completion
+- Compliance reporting as "satisfied"
+- Any downstream process that relies on permit compliance status
+
+Overrides are permitted **only with a logged compliance justification**.
+
+* * *
+
+### 7. Audit Interpretation Rule
+
+At audit time, the system must be able to answer:
+
+> "For this permit, which qualifier exercised oversight, when did it occur, and under which licensed business's authority?"
+
+If the system cannot answer this question definitively, the permit is considered **non-compliant** regardless of project completion status.
+
+* * *
+
+### Design Intent (Non-Negotiable)
+
+This standard intentionally:
+
+- Prevents symbolic or backfilled oversight from satisfying compliance
+- Avoids arbitrary numeric requirements unsupported by statute
+- Aligns with how inspectors and licensing boards evaluate supervision
+- Prioritizes **provable oversight over activity volume**
+
+---
+
+## 7. What This Means for the Application and Copilot
 
 ### Copilot's Role Must Shift
 
@@ -195,7 +301,7 @@ These are **hard failures at write-time**, not validation warnings.
 
 ---
 
-## 7. Why This Is a Strategic Inflection Point
+## 8. Why This Is a Strategic Inflection Point
 
 This reframing:
 
@@ -210,7 +316,7 @@ This reframing:
 
 ---
 
-## 8. Guardrails Going Forward
+## 9. Guardrails Going Forward
 
 1. **Compliance intent** takes precedence over convenience
 2. **Qualifier clarity** beats feature velocity
@@ -220,13 +326,13 @@ This reframing:
 
 ---
 
-## 9. One-Sentence System Definition (Canonical)
+## 10. One-Sentence System Definition (Canonical)
 
 > **This platform exists to manage qualifier-based permit compliance across multiple Licensed Businesses while maintaining clear regulatory accountability, defensible oversight records, and enforced legal limits.**
 
 ---
 
-## 10. Relationship to Existing Documentation
+## 11. Relationship to Existing Documentation
 
 This document:
 
