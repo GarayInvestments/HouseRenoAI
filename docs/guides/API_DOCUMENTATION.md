@@ -483,6 +483,522 @@ curl -s -X POST "$BASE_URL/v1/chat" \
 
 ---
 
+## 🏢 **Licensed Businesses API** (Phase Q - Qualifier Compliance System)
+
+**Authentication**: Required (Supabase JWT)
+
+Manage licensed businesses that employ qualifiers. Part of the NCLBGC qualifier-compliance tracking system.
+
+### **GET /v1/licensed-businesses/**
+List all licensed businesses with optional filtering.
+
+**Query Parameters**:
+- `skip` (int, optional): Number of records to skip for pagination (default: 0)
+- `limit` (int, optional): Maximum records to return (default: 100)
+- `is_active` (bool, optional): Filter by active status
+- `license_type` (string, optional): Filter by license type (general_contractor, electrical, plumbing, etc.)
+
+**Response**:
+```json
+[
+  {
+    "id": "uuid",
+    "business_id": "LB-00001",
+    "business_name": "ABC Construction LLC",
+    "license_number": "NC-12345",
+    "license_type": "general_contractor",
+    "license_status": "active",
+    "issue_date": "2023-01-15",
+    "expiration_date": "2025-12-31",
+    "contact_name": "John Smith",
+    "contact_email": "john@abcconstruction.com",
+    "contact_phone": "(919) 555-0100",
+    "address": "123 Main St, Raleigh, NC 27601",
+    "is_active": true,
+    "created_at": "2025-12-14T10:00:00Z",
+    "updated_at": "2025-12-14T10:00:00Z"
+  }
+]
+```
+
+**Example**:
+```bash
+curl https://api.houserenovatorsllc.com/v1/licensed-businesses/ \
+  -H "Authorization: Bearer $TOKEN"
+
+# Filter by license type
+curl "https://api.houserenovatorsllc.com/v1/licensed-businesses/?license_type=general_contractor" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+---
+
+### **GET /v1/licensed-businesses/{id}**
+Get a specific licensed business by UUID.
+
+**Response**: Same structure as list endpoint (single object)
+
+**Example**:
+```bash
+curl https://api.houserenovatorsllc.com/v1/licensed-businesses/550e8400-e29b-41d4-a716-446655440000 \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+---
+
+### **GET /v1/licensed-businesses/by-business-id/{business_id}**
+Get a licensed business by its human-readable business ID (LB-00001).
+
+**Example**:
+```bash
+curl https://api.houserenovatorsllc.com/v1/licensed-businesses/by-business-id/LB-00001 \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+---
+
+### **POST /v1/licensed-businesses/**
+Create a new licensed business.
+
+**Request Body**:
+```json
+{
+  "business_name": "ABC Construction LLC",
+  "license_number": "NC-12345",
+  "license_type": "general_contractor",
+  "license_status": "active",
+  "issue_date": "2023-01-15",
+  "expiration_date": "2025-12-31",
+  "contact_name": "John Smith",
+  "contact_email": "john@abcconstruction.com",
+  "contact_phone": "(919) 555-0100",
+  "address": "123 Main St, Raleigh, NC 27601",
+  "notes": "Primary GC for commercial projects"
+}
+```
+
+**Response**: Created business object with auto-generated `business_id` (LB-00001)
+
+**Example**:
+```bash
+curl -X POST https://api.houserenovatorsllc.com/v1/licensed-businesses/ \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "business_name": "ABC Construction LLC",
+    "license_number": "NC-12345",
+    "license_type": "general_contractor",
+    "license_status": "active",
+    "issue_date": "2023-01-15",
+    "expiration_date": "2025-12-31",
+    "contact_name": "John Smith",
+    "contact_email": "john@abcconstruction.com",
+    "contact_phone": "(919) 555-0100"
+  }'
+```
+
+---
+
+### **PUT /v1/licensed-businesses/{id}**
+Update an existing licensed business.
+
+**Request Body**: Same as POST (all fields optional except those being updated)
+
+**Example**:
+```bash
+curl -X PUT https://api.houserenovatorsllc.com/v1/licensed-businesses/550e8400-e29b-41d4-a716-446655440000 \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"license_status": "expired", "expiration_date": "2024-12-31"}'
+```
+
+---
+
+### **DELETE /v1/licensed-businesses/{id}**
+Soft delete a licensed business (sets `is_active = false`).
+
+**Response**:
+```json
+{
+  "message": "Licensed business LB-00001 deactivated successfully"
+}
+```
+
+**Example**:
+```bash
+curl -X DELETE https://api.houserenovatorsllc.com/v1/licensed-businesses/550e8400-e29b-41d4-a716-446655440000 \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+---
+
+## 👤 **Qualifiers API** (Phase Q - Qualifier Compliance System)
+
+**Authentication**: Required (Supabase JWT)
+
+Manage individual qualifiers (licensed professionals) and their assignments to businesses. Enforces capacity limits (max 3 businesses per qualifier).
+
+### **GET /v1/qualifiers/**
+List all qualifiers with capacity indicators.
+
+**Query Parameters**:
+- `skip` (int, optional): Pagination offset (default: 0)
+- `limit` (int, optional): Max records (default: 100)
+- `is_active` (bool, optional): Filter by active status
+- `qualifier_type` (string, optional): Filter by type (general_contractor_qualifier, electrical_qualifier, etc.)
+
+**Response**:
+```json
+[
+  {
+    "id": "uuid",
+    "qualifier_id": "QF-00001",
+    "user_id": "user-uuid",
+    "qualifier_type": "general_contractor_qualifier",
+    "license_number": "NC-QF-12345",
+    "issue_date": "2022-06-01",
+    "expiration_date": "2026-06-01",
+    "max_businesses_allowed": 3,
+    "current_business_count": 2,
+    "is_active": true,
+    "created_at": "2025-12-14T10:00:00Z",
+    "updated_at": "2025-12-14T10:00:00Z",
+    "user": {
+      "full_name": "Jane Doe",
+      "email": "jane@example.com"
+    }
+  }
+]
+```
+
+**Example**:
+```bash
+curl https://api.houserenovatorsllc.com/v1/qualifiers/ \
+  -H "Authorization: Bearer $TOKEN"
+
+# Filter by type
+curl "https://api.houserenovatorsllc.com/v1/qualifiers/?qualifier_type=general_contractor_qualifier" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+---
+
+### **GET /v1/qualifiers/{id}**
+Get a specific qualifier by UUID.
+
+**Response**: Same structure as list endpoint (single object)
+
+---
+
+### **GET /v1/qualifiers/by-qualifier-id/{qualifier_id}**
+Get a qualifier by business ID (QF-00001).
+
+**Example**:
+```bash
+curl https://api.houserenovatorsllc.com/v1/qualifiers/by-qualifier-id/QF-00001 \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+---
+
+### **POST /v1/qualifiers/**
+Create a new qualifier.
+
+**Request Body**:
+```json
+{
+  "user_id": "user-uuid",
+  "qualifier_type": "general_contractor_qualifier",
+  "license_number": "NC-QF-12345",
+  "issue_date": "2022-06-01",
+  "expiration_date": "2026-06-01",
+  "max_businesses_allowed": 3,
+  "notes": "Primary qualifier for residential projects"
+}
+```
+
+**Response**: Created qualifier with auto-generated `qualifier_id` (QF-00001)
+
+**Example**:
+```bash
+curl -X POST https://api.houserenovatorsllc.com/v1/qualifiers/ \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "550e8400-e29b-41d4-a716-446655440000",
+    "qualifier_type": "general_contractor_qualifier",
+    "license_number": "NC-QF-12345",
+    "issue_date": "2022-06-01",
+    "expiration_date": "2026-06-01",
+    "max_businesses_allowed": 3
+  }'
+```
+
+---
+
+### **PUT /v1/qualifiers/{id}**
+Update an existing qualifier.
+
+**Request Body**: Same as POST (all fields optional)
+
+---
+
+### **DELETE /v1/qualifiers/{id}**
+Soft delete a qualifier (sets `is_active = false`).
+
+---
+
+### **POST /v1/qualifiers/{id}/assign**
+Assign a qualifier to a licensed business with automatic capacity checking.
+
+**Request Body**:
+```json
+{
+  "licensed_business_id": "business-uuid",
+  "start_date": "2025-12-15",
+  "end_date": null,
+  "notes": "Primary qualifier for this business"
+}
+```
+
+**Response**:
+```json
+{
+  "id": "assignment-uuid",
+  "qualifier_id": "qualifier-uuid",
+  "licensed_business_id": "business-uuid",
+  "start_date": "2025-12-15",
+  "end_date": null,
+  "is_active": true,
+  "created_at": "2025-12-15T10:00:00Z"
+}
+```
+
+**Errors**:
+- **400 Bad Request**: Qualifier at capacity (already assigned to 3 active businesses)
+- **400 Bad Request**: Assignment already exists and is active
+- **404 Not Found**: Qualifier or business not found
+
+**Example**:
+```bash
+curl -X POST https://api.houserenovatorsllc.com/v1/qualifiers/550e8400-e29b-41d4-a716-446655440000/assign \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "licensed_business_id": "660e8400-e29b-41d4-a716-446655440001",
+    "start_date": "2025-12-15"
+  }'
+```
+
+---
+
+### **GET /v1/qualifiers/{id}/capacity**
+Check qualifier's current capacity status.
+
+**Response**:
+```json
+{
+  "qualifier_id": "QF-00001",
+  "current_count": 2,
+  "max_allowed": 3,
+  "available_slots": 1,
+  "at_capacity": false,
+  "active_businesses": [
+    {
+      "business_id": "LB-00001",
+      "business_name": "ABC Construction LLC",
+      "start_date": "2024-01-01"
+    },
+    {
+      "business_id": "LB-00002",
+      "business_name": "XYZ Builders Inc",
+      "start_date": "2024-06-15"
+    }
+  ]
+}
+```
+
+**Example**:
+```bash
+curl https://api.houserenovatorsllc.com/v1/qualifiers/550e8400-e29b-41d4-a716-446655440000/capacity \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+---
+
+## 👁️ **Oversight Actions API** (Phase Q - Qualifier Compliance System)
+
+**Authentication**: Required (Supabase JWT)
+
+Track regulatory oversight actions (inspections, audits, violations) for compliance monitoring.
+
+### **GET /v1/oversight-actions/**
+List all oversight actions with advanced filtering.
+
+**Query Parameters**:
+- `skip` (int): Pagination offset (default: 0)
+- `limit` (int): Max records (default: 100)
+- `project_id` (UUID, optional): Filter by project
+- `qualifier_id` (UUID, optional): Filter by qualifier
+- `licensed_business_id` (UUID, optional): Filter by business
+- `action_type` (string, optional): Filter by type (inspection, audit, violation, warning, fine, suspension)
+- `severity` (string, optional): Filter by severity (low, medium, high, critical)
+
+**Response**:
+```json
+[
+  {
+    "id": "uuid",
+    "action_id": "OA-00001",
+    "project_id": "project-uuid",
+    "qualifier_id": "qualifier-uuid",
+    "licensed_business_id": "business-uuid",
+    "action_type": "inspection",
+    "action_date": "2025-12-14",
+    "severity": "medium",
+    "description": "Routine compliance inspection",
+    "findings": "Minor documentation issues identified",
+    "resolution": "Corrected within 48 hours",
+    "resolution_date": "2025-12-16",
+    "inspector_name": "John Smith",
+    "inspector_agency": "NCLBGC",
+    "attendees": [
+      {"name": "Jane Doe", "role": "Qualifier"},
+      {"name": "Bob Johnson", "role": "Site Manager"}
+    ],
+    "photos": [
+      {"url": "https://...", "caption": "Site documentation"},
+      {"url": "https://...", "caption": "License verification"}
+    ],
+    "created_at": "2025-12-14T14:30:00Z",
+    "updated_at": "2025-12-16T09:15:00Z"
+  }
+]
+```
+
+**Example**:
+```bash
+# Get all oversight actions
+curl https://api.houserenovatorsllc.com/v1/oversight-actions/ \
+  -H "Authorization: Bearer $TOKEN"
+
+# Filter by action type
+curl "https://api.houserenovatorsllc.com/v1/oversight-actions/?action_type=violation" \
+  -H "Authorization: Bearer $TOKEN"
+
+# Filter by qualifier
+curl "https://api.houserenovatorsllc.com/v1/oversight-actions/?qualifier_id=550e8400-e29b-41d4-a716-446655440000" \
+  -H "Authorization: Bearer $TOKEN"
+
+# Filter by severity
+curl "https://api.houserenovatorsllc.com/v1/oversight-actions/?severity=high" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+---
+
+### **GET /v1/oversight-actions/{id}**
+Get a specific oversight action by UUID.
+
+**Response**: Same structure as list endpoint (single object)
+
+---
+
+### **GET /v1/oversight-actions/by-action-id/{action_id}**
+Get an oversight action by business ID (OA-00001).
+
+**Example**:
+```bash
+curl https://api.houserenovatorsllc.com/v1/oversight-actions/by-action-id/OA-00001 \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+---
+
+### **POST /v1/oversight-actions/**
+Create a new oversight action.
+
+**Request Body**:
+```json
+{
+  "project_id": "project-uuid",
+  "qualifier_id": "qualifier-uuid",
+  "licensed_business_id": "business-uuid",
+  "action_type": "inspection",
+  "action_date": "2025-12-14",
+  "severity": "medium",
+  "description": "Routine compliance inspection",
+  "findings": "Minor documentation issues",
+  "inspector_name": "John Smith",
+  "inspector_agency": "NCLBGC",
+  "attendees": [
+    {"name": "Jane Doe", "role": "Qualifier"},
+    {"name": "Bob Johnson", "role": "Site Manager"}
+  ],
+  "photos": [
+    {"url": "https://storage.example.com/photo1.jpg", "caption": "Site documentation"}
+  ]
+}
+```
+
+**Response**: Created oversight action with auto-generated `action_id` (OA-00001)
+
+**Example**:
+```bash
+curl -X POST https://api.houserenovatorsllc.com/v1/oversight-actions/ \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "project_id": "550e8400-e29b-41d4-a716-446655440000",
+    "qualifier_id": "660e8400-e29b-41d4-a716-446655440001",
+    "licensed_business_id": "770e8400-e29b-41d4-a716-446655440002",
+    "action_type": "inspection",
+    "action_date": "2025-12-14",
+    "severity": "low",
+    "description": "Routine compliance check",
+    "inspector_name": "John Smith",
+    "inspector_agency": "NCLBGC"
+  }'
+```
+
+---
+
+### **PUT /v1/oversight-actions/{id}**
+Update an existing oversight action (typically to add resolution details).
+
+**Request Body**: Same as POST (all fields optional)
+
+**Example**:
+```bash
+curl -X PUT https://api.houserenovatorsllc.com/v1/oversight-actions/550e8400-e29b-41d4-a716-446655440000 \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "resolution": "Issues corrected, documentation updated",
+    "resolution_date": "2025-12-16"
+  }'
+```
+
+---
+
+### **DELETE /v1/oversight-actions/{id}**
+Hard delete an oversight action (use with caution - compliance records).
+
+**Response**:
+```json
+{
+  "message": "Oversight action OA-00001 deleted successfully"
+}
+```
+
+**Example**:
+```bash
+curl -X DELETE https://api.houserenovatorsllc.com/v1/oversight-actions/550e8400-e29b-41d4-a716-446655440000 \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+---
+
 ## 📄 **Document Processing API**
 
 ### **POST /v1/documents/extract**
@@ -719,10 +1235,19 @@ const result = await response.json();
 
 ## 🆕 **Version History**
 
-### **v3.2** (Current) - December 13, 2025 🔥
-**Phase F: Frontend CRUD Completion (In Progress)**
-- 🚧 Permits page field mapping fix
-- ⏳ Inspections, Invoices, Payments, Site Visits pages
+### **v3.3** (Current) - December 15, 2025 🔥
+**Phase Q: Qualifier Compliance System Complete**
+- ✅ Licensed Businesses API (5 endpoints)
+- ✅ Qualifiers API (7 endpoints with capacity enforcement)
+- ✅ Oversight Actions API (5 endpoints with filtering)
+- ✅ Frontend pages: LicensedBusinesses, Qualifiers, OversightActions
+- ✅ Database triggers: business_id auto-generation, capacity limits
+- ✅ Regulatory compliance tracking (NCLBGC)
+
+### **v3.2** - December 13, 2025 🔒 **LOCKED**
+**Phase F: Frontend CRUD Completion**
+- ✅ Permits page field mapping fix
+- ✅ Inspections, Invoices, Payments, Site Visits pages
 
 ### **v3.1** - December 12, 2025 🔒 **LOCKED**
 **Phase D-E Complete: Performance & Production Hardening**
@@ -747,7 +1272,7 @@ const result = await response.json();
 - ✅ Production deployment (Fly.io + Cloudflare)
 
 ### **Upcoming Features**
-- v3.3: Frontend CRUD completion (Phases F.2-F.4)
-- v3.4: Advanced site visits features (GPS, photo AI)
-- v3.5: Role-based access control (RBAC)
+- v3.4: QuickBooks Webhooks & Auto-Sync (real-time invoice/payment updates)
+- v3.5: Advanced site visits features (GPS, photo AI)
+- v3.6: Role-based access control (RBAC)
 - v4.0: Multi-jurisdiction support
