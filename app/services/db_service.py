@@ -1518,6 +1518,55 @@ class DBService:
                 logger.error(f"[DB_SERVICE] Failed to create licensed business: {e}")
                 raise
     
+    async def update_licensed_business(self, business_id: str, update_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """
+        Update an existing licensed business.
+        
+        Args:
+            business_id: UUID or business_id format (LB-00001) to update
+            update_data: Dict with fields to update
+            
+        Returns:
+            Dict with updated business data or None if not found
+        """
+        async with AsyncSessionLocal() as session:
+            try:
+                # Find business by UUID or business_id
+                stmt = select(LicensedBusiness).where(
+                    (LicensedBusiness.id == business_id) | (LicensedBusiness.business_id == business_id)
+                )
+                result = await session.execute(stmt)
+                business = result.scalar_one_or_none()
+                
+                if not business:
+                    return None
+                
+                # Update fields
+                for key, value in update_data.items():
+                    if hasattr(business, key):
+                        setattr(business, key, value)
+                
+                await session.commit()
+                await session.refresh(business)
+                
+                logger.info(f"[DB_SERVICE] Updated licensed business {business.business_id}")
+                
+                return {
+                    "id": business.id,
+                    "business_id": business.business_id,
+                    "business_name": business.business_name,
+                    "legal_name": business.legal_name,
+                    "license_number": business.license_number,
+                    "license_type": business.license_type,
+                    "license_status": business.license_status,
+                    "is_active": business.is_active,
+                }
+                
+            except Exception as e:
+                await session.rollback()
+                logger.error(f"[DB_SERVICE] Failed to update licensed business {business_id}: {e}")
+                raise
+    
     async def create_qualifier(self, qualifier_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Create a new qualifier (must link to existing user via user_id).
@@ -1575,6 +1624,56 @@ class DBService:
             except Exception as e:
                 await session.rollback()
                 logger.error(f"[DB_SERVICE] Failed to create qualifier: {e}")
+                raise
+    
+    async def update_qualifier(self, qualifier_id: str, update_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """
+        Update an existing qualifier.
+        
+        Args:
+            qualifier_id: UUID or qualifier_id format (QF-00001) to update
+            update_data: Dict with fields to update
+            
+        Returns:
+            Dict with updated qualifier data or None if not found
+        """
+        async with AsyncSessionLocal() as session:
+            try:
+                # Find qualifier by UUID or qualifier_id
+                stmt = select(Qualifier).where(
+                    (Qualifier.id == qualifier_id) | (Qualifier.qualifier_id == qualifier_id)
+                )
+                result = await session.execute(stmt)
+                qualifier = result.scalar_one_or_none()
+                
+                if not qualifier:
+                    return None
+                
+                # Update fields
+                for key, value in update_data.items():
+                    if hasattr(qualifier, key):
+                        setattr(qualifier, key, value)
+                
+                await session.commit()
+                await session.refresh(qualifier)
+                
+                logger.info(f"[DB_SERVICE] Updated qualifier {qualifier.qualifier_id}")
+                
+                return {
+                    "id": qualifier.id,
+                    "qualifier_id": qualifier.qualifier_id,
+                    "user_id": qualifier.user_id,
+                    "full_name": qualifier.full_name,
+                    "qualifier_id_number": qualifier.qualifier_id_number,
+                    "license_type": qualifier.license_type,
+                    "license_status": qualifier.license_status,
+                    "max_licenses_allowed": qualifier.max_licenses_allowed,
+                    "is_active": qualifier.is_active,
+                }
+                
+            except Exception as e:
+                await session.rollback()
+                logger.error(f"[DB_SERVICE] Failed to update qualifier {qualifier_id}: {e}")
                 raise
     
     async def assign_qualifier_to_business(
