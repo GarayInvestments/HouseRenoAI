@@ -87,6 +87,14 @@ async def startup_event():
         except Exception as qb_error:
             logger.warning(f"QuickBooks token load from database failed: {qb_error}")
             logger.info("QuickBooks will use database storage once OAuth flow is completed")
+        
+        # Initialize scheduled sync jobs
+        try:
+            from app.services.scheduler_service import scheduler_service
+            await scheduler_service.start()
+            logger.info("QuickBooks sync scheduler started (3x daily: 8 AM, 1 PM, 6 PM EST)")
+        except Exception as sched_error:
+            logger.error(f"Failed to start scheduler: {sched_error}")
             
     except Exception as e:
         logger.error(f"Startup error: {e}")

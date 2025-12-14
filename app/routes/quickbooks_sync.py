@@ -16,6 +16,7 @@ from app.db.session import get_db
 from app.routes.auth_supabase import get_current_user
 from app.services.quickbooks_sync_service import qb_sync_service
 from app.utils.circuit_breaker import qb_circuit_breaker
+from app.services.scheduler_service import scheduler_service
 
 logger = logging.getLogger(__name__)
 
@@ -472,4 +473,90 @@ async def reset_circuit_breaker(
     except Exception as e:
         logger.error(f"Failed to reset circuit breaker: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/scheduler")
+async def get_scheduler_status(
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get current scheduler status.
+    
+    Shows whether scheduler is running, next sync time, and schedule.
+    """
+    try:
+        status = scheduler_service.get_status()
+        return status
+    except Exception as e:
+        logger.error(f"Failed to get scheduler status: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/scheduler/trigger")
+async def trigger_sync_now(
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Manually trigger scheduled sync job immediately.
+    
+    Runs sync outside of normal schedule. Useful for testing or
+    forcing immediate sync after known data changes.
+    """
+    try:
+        logger.info(f"[ADMIN] Manual sync triggered by {current_user.email}")
+        await scheduler_service.trigger_now()
+        
+        return {
+            "message": "Sync job triggered successfully",
+            "triggered_by": current_user.email,
+            "note": "Check sync status endpoint for results"
+        }
+    except Exception as e:
+        logger.error(f"Failed to trigger sync: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/scheduler/pause")
+async def pause_scheduler(
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Pause the scheduler (jobs won't run but scheduler stays alive).
+    
+    Use this to temporarily disable automatic syncs without stopping scheduler.
+    """
+    try:
+        await scheduler_service.pause()
+        logger.info(f"[ADMIN] Scheduler paused by {current_user.email}")
+        
+        return {
+            "message": "Scheduler paused",
+            "paused_by": current_user.email,
+            "status": scheduler_service.get_status()
+        }
+    except Exception as e:
+        logger.error(f"Failed to pause scheduler: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/scheduler/resume")
+async def resume_scheduler(
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Resume the scheduler after pause.
+    """
+    try:
+        await scheduler_service.resume()
+        logger.info(f"[ADMIN] Scheduler resumed by {current_user.email}")
+        
+        return {
+            "message": "Scheduler resumed",
+            "resumed_by": current_user.email,
+            "status": scheduler_service.get_status()
+        }
+    except Exception as e:
+        logger.error(f"Failed to resume scheduler: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
 
