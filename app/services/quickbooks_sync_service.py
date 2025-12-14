@@ -3,6 +3,7 @@ QuickBooks Sync Service
 
 Handles synchronization of QuickBooks data to local cache tables.
 Implements delta sync using qb_last_modified timestamps to minimize API calls.
+Includes circuit breaker pattern for API resilience.
 """
 
 import logging
@@ -12,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 
 from app.services.quickbooks_service import quickbooks_service
+from app.utils.circuit_breaker import qb_circuit_breaker, CircuitBreakerError
 
 logger = logging.getLogger(__name__)
 
@@ -66,8 +68,24 @@ class QuickBooksSyncService:
             
             query += " MAXRESULTS 1000"
             
-            # Fetch customers from QuickBooks
-            customers = await self.qb_service.query(query)
+            # Fetch customers from QuickBooks with circuit breaker protection
+            try:
+                customers = await qb_circuit_breaker.call(
+                    self.qb_service.query,
+                    query
+                )
+            except CircuitBreakerError as e:
+                # Circuit is open - fail fast without attempting API call
+                logger.error(f"[SYNC] Circuit breaker blocked sync: {e}")
+                duration_ms = int((datetime.now(timezone.utc) - start_time).total_seconds() * 1000)
+                await self._update_sync_status(db, 'customers', start_time, 0, duration_ms, 1)
+                return {
+                    "records_synced": 0, 
+                    "duration_ms": duration_ms, 
+                    "errors": 1,
+                    "circuit_breaker_status": qb_circuit_breaker.get_status(),
+                    "error": str(e)
+                }
             
             if not customers:
                 logger.info("[SYNC] No customers to sync")
@@ -204,8 +222,23 @@ class QuickBooksSyncService:
             
             query += " MAXRESULTS 1000"
             
-            # Fetch invoices
-            invoices = await self.qb_service.query(query)
+            # Fetch invoices with circuit breaker protection
+            try:
+                invoices = await qb_circuit_breaker.call(
+                    self.qb_service.query,
+                    query
+                )
+            except CircuitBreakerError as e:
+                logger.error(f"[SYNC] Circuit breaker blocked invoice sync: {e}")
+                duration_ms = int((datetime.now(timezone.utc) - start_time).total_seconds() * 1000)
+                await self._update_sync_status(db, 'invoices', start_time, 0, duration_ms, 1)
+                return {
+                    "records_synced": 0,
+                    "duration_ms": duration_ms,
+                    "errors": 1,
+                    "circuit_breaker_status": qb_circuit_breaker.get_status(),
+                    "error": str(e)
+                }
             
             if not invoices:
                 logger.info("[SYNC] No invoices to sync")
@@ -334,8 +367,23 @@ class QuickBooksSyncService:
             
             query += " MAXRESULTS 1000"
             
-            # Fetch payments
-            payments = await self.qb_service.query(query)
+            # Fetch payments with circuit breaker protection
+            try:
+                payments = await qb_circuit_breaker.call(
+                    self.qb_service.query,
+                    query
+                )
+            except CircuitBreakerError as e:
+                logger.error(f"[SYNC] Circuit breaker blocked payment sync: {e}")
+                duration_ms = int((datetime.now(timezone.utc) - start_time).total_seconds() * 1000)
+                await self._update_sync_status(db, 'payments', start_time, 0, duration_ms, 1)
+                return {
+                    "records_synced": 0,
+                    "duration_ms": duration_ms,
+                    "errors": 1,
+                    "circuit_breaker_status": qb_circuit_breaker.get_status(),
+                    "error": str(e)
+                }
             
             if not payments:
                 logger.info("[SYNC] No payments to sync")

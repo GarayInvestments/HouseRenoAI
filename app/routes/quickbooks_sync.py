@@ -15,6 +15,7 @@ from app.db.models import User
 from app.db.session import get_db
 from app.routes.auth_supabase import get_current_user
 from app.services.quickbooks_sync_service import qb_sync_service
+from app.utils.circuit_breaker import qb_circuit_breaker
 
 logger = logging.getLogger(__name__)
 
@@ -418,3 +419,57 @@ async def get_cached_payments(
     except Exception as e:
         logger.error(f"Failed to get cached payments: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/circuit-breaker")
+async def get_circuit_breaker_status(
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get current circuit breaker status.
+    
+    Shows circuit state, failure count, and time until retry.
+    Useful for monitoring and debugging sync issues.
+    """
+    try:
+        status = qb_circuit_breaker.get_status()
+        return {
+            "circuit_breaker": status,
+            "explanation": {
+                "closed": "Normal operation - requests pass through",
+                "open": "Failing fast - no API calls attempted (cooling down)",
+                "half_open": "Testing recovery - limited requests allowed"
+            }
+        }
+    except Exception as e:
+        logger.error(f"Failed to get circuit breaker status: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/circuit-breaker/reset")
+async def reset_circuit_breaker(
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Manually reset circuit breaker to CLOSED state.
+    
+    Use this to force circuit closed after resolving QuickBooks API issues.
+    Only for admin/debugging purposes.
+    """
+    try:
+        old_status = qb_circuit_breaker.get_status()
+        qb_circuit_breaker.reset()
+        new_status = qb_circuit_breaker.get_status()
+        
+        logger.info(f"[ADMIN] Circuit breaker manually reset by {current_user.email}")
+        
+        return {
+            "message": "Circuit breaker reset to CLOSED",
+            "old_state": old_status["state"],
+            "new_state": new_status["state"],
+            "reset_by": current_user.email
+        }
+    except Exception as e:
+        logger.error(f"Failed to reset circuit breaker: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
