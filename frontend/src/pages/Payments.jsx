@@ -115,15 +115,6 @@ export default function Payments() {
     return '#EF4444'; // Red - very stale
   };
 
-  // Format currency
-  const formatCurrency = (amount) => {
-    if (amount === null || amount === undefined) return '$0.00';
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
-  };
-
   // Memoized filtered payments (status filter + search)
   const filteredPayments = useMemo(() => {
     let result = getFilteredPayments(); // Apply status filter from store
