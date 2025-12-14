@@ -212,7 +212,29 @@ export default function InvoiceDetails() {
             borderRadius: '6px',
             textTransform: 'capitalize'
           }}>
-            {status}
+            {isEditing ? (
+              <select
+                value={editedInvoice?.status || ''}
+                onChange={(e) => handleEditChange('status', e.target.value)}
+                style={{
+                  padding: '4px 8px',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  border: '2px solid #2563EB',
+                  borderRadius: '6px',
+                  outline: 'none',
+                  backgroundColor: 'white'
+                }}
+              >
+                <option value="draft">Draft</option>
+                <option value="sent">Sent</option>
+                <option value="paid">Paid</option>
+                <option value="overdue">Overdue</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            ) : (
+              status
+            )}
           </span>
         </div>
         
@@ -516,23 +538,61 @@ export default function InvoiceDetails() {
               <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
-                marginBottom: '8px'
+                marginBottom: '8px',
+                alignItems: 'center'
               }}>
                 <span style={{ fontSize: '14px', color: '#6B7280' }}>Subtotal:</span>
-                <span style={{ fontSize: '14px', fontWeight: '500', color: '#111827' }}>
-                  {formatCurrency(subtotal)}
-                </span>
+                {isEditing ? (
+                  <input
+                    type="number"
+                    value={editedInvoice?.subtotal || ''}
+                    onChange={(e) => handleEditChange('subtotal', parseFloat(e.target.value) || 0)}
+                    style={{
+                      width: '120px',
+                      padding: '4px 8px',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      border: '1px solid #D1D5DB',
+                      borderRadius: '4px',
+                      textAlign: 'right',
+                      outline: 'none'
+                    }}
+                  />
+                ) : (
+                  <span style={{ fontSize: '14px', fontWeight: '500', color: '#111827' }}>
+                    {formatCurrency(subtotal)}
+                  </span>
+                )}
               </div>
               
               <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
-                marginBottom: '12px'
+                marginBottom: '12px',
+                alignItems: 'center'
               }}>
                 <span style={{ fontSize: '14px', color: '#6B7280' }}>Tax:</span>
-                <span style={{ fontSize: '14px', fontWeight: '500', color: '#111827' }}>
-                  {formatCurrency(taxAmount)}
-                </span>
+                {isEditing ? (
+                  <input
+                    type="number"
+                    value={editedInvoice?.tax_amount || ''}
+                    onChange={(e) => handleEditChange('tax_amount', parseFloat(e.target.value) || 0)}
+                    style={{
+                      width: '120px',
+                      padding: '4px 8px',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      border: '1px solid #D1D5DB',
+                      borderRadius: '4px',
+                      textAlign: 'right',
+                      outline: 'none'
+                    }}
+                  />
+                ) : (
+                  <span style={{ fontSize: '14px', fontWeight: '500', color: '#111827' }}>
+                    {formatCurrency(taxAmount)}
+                  </span>
+                )}
               </div>
 
               <div style={{
@@ -540,12 +600,31 @@ export default function InvoiceDetails() {
                 justifyContent: 'space-between',
                 paddingTop: '12px',
                 borderTop: '1px solid #E5E7EB',
-                marginBottom: '8px'
+                marginBottom: '8px',
+                alignItems: 'center'
               }}>
                 <span style={{ fontSize: '16px', fontWeight: '600', color: '#111827' }}>Total:</span>
-                <span style={{ fontSize: '16px', fontWeight: '700', color: '#111827' }}>
-                  {formatCurrency(totalAmount)}
-                </span>
+                {isEditing ? (
+                  <input
+                    type="number"
+                    value={editedInvoice?.total_amount || ''}
+                    onChange={(e) => handleEditChange('total_amount', parseFloat(e.target.value) || 0)}
+                    style={{
+                      width: '120px',
+                      padding: '4px 8px',
+                      fontSize: '16px',
+                      fontWeight: '700',
+                      border: '1px solid #D1D5DB',
+                      borderRadius: '4px',
+                      textAlign: 'right',
+                      outline: 'none'
+                    }}
+                  />
+                ) : (
+                  <span style={{ fontSize: '16px', fontWeight: '700', color: '#111827' }}>
+                    {formatCurrency(totalAmount)}
+                  </span>
+                )}
               </div>
 
               <div style={{

@@ -279,15 +279,35 @@ export default function ProjectDetails() {
             alignItems: 'flex-start',
             marginBottom: '16px'
           }}>
-            <div>
-              <h1 style={{
-                fontSize: '32px',
-                fontWeight: '600',
-                color: '#1E293B',
-                marginBottom: '8px'
-              }}>
-                {project['Project Name'] || 'Unnamed Project'}
-              </h1>
+            <div style={{ flex: 1, marginRight: '16px' }}>
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={editedProject?.['Project Name'] || ''}
+                  onChange={(e) => handleEditChange('Project Name', e.target.value)}
+                  style={{
+                    fontSize: '32px',
+                    fontWeight: '600',
+                    color: '#1E293B',
+                    marginBottom: '8px',
+                    width: '100%',
+                    padding: '8px',
+                    border: '2px solid #2563EB',
+                    borderRadius: '8px',
+                    outline: 'none'
+                  }}
+                  placeholder="Project Name"
+                />
+              ) : (
+                <h1 style={{
+                  fontSize: '32px',
+                  fontWeight: '600',
+                  color: '#1E293B',
+                  marginBottom: '8px'
+                }}>
+                  {project['Project Name'] || 'Unnamed Project'}
+                </h1>
+              )}
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -300,20 +320,44 @@ export default function ProjectDetails() {
                 Project ID: {project['Project ID']}
               </div>
             </div>
-            <span style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              padding: '8px 16px',
-              borderRadius: '8px',
-              backgroundColor: statusStyle.bg,
-              color: statusStyle.text,
-              fontSize: '14px',
-              fontWeight: '500',
-              border: `1px solid ${statusStyle.border}`,
-              textTransform: 'capitalize'
-            }}>
-              {project.Status || 'N/A'}
-            </span>
+            {isEditing ? (
+              <select
+                value={editedProject?.Status || ''}
+                onChange={(e) => handleEditChange('Status', e.target.value)}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  border: '2px solid #2563EB',
+                  outline: 'none'
+                }}
+              >
+                <option value="Inquiry Received">Inquiry Received</option>
+                <option value="Planning">Planning</option>
+                <option value="Permit Submitted">Permit Submitted</option>
+                <option value="Permit Approved">Permit Approved</option>
+                <option value="Active">Active</option>
+                <option value="Final Inspection Complete">Final Inspection Complete</option>
+                <option value="Completed">Completed</option>
+                <option value="Closed / Archived">Closed / Archived</option>
+              </select>
+            ) : (
+              <span style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                padding: '8px 16px',
+                borderRadius: '8px',
+                backgroundColor: statusStyle.bg,
+                color: statusStyle.text,
+                fontSize: '14px',
+                fontWeight: '500',
+                border: `1px solid ${statusStyle.border}`,
+                textTransform: 'capitalize'
+              }}>
+                {project.Status || 'N/A'}
+              </span>
+            )}
           </div>
 
           <div style={{
@@ -335,11 +379,29 @@ export default function ProjectDetails() {
               }}>
                 <MapPin size={20} style={{ color: '#2563EB' }} />
               </div>
-              <div>
+              <div style={{ flex: 1 }}>
                 <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '2px' }}>Location</p>
-                <p style={{ fontSize: '14px', color: '#1E293B', fontWeight: '500' }}>
-                  {project['Project Address'] || 'No address'}
-                </p>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={editedProject?.['Project Address'] || ''}
+                    onChange={(e) => handleEditChange('Project Address', e.target.value)}
+                    style={{
+                      width: '100%',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      padding: '6px 10px',
+                      border: '1px solid #D1D5DB',
+                      borderRadius: '6px',
+                      outline: 'none'
+                    }}
+                    placeholder="Project Address"
+                  />
+                ) : (
+                  <p style={{ fontSize: '14px', color: '#1E293B', fontWeight: '500' }}>
+                    {project['Project Address'] || 'No address'}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -355,11 +417,29 @@ export default function ProjectDetails() {
               }}>
                 <Building size={20} style={{ color: '#059669' }} />
               </div>
-              <div>
+              <div style={{ flex: 1 }}>
                 <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '2px' }}>Type</p>
-                <p style={{ fontSize: '14px', color: '#1E293B', fontWeight: '500' }}>
-                  {project['Project Type'] || 'N/A'}
-                </p>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={editedProject?.['Project Type'] || ''}
+                    onChange={(e) => handleEditChange('Project Type', e.target.value)}
+                    style={{
+                      width: '100%',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      padding: '6px 10px',
+                      border: '1px solid #D1D5DB',
+                      borderRadius: '6px',
+                      outline: 'none'
+                    }}
+                    placeholder="Project Type"
+                  />
+                ) : (
+                  <p style={{ fontSize: '14px', color: '#1E293B', fontWeight: '500' }}>
+                    {project['Project Type'] || 'N/A'}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -375,11 +455,28 @@ export default function ProjectDetails() {
               }}>
                 <Calendar size={20} style={{ color: '#D97706' }} />
               </div>
-              <div>
+              <div style={{ flex: 1 }}>
                 <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '2px' }}>Start Date</p>
-                <p style={{ fontSize: '14px', color: '#1E293B', fontWeight: '500' }}>
-                  {formatDate(project['Start Date'])}
-                </p>
+                {isEditing ? (
+                  <input
+                    type="date"
+                    value={editedProject?.['Start Date'] || ''}
+                    onChange={(e) => handleEditChange('Start Date', e.target.value)}
+                    style={{
+                      width: '100%',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      padding: '6px 10px',
+                      border: '1px solid #D1D5DB',
+                      borderRadius: '6px',
+                      outline: 'none'
+                    }}
+                  />
+                ) : (
+                  <p style={{ fontSize: '14px', color: '#1E293B', fontWeight: '500' }}>
+                    {formatDate(project['Start Date'])}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -455,15 +552,51 @@ export default function ProjectDetails() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
                 <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '4px' }}>Project Cost</p>
-                <p style={{ fontSize: '20px', color: '#1E293B', fontWeight: '600' }}>
-                  {formatCurrency(project['Project Cost (Materials + Labor)'])}
-                </p>
+                {isEditing ? (
+                  <input
+                    type="number"
+                    value={editedProject?.['Project Cost (Materials + Labor)'] || ''}
+                    onChange={(e) => handleEditChange('Project Cost (Materials + Labor)', parseFloat(e.target.value) || 0)}
+                    style={{
+                      width: '100%',
+                      fontSize: '20px',
+                      fontWeight: '600',
+                      padding: '8px',
+                      border: '1px solid #D1D5DB',
+                      borderRadius: '6px',
+                      outline: 'none'
+                    }}
+                    placeholder="0"
+                  />
+                ) : (
+                  <p style={{ fontSize: '20px', color: '#1E293B', fontWeight: '600' }}>
+                    {formatCurrency(project['Project Cost (Materials + Labor)'])}
+                  </p>
+                )}
               </div>
               <div>
                 <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '4px' }}>HR PC Service Fee</p>
-                <p style={{ fontSize: '18px', color: '#1E293B', fontWeight: '500' }}>
-                  {formatCurrency(project['HR PC Service Fee'])}
-                </p>
+                {isEditing ? (
+                  <input
+                    type="number"
+                    value={editedProject?.['HR PC Service Fee'] || ''}
+                    onChange={(e) => handleEditChange('HR PC Service Fee', parseFloat(e.target.value) || 0)}
+                    style={{
+                      width: '100%',
+                      fontSize: '18px',
+                      fontWeight: '500',
+                      padding: '8px',
+                      border: '1px solid #D1D5DB',
+                      borderRadius: '6px',
+                      outline: 'none'
+                    }}
+                    placeholder="0"
+                  />
+                ) : (
+                  <p style={{ fontSize: '18px', color: '#1E293B', fontWeight: '500' }}>
+                    {formatCurrency(project['HR PC Service Fee'])}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -491,27 +624,95 @@ export default function ProjectDetails() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
                 <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '4px' }}>City</p>
-                <p style={{ fontSize: '14px', color: '#1E293B', fontWeight: '500' }}>
-                  {project.City || 'N/A'}
-                </p>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={editedProject?.City || ''}
+                    onChange={(e) => handleEditChange('City', e.target.value)}
+                    style={{
+                      width: '100%',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      padding: '6px 10px',
+                      border: '1px solid #D1D5DB',
+                      borderRadius: '6px',
+                      outline: 'none'
+                    }}
+                  />
+                ) : (
+                  <p style={{ fontSize: '14px', color: '#1E293B', fontWeight: '500' }}>
+                    {project.City || 'N/A'}
+                  </p>
+                )}
               </div>
               <div>
                 <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '4px' }}>County</p>
-                <p style={{ fontSize: '14px', color: '#1E293B', fontWeight: '500' }}>
-                  {project.County || 'N/A'}
-                </p>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={editedProject?.County || ''}
+                    onChange={(e) => handleEditChange('County', e.target.value)}
+                    style={{
+                      width: '100%',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      padding: '6px 10px',
+                      border: '1px solid #D1D5DB',
+                      borderRadius: '6px',
+                      outline: 'none'
+                    }}
+                  />
+                ) : (
+                  <p style={{ fontSize: '14px', color: '#1E293B', fontWeight: '500' }}>
+                    {project.County || 'N/A'}
+                  </p>
+                )}
               </div>
               <div>
                 <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '4px' }}>Jurisdiction ID</p>
-                <p style={{ fontSize: '14px', color: '#1E293B', fontWeight: '500' }}>
-                  {project.Jurisdiction || 'N/A'}
-                </p>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={editedProject?.Jurisdiction || ''}
+                    onChange={(e) => handleEditChange('Jurisdiction', e.target.value)}
+                    style={{
+                      width: '100%',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      padding: '6px 10px',
+                      border: '1px solid #D1D5DB',
+                      borderRadius: '6px',
+                      outline: 'none'
+                    }}
+                  />
+                ) : (
+                  <p style={{ fontSize: '14px', color: '#1E293B', fontWeight: '500' }}>
+                    {project.Jurisdiction || 'N/A'}
+                  </p>
+                )}
               </div>
               <div>
                 <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '4px' }}>Primary Inspector ID</p>
-                <p style={{ fontSize: '14px', color: '#1E293B', fontWeight: '500' }}>
-                  {project['Primary Inspector'] || 'N/A'}
-                </p>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={editedProject?.['Primary Inspector'] || ''}
+                    onChange={(e) => handleEditChange('Primary Inspector', e.target.value)}
+                    style={{
+                      width: '100%',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      padding: '6px 10px',
+                      border: '1px solid #D1D5DB',
+                      borderRadius: '6px',
+                      outline: 'none'
+                    }}
+                  />
+                ) : (
+                  <p style={{ fontSize: '14px', color: '#1E293B', fontWeight: '500' }}>
+                    {project['Primary Inspector'] || 'N/A'}
+                  </p>
+                )}
               </div>
             </div>
           </div>

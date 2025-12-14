@@ -280,18 +280,61 @@ export default function ClientDetails() {
               justifyContent: 'space-between'
             }}>
               <div style={{ flex: 1 }}>
-                <h1 style={{
-                  fontSize: '28px',
-                  fontWeight: '600',
-                  color: '#1E293B',
-                  marginBottom: '8px'
-                }}>{clientName}</h1>
-                {companyName && (
-                  <p style={{
-                    fontSize: '16px',
-                    color: '#64748B',
-                    marginBottom: '4px'
-                  }}>{companyName}</p>
+                {isEditing ? (
+                  <>
+                    <input
+                      type="text"
+                      value={editedClient?.['Full Name'] || editedClient?.['Client Name'] || ''}
+                      onChange={(e) => {
+                        handleEditChange('Full Name', e.target.value);
+                        handleEditChange('Client Name', e.target.value);
+                      }}
+                      style={{
+                        fontSize: '28px',
+                        fontWeight: '600',
+                        color: '#1E293B',
+                        marginBottom: '8px',
+                        width: '100%',
+                        padding: '8px',
+                        border: '2px solid #2563EB',
+                        borderRadius: '8px',
+                        outline: 'none'
+                      }}
+                      placeholder="Client Name"
+                    />
+                    <input
+                      type="text"
+                      value={editedClient?.['Company Name'] || ''}
+                      onChange={(e) => handleEditChange('Company Name', e.target.value)}
+                      style={{
+                        fontSize: '16px',
+                        color: '#64748B',
+                        marginBottom: '4px',
+                        width: '100%',
+                        padding: '6px',
+                        border: '1px solid #D1D5DB',
+                        borderRadius: '6px',
+                        outline: 'none'
+                      }}
+                      placeholder="Company Name (optional)"
+                    />
+                  </>
+                ) : (
+                  <>
+                    <h1 style={{
+                      fontSize: '28px',
+                      fontWeight: '600',
+                      color: '#1E293B',
+                      marginBottom: '8px'
+                    }}>{clientName}</h1>
+                    {companyName && (
+                      <p style={{
+                        fontSize: '16px',
+                        color: '#64748B',
+                        marginBottom: '4px'
+                      }}>{companyName}</p>
+                    )}
+                  </>
                 )}
                 <p style={{
                   fontSize: '13px',
@@ -415,31 +458,49 @@ export default function ClientDetails() {
                   )}
                 </div>
               </div>
-              {preferredContact && (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '12px'
-                }}>
-                  <FileText size={20} style={{ color: '#94A3B8', flexShrink: 0, marginTop: '2px' }} />
-                  <div>
-                    <p style={{
-                      fontSize: '12px',
-                      color: '#94A3B8',
-                      marginBottom: '4px'
-                    }}>Preferred Contact Method</p>
+              <div style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '12px'
+              }}>
+                <FileText size={20} style={{ color: '#94A3B8', flexShrink: 0, marginTop: '2px' }} />
+                <div style={{ flex: 1 }}>
+                  <p style={{
+                    fontSize: '12px',
+                    color: '#94A3B8',
+                    marginBottom: '4px'
+                  }}>Preferred Contact Method</p>
+                  {isEditing ? (
+                    <select
+                      value={editedClient?.['Preferred Contact Method'] || ''}
+                      onChange={(e) => handleEditChange('Preferred Contact Method', e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        border: '1px solid #D1D5DB',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        outline: 'none'
+                      }}
+                    >
+                      <option value="">Select method...</option>
+                      <option value="Email">Email</option>
+                      <option value="Phone">Phone</option>
+                      <option value="Text">Text</option>
+                    </select>
+                  ) : (
                     <p style={{
                       fontSize: '14px',
                       color: '#1E293B'
-                    }}>{preferredContact}</p>
-                  </div>
+                    }}>{preferredContact || 'Not set'}</p>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           </div>
 
           {/* Address Information */}
-          {(address || city || state || zip) && (
+          {(address || city || state || zip || isEditing) && (
             <div style={{
               backgroundColor: '#FFFFFF',
               borderRadius: '12px',
@@ -454,29 +515,92 @@ export default function ClientDetails() {
                 color: '#1E293B',
                 marginBottom: '20px'
               }}>Address</h2>
-              <div style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '12px'
-              }}>
-                <MapPin size={20} style={{ color: '#94A3B8', flexShrink: 0, marginTop: '2px' }} />
-                <div>
-                  {address && <p style={{
-                    fontSize: '14px',
-                    color: '#1E293B',
-                    marginBottom: '4px'
-                  }}>{address}</p>}
-                  {(city || state || zip) && (
-                    <p style={{
+              {isEditing ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <input
+                    type="text"
+                    value={editedClient?.Address || ''}
+                    onChange={(e) => handleEditChange('Address', e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      border: '1px solid #D1D5DB',
+                      borderRadius: '8px',
                       fontSize: '14px',
-                      color: '#475569'
-                    }}>
-                      {city}{city && (state || zip) && ', '}
-                      {state} {zip}
-                    </p>
-                  )}
+                      outline: 'none'
+                    }}
+                    placeholder="Street Address"
+                  />
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '12px' }}>
+                    <input
+                      type="text"
+                      value={editedClient?.City || ''}
+                      onChange={(e) => handleEditChange('City', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #D1D5DB',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        outline: 'none'
+                      }}
+                      placeholder="City"
+                    />
+                    <input
+                      type="text"
+                      value={editedClient?.State || ''}
+                      onChange={(e) => handleEditChange('State', e.target.value)}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #D1D5DB',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        outline: 'none'
+                      }}
+                      placeholder="State"
+                    />
+                    <input
+                      type="text"
+                      value={editedClient?.ZIP || editedClient?.['Zip Code'] || ''}
+                      onChange={(e) => {
+                        handleEditChange('ZIP', e.target.value);
+                        handleEditChange('Zip Code', e.target.value);
+                      }}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #D1D5DB',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        outline: 'none'
+                      }}
+                      placeholder="ZIP"
+                    />
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '12px'
+                }}>
+                  <MapPin size={20} style={{ color: '#94A3B8', flexShrink: 0, marginTop: '2px' }} />
+                  <div>
+                    {address && <p style={{
+                      fontSize: '14px',
+                      color: '#1E293B',
+                      marginBottom: '4px'
+                    }}>{address}</p>}
+                    {(city || state || zip) && (
+                      <p style={{
+                        fontSize: '14px',
+                        color: '#475569'
+                      }}>
+                        {city}{city && (state || zip) && ', '}
+                        {state} {zip}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

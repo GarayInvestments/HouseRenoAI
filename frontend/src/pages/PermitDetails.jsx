@@ -319,14 +319,37 @@ export default function PermitDetails() {
             marginBottom: '16px'
           }}>
             <div>
-              <h1 style={{
-                fontSize: '32px',
-                fontWeight: '600',
-                color: '#1E293B',
-                marginBottom: '8px'
-              }}>
-                Permit {permitNumber || 'Unknown'}
-              </h1>
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={editedPermit?.['Permit Number'] || editedPermit?.permit_number || ''}
+                  onChange={(e) => {
+                    handleEditChange('Permit Number', e.target.value);
+                    handleEditChange('permit_number', e.target.value);
+                  }}
+                  style={{
+                    fontSize: '32px',
+                    fontWeight: '600',
+                    color: '#1E293B',
+                    marginBottom: '8px',
+                    width: '100%',
+                    padding: '8px',
+                    border: '2px solid #2563EB',
+                    borderRadius: '8px',
+                    outline: 'none'
+                  }}
+                  placeholder="Permit Number"
+                />
+              ) : (
+                <h1 style={{
+                  fontSize: '32px',
+                  fontWeight: '600',
+                  color: '#1E293B',
+                  marginBottom: '8px'
+                }}>
+                  Permit {permitNumber || 'Unknown'}
+                </h1>
+              )}
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -339,22 +362,47 @@ export default function PermitDetails() {
                 Permit ID: {permitId || business_id || 'N/A'}
               </div>
             </div>
-            <span style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '8px 16px',
-              borderRadius: '8px',
-              backgroundColor: statusStyle.bg,
-              color: statusStyle.text,
-              fontSize: '14px',
-              fontWeight: '500',
-              border: `1px solid ${statusStyle.border}`,
-              textTransform: 'capitalize'
-            }}>
-              {getStatusIcon(permitStatus)}
-              {permitStatus || 'N/A'}
-            </span>
+            {isEditing ? (
+              <select
+                value={editedPermit?.['Permit Status'] || editedPermit?.status || ''}
+                onChange={(e) => {
+                  handleEditChange('Permit Status', e.target.value);
+                  handleEditChange('status', e.target.value);
+                }}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  border: '2px solid #2563EB',
+                  outline: 'none'
+                }}
+              >
+                <option value="Pending">Pending</option>
+                <option value="Submitted">Submitted</option>
+                <option value="In Review">In Review</option>
+                <option value="Approved">Approved</option>
+                <option value="Rejected">Rejected</option>
+                <option value="Expired">Expired</option>
+              </select>
+            ) : (
+              <span style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 16px',
+                borderRadius: '8px',
+                backgroundColor: statusStyle.bg,
+                color: statusStyle.text,
+                fontSize: '14px',
+                fontWeight: '500',
+                border: `1px solid ${statusStyle.border}`,
+                textTransform: 'capitalize'
+              }}>
+                {getStatusIcon(permitStatus)}
+                {permitStatus || 'N/A'}
+              </span>
+            )}
           </div>
 
           <div style={{
