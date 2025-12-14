@@ -179,7 +179,24 @@ When working with documentation, Copilot must:
 
 ---
 
-## 8. Quick Navigation
+## 8. Canonical Documents
+
+**If you are looking for:**
+
+- **Current priorities** → `roadmap/PROJECT_ROADMAP.md`
+- **Active work & blockers** → `operations/IMPLEMENTATION_TRACKER.md`
+- **System design** → `architecture/`
+- **Business rules** → `business/`
+- **Debugging rationale** → `audits/`
+- **How-to guides** → `guides/`
+- **Setup instructions** → `setup/`
+- **Deployment procedures** → `deployment/`
+- **Technical specs** → `technical/`
+- **Completed work** → `history/`
+
+---
+
+## 9. Quick Navigation
 
 ### 🎯 I need to...
 
@@ -226,27 +243,23 @@ When working with documentation, Copilot must:
 
 ---
 
-## 9. Current Triage Status
+## 10. Current Triage Status
 
 **Date**: December 13, 2025  
-**Status**: 🚧 In Progress
-
-See `_triage/TRIAGE_ANALYSIS.md` for complete classification plan.
+**Status**: ✅ Complete
 
 **Actions Completed**:
 - ✅ Created canonical folder structure
 - ✅ Created governance policy (this document)
 - ✅ Analyzed existing docs for classification
-
-**Actions Pending**:
-- ⏳ Move docs to canonical locations
-- ⏳ Consolidate duplicate auth docs
-- ⏳ Archive historical docs
-- ⏳ Verify _triage/ is empty
+- ✅ Moved docs to canonical locations
+- ✅ Consolidated duplicate auth docs
+- ✅ Archived historical docs
+- ✅ Verified _triage/ is empty
 
 ---
 
-## 10. Backup & Recovery
+## 11. Backup & Recovery
 
 **Navigation Backup**: The original navigation README is preserved at `_triage/README_NAVIGATION_BACKUP.md` and will be archived after triage completion.
 
