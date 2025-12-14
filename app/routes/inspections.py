@@ -14,7 +14,8 @@ from pydantic import BaseModel, Field
 import logging
 
 from app.db.session import get_db
-from app.routes.auth import get_current_user
+from app.db.models import User
+from app.routes.auth_supabase import get_current_user
 from app.services.inspection_service import InspectionService
 
 logger = logging.getLogger(__name__)
@@ -100,7 +101,7 @@ class DeficiencyCreate(BaseModel):
 async def create_inspection(
     inspection_data: InspectionCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """
     Create a new inspection for a permit.
@@ -145,7 +146,7 @@ async def list_inspections(
     skip: int = 0,
     limit: int = 100,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """
     List inspections with optional filtering.
@@ -179,7 +180,7 @@ async def list_inspections(
 async def get_inspection_by_business_id(
     business_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """
     Get an inspection by business ID (e.g., INS-00001).
@@ -209,7 +210,7 @@ async def get_inspection_by_business_id(
 async def get_inspection(
     inspection_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """
     Get an inspection by UUID.
@@ -241,7 +242,7 @@ async def update_inspection(
     inspection_id: UUID,
     update_data: InspectionUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """
     Update an inspection.
@@ -281,7 +282,7 @@ async def add_inspection_photo(
     inspection_id: UUID,
     photo: PhotoUpload,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """
     Add a photo to an inspection.
@@ -325,7 +326,7 @@ async def add_deficiency(
     inspection_id: UUID,
     deficiency: DeficiencyCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """
     Add a deficiency to an inspection.
@@ -367,7 +368,7 @@ async def add_deficiency(
 async def cancel_inspection(
     inspection_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """
     Cancel an inspection (soft delete - sets status to 'Cancelled').
@@ -396,3 +397,4 @@ async def cancel_inspection(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to cancel inspection: {str(e)}"
         )
+

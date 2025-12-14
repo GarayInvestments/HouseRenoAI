@@ -7,6 +7,13 @@ const API_VERSION = 'v1';
 class ApiService {
   constructor() {
     this.baseUrl = `${API_URL}/${API_VERSION}`;
+    // Auth-critical routes that should trigger logout on 401 after refresh fails
+    this.authCriticalRoutes = [
+      '/chat',
+      '/chat/sessions',
+      '/auth',
+      '/auth/supabase',
+    ];
   }
 
   async getAuthToken() {
@@ -20,11 +27,21 @@ class ApiService {
     return session.access_token
   }
 
-  async request(endpoint, options = {}) {
+  isAuthCriticalRoute(endpoint) {
+    return this.authCriticalRoutes.some(route => endpoint.startsWith(route));
+  }
+
+  async request(endpoint, options = {}, hasRetried = false) {
     const url = `${this.baseUrl}${endpoint}`;
     
     // Get token from Supabase session (not localStorage)
     const token = await this.getAuthToken();
+    
+    if (!token) {
+      console.warn(`[API] No auth token for request to ${endpoint}`);
+    } else {
+      console.log(`[API] Request to ${endpoint} with token`);
+    }
     
     const config = {
       headers: {
@@ -38,13 +55,52 @@ class ApiService {
     try {
       const response = await fetch(url, config);
       
-      // Handle 401 Unauthorized - session expired or invalid
-      if (response.status === 401) {
-        // Clear any local storage
-        localStorage.removeItem('user');
-        // Redirect to login (auth store will handle session cleanup)
-        window.location.href = '/';
-        throw new Error('Session expired. Please login again.');
+      console.log(`[API] Response from ${endpoint}: ${response.status}`);
+      
+      // Handle 401 Unauthorized - try to refresh session first (but only once per request)
+      if (response.status === 401 && !hasRetried) {
+        console.warn('[API] 401 Unauthorized - attempting token refresh');
+        
+        // Try to refresh the session
+        const { data: { session }, error } = await supabase.auth.refreshSession();
+        
+        if (error || !session) {
+          // Refresh failed - session is truly expired
+          console.error('[API] Token refresh failed');
+          
+          // Only auto-logout for auth-critical routes
+          if (this.isAuthCriticalRoute(endpoint)) {
+            console.error('[API] Auth-critical route - redirecting to login');
+            await supabase.auth.signOut();
+            localStorage.removeItem('user');
+            window.location.href = '/';
+            throw new Error('Session expired. Please login again.');
+          } else {
+            // Non-critical route - let the UI handle it
+            console.warn('[API] Non-critical route - throwing error for UI to handle');
+            throw new Error('Unauthorized. Please check your permissions.');
+          }
+        }
+        
+        // Refresh succeeded - retry the request with new token (only once)
+        console.log('[API] Token refreshed successfully - retrying request');
+        return this.request(endpoint, options, true); // hasRetried = true
+      }
+      
+      // If we already retried and still got 401, don't try again
+      if (response.status === 401 && hasRetried) {
+        console.error('[API] 401 after refresh - authorization issue');
+        
+        // Only auto-logout for auth-critical routes
+        if (this.isAuthCriticalRoute(endpoint)) {
+          await supabase.auth.signOut();
+          localStorage.removeItem('user');
+          window.location.href = '/';
+          throw new Error('Session expired. Please login again.');
+        } else {
+          // Let UI handle authorization errors
+          throw new Error('Unauthorized. Please check your permissions.');
+        }
       }
       
       if (!response.ok) {
@@ -446,10 +502,17 @@ class ApiService {
   async uploadDocument(formData) {
     const url = `${this.baseUrl}/documents/extract`;
     
+    // Get auth token from Supabase session
+    const token = await this.getAuthToken();
+    
     try {
       const response = await fetch(url, {
         method: 'POST',
-        body: formData, // Don't set Content-Type header - browser will set it with boundary
+        headers: {
+          // Add Authorization header, but NOT Content-Type (browser sets multipart boundary)
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
+        body: formData,
       });
       
       if (!response.ok) {

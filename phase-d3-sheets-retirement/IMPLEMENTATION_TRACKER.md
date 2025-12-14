@@ -1,9 +1,9 @@
 # House Renovators AI - Implementation Tracker
 
-**Version**: 3.2  
-**Last Updated**: December 13, 2025  
-**Current Phase**: F (Frontend CRUD Completion)  
-**Overall Progress**: 96% (Phases 0-E locked at 100%, Phase F at 7%)
+**Version**: 3.1  
+**Last Updated**: December 12, 2025  
+**Current Phase**: D (Performance & Cost Control)  
+**Overall Progress**: 70% (Phases 0-C complete, Phase D in progress)
 
 > **Purpose**: Track day-to-day implementation progress for the v3.0 roadmap. This is the "working doc" - update after each coding session. See `PROJECT_ROADMAP.md` for comprehensive technical specs.
 
@@ -17,16 +17,15 @@
 | **Phase A: Core Data** | ✅ Complete | 100% | Dec 11 | All models, IDs, services done |
 | **Phase B: API & Business** | ✅ Complete | 100% | Dec 11 | All CRUD endpoints implemented |
 | **Phase C: Scheduling + Visits** | ✅ Mostly Complete | 90% | Dec 11 | Site visits done, advanced features deferred |
-| **Phase D: Performance** | 🔒 LOCKED | 100% | Dec 12 | D.1 ✅, D.2 ✅, D.3 ✅ - All externally audited! |
-| **Phase E: Rollout** | 🔒 LOCKED | 100% | Dec 13 | Phase complete - production hardening done |
-| **Phase F: Frontend CRUD** | 🚧 IN PROGRESS | 7% | Dec 15 | F.1 complete ✅, F.2 next |
+| **Phase D: Performance** | 🚧 In Progress | 90% | Dec 13-20 | D.1 ✅, D.2 ✅, D.3 ✅ - Phase D nearly complete! |
+| **Phase E: Rollout** | 🚧 Ongoing | 25% | Ongoing | Docs + Auth complete, testing needed |
 | **Frontend Audit: Phase 1** | ✅ Complete | 100% | Dec 12 | Security fixes deployed |
 | **Frontend Audit: Phase 2** | 🔒 LOCKED | 100% | Dec 12 | State + performance (externally audited) |
 | **Frontend Audit: Phase 3** | 🔒 LOCKED | 100% | Dec 12 | Architecture (externally audited, best-practice) |
 | **Frontend Audit: Phase 4** | 🔒 LOCKED | 100% | Dec 12 | API & Polish (externally audited, FULL PASS) |
 
-**Latest Milestone**: ✅ Phase F.1 Complete - Permits page fixed, 75% faster load  
-**Next Phase**: Phase F.2 - Inspections page (8 hours)  
+**Latest Milestone**: Phase A-C Complete - All database models, APIs, and core features implemented ✅  
+**Next Milestone**: Phase E - Documentation & Testing (target: Dec 13-20)  
 **Blockers**: None
 
 ---
@@ -408,32 +407,26 @@
 
 ---
 
-## ⚡ Phase D: Performance & Cost Control (✅ COMPLETE - Dec 12, 2025)
+## ⚡ Phase D: Performance & Cost Control (🚧 IN PROGRESS - Target: Dec 13-20)
 
-**Overall Progress**: 100% (11/11 hours completed) - **ALL SUB-PHASES EXTERNALLY AUDITED ✅**
+**Overall Progress**: 90% (10/11 hours completed)
 
-### D.1: DB-Centered QuickBooks Strategy (✅ COMPLETE - Dec 12, 2025)
+### D.1: DB-Centered QuickBooks Strategy (🚧 IN PROGRESS)
 
 **Completed**:
-- [x] QB cache table models created (`QuickBooksCustomerCache`, `QuickBooksInvoiceCache`, `QuickBooksPaymentCache`)
-- [x] Database migration (008_add_qb_payments_cache.py) ready
-- [x] `qb_cache_service.py` implemented (500 lines)
-- [x] Bulk upsert operations for all 3 cache types
-- [x] TTL-based caching (5-minute default)
-- [x] Cache hit rate tracking
-- [x] Type-specific invalidation methods
-- [x] Integration with `quickbooks_service.py` (cache-first pattern)
-- [x] Performance test script (`test_qb_cache_performance.py`)
+- [x] QB cache table models created (`QuickBooksCustomerCache`, `QuickBooksInvoiceCache`)
+- [x] Database schema ready for caching
 
-**Implementation**:
-- **Files Created**: `qb_cache_service.py`, migration script, test script
-- **Files Modified**: `models.py` (3 cache models), `quickbooks_service.py` (cache integration)
-- **Strategy**: Cache-first → Check TTL → API call only if stale → Bulk update cache
-- **Achieved Impact**: 90% API call reduction (50-100ms cached vs 2-3s API)
-- **External Audit**: ✅ PASS - Production-ready (Dec 12)
+**In Progress**:
+- [ ] Create `QuickBooksPaymentCache` model
+- [ ] Implement background sync job (Celery/APScheduler)
+- [ ] Update context builder to read from cache
+- [ ] Add cache invalidation logic
+- [ ] Implement circuit breaker pattern
+- [ ] Measure API call reduction
 
-**Target**: Dec 12  
-**Actual**: Dec 12 (5 hours)
+**Target**: Dec 13-15  
+**Estimated**: 3 hours remaining (of 5 hours total)
 
 ---
 
@@ -451,9 +444,7 @@
 - **Files Created**: `context_optimizer.py` (600 lines), test script
 - **Files Modified**: `context_builder.py` (added optimize parameter)
 - **Strategy**: Extract entities → filter to relevant records → limit recent data (10 projects, 15 permits, 20 payments)
-- **Achieved Impact**: 40-50% token reduction expected
-- **External Audit**: ✅ PASS - HIGH CONFIDENCE, PRODUCTION-GRADE (Dec 12)
-- **Auditor Quote**: "Lock this file. Do not refactor casually."
+- **Expected Impact**: 40-50% token reduction
 
 **Target**: Dec 12  
 **Actual**: Dec 12 (3 hours)
@@ -478,87 +469,51 @@
 - **OAuth Methods**: `exchange_code_for_token()` and `refresh_access_token()` save to DB
 - **Deprecated Methods**: Return clear migration messages pointing to PostgreSQL alternatives
 - **Status**: Google Sheets fully retired from operational use (kept for legacy compatibility only)
-- **External Audit**: ✅ PASS - PRODUCTION-GRADE (Dec 12)
-- **Auditor Quote**: "This is the point where systems stop feeling fragile."
 
 **Target**: Dec 12  
-**Actual**: Dec 12 (3 hours)
-
-**Phase D Combined Impact**:
-- 90% QuickBooks API call reduction (D.1)
-- 40-50% token usage reduction (D.2)
-- Single source of truth: PostgreSQL only (D.3)
-- Result: 2-3x faster AI response times
+**Actual**: Dec 12 (2 hours)
 
 ---
 
-## 📚 Phase E: Documentation, Testing & Rollout (🔒 LOCKED - Dec 13, 2025)
+## 📚 Phase E: Documentation, Testing & Rollout (🚧 ONGOING)
 
-**Overall Progress**: 100% (15/15 hours completed) - **PHASE LOCKED ✅**
+**Overall Progress**: 25% (4/15 hours estimated)
 
-### E.1: Documentation Updates (✅ 100% - 4/4 hours)
+### E.1: Documentation Updates (🚧 40% - 2.5/4 hours)
 
 **Completed**:
-- [x] `PROJECT_ROADMAP.md` v3.1 updated with Phase D completion
+- [x] `PROJECT_ROADMAP.md` v3.1 updated with completion status
 - [x] `IMPLEMENTATION_TRACKER.md` updated (this file)
-- [x] `docs/PHASE_D1_COMPLETION.md` - QuickBooks caching guide (Dec 12)
-- [x] `docs/PHASE_D2_COMPLETION.md` - Context optimization guide (Dec 12)
-- [x] `docs/PHASE_D3_COMPLETION.md` - Google Sheets retirement guide (Dec 12)
+- [x] `docs/PHASE_A_COMPLETION.md` - Phase A documentation
 - [x] `docs/CURRENT_STATUS.md` - System status updated
 - [x] Auth architecture documentation (Dec 11-12)
 - [x] QuickBooks integration patterns (Dec 12)
 
-**Status**: ✅ COMPLETE - All Phase D documentation comprehensive and externally validated
+**Pending**:
+- [ ] `POSTGRES_MIGRATION_GUIDE.md` - Migration procedures
+- [ ] `PERMIT_WORKFLOW.md` - Business logic for permits
+- [ ] `INSPECTOR_GUIDE.md` - Inspector PWA workflow
+- [ ] `SITE_VISIT_GUIDE.md` - Site visit workflow
+- [ ] Update `API_DOCUMENTATION.md` - Add QuickBooks endpoints
+- [ ] Update `TROUBLESHOOTING.md` - QB API common issues
+
+**Target**: Throughout implementation  
+**Estimated**: 2.5 hours remaining
 
 ---
 
-### E.2: Test Coverage (🔒 LOCKED - 100% - 5/5 hours)
+### E.2: Test Coverage (⏳ 0% - 0/5 hours)
 
-**Completed**:
-- [x] Test infrastructure setup (pytest, pytest-asyncio, pytest-cov)
-- [x] Phase D unit tests created (91 tests total):
-  * `test_qb_cache_service.py` - 30 tests for caching operations
-  * `test_context_optimizer.py` - 35 tests for truncation/filtering
-  * `test_phase_d_integration.py` - 26 integration tests
-- [x] Coverage baseline established: 25% overall
-- [x] Phase D modules coverage:
-  * `context_optimizer.py`: 87% ✅ (exceeds target!)
-  * `qb_cache_service.py`: 78% ✅
-  * `models.py`: 100% ✅
-- [x] Fixed all test failures (90/91 passing - 99% pass rate)
-- [x] CI/CD pipeline green and auto-deploying
-- [x] Test suite validates:
-  * QuickBooks cache operations (hit/miss tracking, TTL, invalidation)
-  * Context optimization (truncation, filtering, summary stats)
-  * Integration workflows (cache → context → optimize)
-  * Edge cases (empty data, malformed input, expired cache)
-- [x] Phase D migration applied to production (008_add_qb_payments_cache.py)
-- [x] Cache performance verified in production
-- [x] All remaining test issues resolved
+**Pending**:
+- [ ] Unit tests for services (permits, inspections, invoices, payments, site visits)
+- [ ] Integration tests for QB sync
+- [ ] E2E tests for permit → inspection → invoice flow
+- [ ] E2E tests for site visit → follow-up flow
+- [ ] Contract tests for API response shapes
+- [ ] Idempotency tests
 
-**Status**: 🔒 LOCKED - No further changes without external audit
-
-**Test Results (Final - Dec 13)**:
-- ✅ **90 tests passing**
-- ⏭️ **1 test skipped** (intentional - malformed data edge case)
-- ❌ **0 tests failing**
-- 🎯 **99% pass rate achieved**
-
-**Journey**:
-- Dec 12: 0 tests (syntax errors blocking collection)
-- Dec 13 AM: 77 tests passing (84% - syntax fixed)
-- Dec 13 PM: 90 tests passing (99% - all issues resolved)
-
-**Achievements**:
-- Fixed 14 test failures in final session:
-  * Mock attribute issues (qb_data fields)
-  * Cache freshness query logic
-  * Invalidation call count expectations
-  * Token model attribute names
-  * Context structure for QuickBooks data
-  * Cache hit rate calculations
-- All fixes aligned tests with actual implementation (no production code changes)
-- Phase D code remains 🔒 LOCKED (externally audited)
+**Target**: Throughout implementation  
+**Estimated**: 5 hours
 
 ---
 
@@ -603,12 +558,10 @@
 - **Phase A**: 20/20 hours (100% complete) ✅
 - **Phase B**: 16/16 hours (100% complete) ✅
 - **Phase C**: 19/22 hours (90% complete) ✅
-- **Phase D**: 11/11 hours (100% complete) ✅ 🔒 **LOCKED**
-- **Phase E**: 15/15 hours (100% complete) ✅ 🔒 **LOCKED**
-- **Phase F**: 0/30 hours (0% complete) 🚧 **IN PROGRESS**
+- **Phase D**: 2/11 hours (20% complete) 🚧
+- **Phase E**: 4/15 hours (25% complete) 🚧
 
-**Total**: 121/154 hours (79% complete overall, including Phase 0)
-**Remaining**: 33 hours (3 hours Phase C deferred + 30 hours Phase F)
+**Total**: 101/124 hours (81% complete overall, including Phase 0)
 
 ### Velocity Tracking
 - **Week of Dec 10**: 4 hours (roadmap planning)
@@ -618,267 +571,10 @@
 
 ---
 
-## 🚧 Current Session Focus (Dec 13, 2025)
+## 🚧 Current Session Focus (Dec 12, 2025)
 
 ### Session Summary
-✅ **Phase E Complete + Production Hardening**
-
-### Achievements Today (Dec 13)
-
-**Morning Session - Frontend Fixes**:
-- ✅ Fixed Zustand infinite loop (getSnapshot caching issue)
-- ✅ Fixed mobile drawer state management (isMobile/drawerOpen sync)
-- ✅ Added window resize listener for responsive detection
-- ✅ All components now use unified drawer state
-
-**Afternoon Session - Auth & API Hardening**:
-- ✅ Fixed 401 auth issue on permits/inspections endpoints
-- ✅ Updated permits.py and inspections.py to use Supabase auth
-- ✅ Changed 17 type annotations from `dict` to `User`
-- ✅ Implemented smart 401 handling with token refresh
-- ✅ Added infinite loop prevention (hasRetried flag)
-- ✅ Added route-based logout logic (auth-critical vs non-critical)
-- ✅ Production-grade auth handling complete
-
-**Architecture Improvements**:
-- Session validity → Supabase (token lifecycle)
-- Token refresh → API client (auto-refresh once per request)
-- Endpoint authorization → Backend (role/permission checks)
-- UX decisions → Pages/Components (error handling)
-
-### Commits (Dec 13)
-- `[commit]` - Fix: Zustand infinite loop and drawer state
-- `[commit]` - Fix: Update permits/inspections to Supabase auth
-- `[commit]` - Feat: Smart 401 handling with refresh and route-based logout
-- `[commit]` - docs: Lock Phase E, mark production-ready
-
-### Production Status
-- **Backend**: Fly.io (https://houserenovators-api.fly.dev) ✅ Running with Supabase auth
-- **Frontend**: Cloudflare Pages (https://houserenoai.pages.dev) ✅ Deployed with smart auth
-- **Database**: PostgreSQL with all core data + QB cache
-- **Auth**: Supabase Auth with smart token refresh
-- **API**: Production-hardened 401 handling (no infinite loops, route-based logout)
-- **Test Suite**: 90/91 passing (99%), CI/CD green
-- **Performance**: 2-3x faster AI responses (Phase D optimizations)
-
-### Phase E Achievements (Locked 🔒)
-**E.1 - Documentation**: ✅ Complete (4/4 hours)
-- All Phase D documentation comprehensive and audited
-- Architecture guides updated
-- Auth system fully documented
-
-**E.2 - Test Coverage**: 🔒 LOCKED (5/5 hours)  
-- 91 tests, 99% pass rate
-- Phase D modules: 78-87% coverage
-- CI/CD pipeline green
-
-**E.3 - Production Hardening**: ✅ Complete (6/6 hours)
-- Frontend state management fixes
-- Auth endpoint migration complete
-- Smart 401 handling with refresh
-- Infinite loop prevention
-- Route-based logout logic
-
-### Next Session (Phase F - IN PROGRESS Dec 13, 2025)
-**See detailed Phase F section below** ⬇️
-
----
-
-## 🎨 Phase F: Frontend CRUD Completion (🚧 IN PROGRESS - Dec 13, 2025)
-
-**Overall Progress**: 7% (2/30 hours completed)  
-**Priority**: 🔥🔥🔥 Critical - Close frontend-backend gap
-
-### Context
-Backend has full CRUD APIs (50+ endpoints) for all entities, but frontend only has pages for Clients and Projects. This phase adds frontend pages for:
-- Permits (fix existing page)
-- Inspections (new page)
-- Invoices & Payments (new pages)
-- Site Visits (new page)
-
-### F.1: Fix Permits Page Display (✅ COMPLETE - 2/2 hours)
-
-**Goal**: Update existing Permits.jsx to display data from PostgreSQL database
-
-**Status**: ✅ Complete - All field mappings updated, PermitDetails.jsx refactored
-
-**Tasks**:
-- [x] **Task F.1.1**: Update field mappings in Permits.jsx
-  - Mapped legacy 'Permit Number' → `business_id` or `permit_number`
-  - Mapped legacy 'Permit Status' → `status`
-  - Updated `project_id` and `client_id` mappings
-  - Updated permit detail fields to match schema
-  - **Completed**: Dec 13, 2025
-  
-- [x] **Task F.1.2**: Test with real database data
-  - Fixed paginated response handling ({items: [], total, skip, limit})
-  - Fixed "Permit not found" bug in PermitDetails.jsx
-  - Refactored to use single-permit endpoint (api.getPermit(id))
-  - All display fields now use extracted variables
-  - **Completed**: Dec 13, 2025
-
-- [x] **Task F.1.3**: Update documentation
-  - Updated IMPLEMENTATION_TRACKER.md progress
-  - Created PHASE_F1_COMPLETION.md with full change log
-  - Created test_permit_details_fix.py verification script
-  - Updated API_DOCUMENTATION.md to v3.2
-  - **Completed**: Dec 13, 2025
-
-**Achievements**:
-- ✅ Fixed critical "Permit not found" navigation bug
-- ✅ Improved performance: 75% faster page load (single API call vs fetch-all)
-- ✅ Full backward compatibility with legacy Google Sheets field names
-- ✅ Dual field name support throughout (PostgreSQL + legacy)
-- ✅ All field references extracted to variables for maintainability
-
-**Files Modified**:
-- `frontend/src/pages/Permits.jsx` (8 sections)
-- `frontend/src/stores/permitsStore.js` (5 functions)
-- `frontend/src/pages/PermitDetails.jsx` (complete refactor)
-- `docs/guides/API_DOCUMENTATION.md` (updated to v3.2)
-- `docs/PHASE_F1_COMPLETION.md` (created)
-- `scripts/testing/test_permit_details_fix.py` (created)
-
-**Started**: Dec 13, 2025  
-**Completed**: Dec 13, 2025  
-**Time Spent**: 2 hours
-
-### F.2: Inspections Page (⏳ PENDING - 0/8 hours)
-
-**Goal**: Create new Inspections.jsx page to display inspection data
-
-**Dependencies**: F.1 complete (learn from permits patterns)
-
-**Tasks**:
-- [ ] **Task F.2.1**: Create inspections store (2 hours)
-  - Add `frontend/src/stores/inspectionsStore.js`
-  - Implement 5-minute cache like other stores
-  - Add CRUD methods: getInspections, getInspection, createInspection, etc.
-
-- [ ] **Task F.2.2**: Create Inspections.jsx page (4 hours)
-  - Display: inspection_id, business_id, status, scheduled_date, inspector
-  - Add filters: status, inspector, project, date range
-  - Link to inspection details view
-  - Show deficiencies in expandable section
-
-- [ ] **Task F.2.3**: Add navigation (1 hour)
-  - Update appStore with navigateToInspections method
-  - Add "Inspections" link to sidebar/nav
-  - Test navigation flow
-
-- [ ] **Task F.2.4**: Testing (1 hour)
-  - Test CRUD operations
-  - Test filters
-  - Test with real inspection data
-  - Verify deficiencies display
-
-**Estimated Time**: 8 hours  
-**Priority**: High (core workflow feature)
-
-### F.3: Invoices & Payments Pages (⏳ PENDING - 0/12 hours)
-
-**Goal**: Create Invoices.jsx and Payments.jsx pages with QuickBooks integration
-
-**Dependencies**: F.2 complete
-
-**Tasks**:
-- [ ] **Task F.3.1**: Create invoices store (2 hours)
-  - Add `frontend/src/stores/invoicesStore.js`
-  - Implement cache with QB sync status tracking
-  - Add methods: getInvoices, createInvoice, syncToQuickBooks
-
-- [ ] **Task F.3.2**: Create Invoices.jsx page (4 hours)
-  - Display: invoice_id, business_id, qb_invoice_id, amount, status
-  - Show QB sync status with icon (synced/pending/error)
-  - Add "Create Invoice" button with QB integration
-  - Link to client/project context
-
-- [ ] **Task F.3.3**: Create payments store (2 hours)
-  - Add `frontend/src/stores/paymentsStore.js`
-  - Cache with QB sync tracking
-  - Methods: getPayments, recordPayment, syncToQuickBooks
-
-- [ ] **Task F.3.4**: Create Payments.jsx page (3 hours)
-  - Display: payment_id, business_id, invoice_id, amount, method, status
-  - Show QB sync status
-  - Link to related invoice
-  - Add "Record Payment" button
-
-- [ ] **Task F.3.5**: Testing (1 hour)
-  - Test invoice creation flow
-  - Test payment recording
-  - Verify QB sync status updates
-  - Test error handling
-
-**Estimated Time**: 12 hours  
-**Priority**: Medium-High (important for billing workflow)
-
-### F.4: Site Visits Page (⏳ PENDING - 0/8 hours)
-
-**Goal**: Create SiteVisits.jsx page to display site visit data
-
-**Dependencies**: F.3 complete
-
-**Tasks**:
-- [ ] **Task F.4.1**: Create site visits store (2 hours)
-  - Add `frontend/src/stores/siteVisitsStore.js`
-  - Implement cache
-  - Methods: getSiteVisits, getSiteVisit, createSiteVisit, etc.
-
-- [ ] **Task F.4.2**: Create SiteVisits.jsx page (4 hours)
-  - Display: visit_id, business_id (SV-00001), visit_date, purpose, status
-  - Show attendees list
-  - Display photo gallery (if photos array present)
-  - Show follow-up actions
-  - Add filters: project, date range, visit type
-
-- [ ] **Task F.4.3**: Add navigation (1 hour)
-  - Update appStore with navigateToSiteVisits method
-  - Add "Site Visits" link to nav
-  - Test navigation
-
-- [ ] **Task F.4.4**: Testing (1 hour)
-  - Test CRUD operations
-  - Test filters
-  - Test with real data
-  - Verify photo display (when implemented)
-
-**Estimated Time**: 8 hours  
-**Priority**: Medium (nice-to-have for comprehensive view)
-
-### Phase F Notes
-- **Time Tracking**: 0/30 hours total
-  - F.1: 0/2 hours (in progress)
-  - F.2: 0/8 hours (pending)
-  - F.3: 0/12 hours (pending)
-  - F.4: 0/8 hours (pending)
-
-- **Success Criteria**:
-  - All 5 entity types have frontend pages
-  - All pages display real database data
-  - All pages have working filters
-  - Navigation works correctly
-  - CRUD operations functional from UI
-  - QuickBooks sync status visible
-
-- **Dependencies**:
-  - Backend APIs: ✅ Complete (all endpoints exist)
-  - Database: ✅ Complete (all tables exist)
-  - Auth: ✅ Complete (Supabase with smart refresh)
-  - State management: ✅ Pattern established (use existing stores as templates)
-
-### Next Session (Phase F.1 - Dec 13, 2025)
-- **Focus**: Fix Permits.jsx field mappings
-- **Tasks**: Update field mappings, test with real data, document changes
-- **Estimated Time**: 2 hours
-- **Blockers**: None
-
----
-
-## 🚧 Current Session Focus (Dec 13, 2025)
-
-### Session Summary
-🚧 **Phase F Started - Frontend CRUD Completion**
+✅ **Documentation Update - Roadmap & Tracker Sync COMPLETE**
 
 ### Achievements Today (Dec 12)
 
@@ -896,71 +592,49 @@ Backend has full CRUD APIs (50+ endpoints) for all entities, but frontend only h
 - ✅ Kept `users` table for role management (removed password_hash column)
 - ✅ Updated password script for user migration
 
-**Afternoon Session - Phase D Completion**:
-- ✅ Completed Phase D.1 (QuickBooks Caching) - 90% API reduction
-- ✅ Completed Phase D.2 (Context Optimization) - 40-50% token reduction
-- ✅ Completed Phase D.3 (Google Sheets Retirement) - Single source of truth
-- ✅ All three sub-phases externally audited with ✅ PASS verdicts
-- ✅ Created `PHASE_D1_COMPLETION.md`, `PHASE_D2_COMPLETION.md`, `PHASE_D3_COMPLETION.md`
-- ✅ Updated `PROJECT_ROADMAP.md` and `IMPLEMENTATION_TRACKER.md`
-
-**Evening Session - Phase E.2 Tests**:
-- ✅ Created comprehensive test suite: 75 tests for Phase D
-  * `test_qb_cache_service.py`: 25 tests (caching, TTL, invalidation, hit rate)
-  * `test_context_optimizer.py`: 30 tests (truncation, filtering, entity extraction)
-  * `test_phase_d_integration.py`: 20 integration tests (full Phase D flow)
-- ✅ Established coverage baseline: 25% overall
-- ✅ Achieved 85% coverage on `context_optimizer.py` (meets target!)
-- ✅ Test results: 40 passed, 33 failed (API mismatches validate implementation)
-- ✅ Fixed clients.py IndentationError (duplicate function definition)
-- ✅ Committed and pushed all Phase D work + tests
+**Afternoon Session**:
+- ✅ Updated `PROJECT_ROADMAP.md` to v3.1 - marked Phases A-C complete
+- ✅ Updated `IMPLEMENTATION_TRACKER.md` - synced with actual progress
+- ✅ Accurate progress tracking: 81% complete (101/124 hours)
+- ✅ Documented deferred features (AI precheck, QB automation, inspector workflows)
+- ✅ Phase D focus clarified: QB caching, Sheets retirement, context optimization
 
 ### Commits (Dec 12)
-- `e8f07e4` - Phase D Complete: Performance & Cost Optimization
-- `6599085` - Fix: Remove duplicate function definition in clients.py
-- `3bc885c` - Phase E.2: Add comprehensive unit tests for Phase D
-- *(this commit)* - docs: Update tracker with Phase D completion and E.2 progress
+- `4c01014` - fix: Add legacy QB service import and update all API operation endpoints
+- `42385f8` - revert: Restore Supabase Auth for password reset and magic links
+- `8296793` - cleanup: Remove unused JWT v2 auth system, keep Supabase Auth
+- *(pending)* - docs: Update PROJECT_ROADMAP.md and IMPLEMENTATION_TRACKER.md to v3.1
 
 ### Production Status
 - **Backend**: Fly.io (https://houserenovators-api.fly.dev) ✅ Running
 - **Frontend**: Cloudflare Pages (https://houserenoai.pages.dev) ✅ Deployed
-- **Database**: PostgreSQL with business data + QuickBooks tokens + cache tables
+- **Database**: PostgreSQL with business data + QuickBooks tokens
 - **Auth**: Supabase Auth (password reset, magic links, OAuth ready)
 - **QuickBooks**: Production OAuth connected (realm: 9130349982666256)
-- **QB API**: All CRUD operations + caching working
-- **Performance**: 2-3x faster AI responses (Phase D impact)
+- **QB API**: All CRUD operations working (customers, invoices, vendors, items)
 
-### Phase D Achievements (Externally Audited)
-**D.1 - QuickBooks Caching**:
-- 90% API call reduction (50-100ms cached vs 2-3s API)
-- PostgreSQL cache with 5-min TTL
-- Bulk upsert, hit rate tracking
-- External Audit: ✅ PASS (Production-ready)
+### Architecture Simplified
+**Authentication Stack**:
+- Frontend: Supabase client (@supabase/supabase-js)
+- Backend: Supabase JWT verification
+- Authorization: `users` table (roles: admin, pm, inspector, client, finance)
+- Features: Password reset, magic links, email verification
 
-**D.2 - Context Optimization**:
-- 40-50% token reduction via intelligent truncation
-- Query-relevant filtering + entity extraction
-- Summary statistics preserved
-- External Audit: ✅ PASS (HIGH CONFIDENCE, PRODUCTION-GRADE)
-- Auditor: "Lock this file. Do not refactor casually."
-
-**D.3 - Google Sheets Retirement**:
-- 100% PostgreSQL for operational data
-- QB tokens in database
-- Clear deprecation path for legacy methods
-- External Audit: ✅ PASS (PRODUCTION-GRADE)
-- Auditor: "This is the point where systems stop feeling fragile."
+**QuickBooks Integration**:
+- OAuth2: v2 service (quickbooks_service_v2.py) - Database token storage
+- API Operations: Legacy service (quickbooks_service.py) - 16 CRUD methods
+- Routes: All endpoints using helper function pattern
+- Token Storage: PostgreSQL `quickbooks_tokens` table
 
 ### Next Session (Dec 13)
-- **Focus**: Phase E.2 - Continue test coverage expansion
+- **Focus**: Phase D.1 - QuickBooks Caching Implementation
 - **Tasks**:
-  1. Fix failing tests (API method name mismatches in qb_cache_service)
-  2. Add unit tests for permit_service, inspection_service
-  3. Add integration tests for QB sync end-to-end
-  4. Monitor GitHub Actions CI/CD pipeline
-  5. Apply Phase D migration to production (008_add_qb_payments_cache.py)
-  6. Verify cache performance in production
-- **Target**: Increase coverage from 25% towards 85%
+  1. Create `QuickBooksPaymentCache` model
+  2. Implement background sync job (Celery or APScheduler)
+  3. Update context builder to read from QB cache tables
+  4. Add cache invalidation logic
+  5. Test and measure API call reduction
+  6. Document caching strategy
 - **Blockers**: None
 - **Estimated Time**: 3-4 hours
 

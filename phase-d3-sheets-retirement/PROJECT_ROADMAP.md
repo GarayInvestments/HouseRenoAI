@@ -1,33 +1,32 @@
-# House Renovators AI Portal - Implementation Roadmap v3.2
+# House Renovators AI Portal - Implementation Roadmap v3.1
 
-**Version**: 3.2 (Phase F - Frontend CRUD Completion)  
-**Date**: December 13, 2025  
-**Status**: Phases 0-E Complete (LOCKED), Phase F.1 In Progress  
-**Architecture**: PostgreSQL Backend with Full CRUD APIs, Frontend Gap Closing
+**Version**: 3.1 (Active Development - Phase D)  
+**Date**: December 12, 2025  
+**Status**: Phase A-C Complete, Phase D In Progress  
+**Architecture**: Buildertrend-Influenced PostgreSQL Backend
 
 ---
 
 ## 1. High-Level Status
 
-Platform successfully migrated from Google Sheets to **PostgreSQL-backed app running on Fly.io**. Phases 0-E are **COMPLETE and LOCKED** (externally audited). Backend has full CRUD APIs for all entities. Now focusing on **Phase F: Frontend CRUD Completion** - closing the gap between backend capabilities and frontend UI.
+Platform successfully migrated from Google Sheets to **PostgreSQL-backed app running on Fly.io**. Phase A (Core Data), Phase B (APIs), and Phase C (Scheduling) are **COMPLETE**. Frontend Phases 1-4 are **COMPLETE and LOCKED** (externally audited). Now focusing on Phase D (Performance & Cost Control).
 
 **Current State**:
 - ✅ Backend: Fly.io (https://houserenovators-api.fly.dev) - **2 machines, healthy**
-- ✅ Frontend: Cloudflare Pages with custom domain  
+- ✅ Frontend: Cloudflare Pages with custom domain
 - ✅ Database: Supabase PostgreSQL with UUID primary keys + business IDs
 - ✅ Data: 8 clients, 13 projects, 9 permits, 9 inspections, 4 site visits **migrated**
 - ✅ CI/CD: GitHub Actions auto-deploy for both frontend/backend
 - ✅ HTTPS: Working correctly with proxy middleware
-- ✅ Auth: Supabase Auth with smart 401 handling **production-grade**
+- ✅ Auth: Supabase Auth with JWT verification **working**
 - ✅ API Routes: All CRUD endpoints implemented (clients, projects, permits, inspections, invoices, payments, site_visits)
 - ✅ Business IDs: Auto-generation via PostgreSQL triggers (CL-00001, PRJ-00001, etc.)
-- ✅ Frontend Security: Phase 1 complete (auth refactor, input sanitization, error handling) - 🔒 LOCKED
+- ✅ Frontend Security: Phase 1 complete (auth refactor, input sanitization, error handling)
 - ✅ Frontend Performance: Phase 2 complete (state splitting, caching, memoization) - 🔒 LOCKED
 - ✅ Frontend Architecture: Phase 3 complete (layouts, stores, hooks, components) - 🔒 LOCKED
-- ✅ Frontend API & Polish: Phase 4 complete (accessibility, apiClient wrapper) - 🔒 LOCKED
-- ⚠️ **Frontend Gap**: Only Clients and Projects have full UI - Permits, Inspections, Invoices, Payments, Site Visits need pages
+- ✅ Frontend API & Polish: Phase 4 complete (accessibility, apiClient wrapper) - 🔒 LOCKED (Dec 12)
 
-**Strategic Focus**: Close frontend-backend gap by building UI pages for all backend entities. Backend APIs are production-ready, just need frontend consumption.
+**Strategic Focus**: Now optimizing performance and cost control - QuickBooks caching, context size optimization, removing Google Sheets entirely.
 
 ---
 
@@ -1187,45 +1186,6 @@ async def reconcile_schedules_and_inspections():
 - ⏳ Background job monitoring - TODO
 - ⏳ Webhook processing - TODO
 
-### Phase F: Frontend CRUD Completion 🔥 **IN PROGRESS** (Dec 13, 2025)
-
-**Status**: Backend has full CRUD APIs (50+ endpoints) but frontend only has pages for clients and projects. Need to add frontend pages for permits, inspections, invoices/payments, and site visits to close the frontend-backend gap.
-
-**F.1: Fix Permits Page Display** 🚧 **IN PROGRESS**
-- 🚧 Update field mappings from legacy Google Sheets names to PostgreSQL schema
-- 🚧 Map 'Permit Number' → `business_id` or `permit_number`
-- 🚧 Map 'Permit Status' → `status`
-- 🚧 Map 'Project ID' → `project_id`
-- 🚧 Test with real permits data from database
-- 🚧 Update documentation in IMPLEMENTATION_TRACKER.md
-- **Time**: 0/2 hours
-
-**F.2: Inspections Page** ⏳ **PENDING**
-- ⏳ Create `frontend/src/pages/Inspections.jsx`
-- ⏳ Use inspections store with caching
-- ⏳ Display inspection_id, business_id, status, scheduled_date, inspector
-- ⏳ Add filters by status, inspector, project
-- ⏳ Link to inspection details view
-- ⏳ Handle deficiencies display
-- **Time**: 0/8 hours
-
-**F.3: Invoices & Payments Pages** ⏳ **PENDING**
-- ⏳ Create `frontend/src/pages/Invoices.jsx`
-- ⏳ Create `frontend/src/pages/Payments.jsx`
-- ⏳ Display QuickBooks sync status
-- ⏳ Show payment method, amount, status
-- ⏳ Link to client/project context
-- ⏳ Add QB invoice creation flow
-- **Time**: 0/12 hours
-
-**F.4: Site Visits Page** ⏳ **PENDING**
-- ⏳ Create `frontend/src/pages/SiteVisits.jsx`
-- ⏳ Display visit_id, business_id (SV-00001), visit_date, purpose
-- ⏳ Show follow-up actions
-- ⏳ Photo gallery display
-- ⏳ Add filters by project, date range
-- **Time**: 0/8 hours
-
 ---
 
 ## Timeline Summary
@@ -1235,9 +1195,8 @@ async def reconcile_schedules_and_inspections():
 | **A: Core Data & Migration** | 1-2 weeks | 15-20 hours | 🔥🔥🔥 | ✅ Complete | Dec 11, 2025 |
 | **B: API & Business Flows** | 1-2 weeks | 12-16 hours | 🔥🔥🔥 | ✅ Complete | Dec 11, 2025 |
 | **C: Scheduling & Site Visits** | 1.5-2 weeks | 17-22 hours | 🔥🔥🔥 | ✅ Mostly Complete | Dec 11, 2025 |
-| **D: Performance & Costs** | 1 week | 8-11 hours | 🔥🔥🔥 | 🔒 LOCKED | Dec 12, 2025 |
-| **E: Docs, Tests, Polish** | 1 week | 15 hours | 🔥🔥 | 🔒 LOCKED | Dec 13, 2025 |
-| **F: Frontend CRUD Completion** | 1.5 weeks | 30 hours | 🔥🔥🔥 | 🔥 IN PROGRESS | In Progress |
+| **D: Performance & Costs** | 1 week | 8-11 hours | 🔥🔥🔥 | 🔥 IN PROGRESS | In Progress |
+| **E: Docs, Tests, Polish** | Ongoing | 10-15 hours | 🔥🔥 | ⏳ Next | Pending |
 
 **Completed Effort**: ~44-58 hours (Phase A-C)  
 **Remaining Effort**: 18-26 hours (Phase D-E)  
@@ -1293,30 +1252,21 @@ async def reconcile_schedules_and_inspections():
 **Phase C** ✅ **COMPLETE** (Core CRUD):
 - ✅ Site visits CRUD implemented
 - ✅ Inspection photo upload working
-- ⏳ Schedule items integration deferred to Jan 2026
-- ⏳ Inspector workflow automation deferred to Jan 2026
-- ⏳ Reconciliation job deferred to Jan 2026
+- ⏳ Schedule items integration deferred to Phase E
+- ⏳ Inspector workflow automation deferred to Phase E
+- ⏳ Reconciliation job deferred to Phase E
 
-**Phase D** ✅ **COMPLETE** (Externally Audited):
-- ✅ 90% reduction in QuickBooks API calls (via caching) - ACHIEVED
-- ✅ 40-50% token reduction (via truncation) - ACHIEVED
-- ✅ Sub-2s response time for all AI queries - ACHIEVED
-- ✅ Context builder reads from DB cache, not QB API - ACHIEVED
-- 🔒 LOCKED - No changes without external audit
+**Phase D** ⏳ **IN PROGRESS**:
+- ⏳ 90% reduction in QuickBooks API calls (via caching) - TARGET
+- ⏳ 40-50% token reduction (via truncation) - TARGET
+- ⏳ Sub-2s response time for all AI queries - TARGET
+- ⏳ Context builder reads from DB cache, not QB API - TARGET
 
-**Phase E** ✅ **COMPLETE** (LOCKED):
+**Phase E** ⏳ **PENDING**:
 - ✅ Zero data loss during migration - ACHIEVED
 - ✅ Production deployment stable - ACHIEVED
-- ✅ Test coverage 99% (90/91 tests passing) - EXCEEDED TARGET
-- ✅ Google Sheets fully retired for operational data - ACHIEVED
-- 🔒 LOCKED - Production-hardened and audited
-
-**Phase F** 🚧 **IN PROGRESS** (Frontend CRUD Completion):
-- 🚧 F.1: Fix Permits page display - IN PROGRESS (2 hours)
-- ⏳ F.2: Inspections page - PENDING (8 hours)
-- ⏳ F.3: Invoices & Payments pages - PENDING (12 hours)
-- ⏳ F.4: Site Visits page - PENDING (8 hours)
-- ⏳ Total: 30 hours to close frontend-backend gap
+- ⏳ Test coverage > 85% - TARGET
+- ⏳ Google Sheets fully decommissioned - PARTIAL (operational data done, QB tokens remain)
 
 ---
 
@@ -1327,9 +1277,8 @@ For implementation details:
 - See `docs/technical/POSTGRES_MIGRATION_GUIDE.md` for migration procedures
 - See `docs/guides/PERMIT_WORKFLOW.md` for business logic
 - Check `docs/DEPLOYMENT_TROUBLESHOOTING.md` for infrastructure issues
-- See `docs/IMPLEMENTATION_TRACKER.md` for daily progress updates
 
 **Roadmap maintained by**: Development Team  
-**Last Review**: December 13, 2025  
-**Next Review**: Weekly during Phase F implementation
+**Last Review**: December 10, 2025  
+**Next Review**: Weekly during Phase A-D implementation
 

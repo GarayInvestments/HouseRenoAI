@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { ArrowLeft, User, Mail, Phone, MapPin, Calendar, FileText, Loader2 } from 'lucide-react';
 import api from '../lib/api';
 import useAppStore from '../stores/appStore';
+import { useProjectsStore } from '../stores/projectsStore';
+import { usePermitsStore } from '../stores/permitsStore';
 import LoadingScreen from '../components/LoadingScreen';
 import ErrorState from '../components/ErrorState';
 
@@ -13,6 +15,9 @@ export default function ClientDetails() {
   const [error, setError] = useState(null);
   const currentClientId = useAppStore((state) => state.currentClientId);
   const navigateToClients = useAppStore((state) => state.navigateToClients);
+  const setCurrentView = useAppStore((state) => state.setCurrentView);
+  const getProjectsByClient = useProjectsStore((state) => state.getProjectsByClient);
+  const getPermitsByClient = usePermitsStore((state) => state.getPermitsByClient);
 
   useEffect(() => {
     // Handle browser back button
@@ -415,7 +420,7 @@ export default function ClientDetails() {
                     marginBottom: '4px'
                   }}>Active Projects</p>
                   <button
-                    onClick={() => useAppStore.getState().navigateToProjectsFiltered(clientId)}
+                    onClick={() => setCurrentView('projects')}
                     style={{
                       fontSize: '16px',
                       fontWeight: '600',
@@ -456,7 +461,7 @@ export default function ClientDetails() {
                     marginBottom: '4px'
                   }}>Active Permits</p>
                   <button
-                    onClick={() => useAppStore.getState().navigateToPermitsFiltered(clientId)}
+                    onClick={() => setCurrentView('permits')}
                     style={{
                       fontSize: '16px',
                       fontWeight: '600',

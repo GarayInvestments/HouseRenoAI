@@ -30,44 +30,53 @@ export default function PermitDetails() {
         setLoading(true);
         setError(null);
         
-        // Fetch permits, projects, and clients in parallel
-        const [permitsData, projectsData, clientsData] = await Promise.all([
-          api.getPermits(),
-          api.getProjects(),
-          api.getClients()
-        ]);
+        // Fetch single permit by ID (not all permits)
+        const permitData = await api.getPermit(currentPermitId);
         
-        const foundPermit = Array.isArray(permitsData) 
-          ? permitsData.find(p => p['Permit ID'] === currentPermitId)
-          : null;
-        
-        if (foundPermit) {
-          setPermit(foundPermit);
+        if (permitData) {
+          setPermit(permitData);
           
-          // Find related project
-          const relatedProject = Array.isArray(projectsData)
-            ? projectsData.find(p => p['Project ID'] === foundPermit['Project ID'])
-            : null;
-          setProject(relatedProject);
+          // Get project ID from permit (handle both old and new field names)
+          const projectId = permitData['Project ID'] || permitData.project_id;
           
-          // Find related client through project
-          if (relatedProject && relatedProject['Client ID']) {
-            const relatedClient = Array.isArray(clientsData)
-              ? clientsData.find(c => c['Client ID'] === relatedProject['Client ID'] || c['ID'] === relatedProject['Client ID'])
-              : null;
-            setClient(relatedClient);
+          if (projectId) {
+            // Fetch related project and all clients
+            const [projectData, clientsData] = await Promise.all([
+              api.getProject(projectId),
+              api.getClients()
+            ]);
+            
+            setProject(projectData);
+            
+            // Find related client through project
+            const clientId = projectData?.['Client ID'] || projectData?.client_id;
+            if (clientId && Array.isArray(clientsData)) {
+              const relatedClient = clientsData.find(c => 
+                c['Client ID'] === clientId || 
+                c['ID'] === clientId ||
+                c.client_id === clientId ||
+                c.id === clientId
+              );
+              setClient(relatedClient);
+            }
           }
         } else {
           setError('Permit not found');
         }
-      } catch {
+      } catch (err) {
+        console.error('Failed to load permit details:', err);
         setError('Failed to load permit details');
       } finally {
         setLoading(false);
       }
     };
     
-    fetchPermitDetails();
+    if (currentPermitId) {
+      fetchPermitDetails();
+    } else {
+      setError('No permit ID provided');
+      setLoading(false);
+    }
   }, [currentPermitId]);
 
   // Handle browser back button
@@ -163,7 +172,12 @@ export default function PermitDetails() {
     );
   }
 
-  const statusStyle = getStatusColor(permit['Permit Status']);
+  const permitStatus = permit?.['Permit Status'] || permit?.status;
+  const permitNumber = permit?.['Permit Number'] || permit?.permit_number || permit?.business_id;
+  const permitId = permit?.['Permit ID'] || permit?.permit_id;
+  const dateSubmitted = permit?.['Date Submitted'] || permit?.application_date;
+  const dateApproved = permit?.['Date Approved'] || permit?.approval_date;
+  const statusStyle = getStatusColor(permitStatus);
 
   return (
     <div style={{
@@ -227,7 +241,7 @@ export default function PermitDetails() {
                 color: '#1E293B',
                 marginBottom: '8px'
               }}>
-                Permit {permit['Permit Number'] || 'Unknown'}
+                Permit {permitNumber || 'Unknown'}
               </h1>
               <div style={{
                 display: 'flex',
@@ -238,7 +252,7 @@ export default function PermitDetails() {
                 marginBottom: '12px'
               }}>
                 <Hash size={14} />
-                Permit ID: {permit['Permit ID']}
+                Permit ID: {permitId || business_id || 'N/A'}
               </div>
             </div>
             <span style={{
@@ -254,8 +268,8 @@ export default function PermitDetails() {
               border: `1px solid ${statusStyle.border}`,
               textTransform: 'capitalize'
             }}>
-              {getStatusIcon(permit['Permit Status'])}
-              {permit['Permit Status'] || 'N/A'}
+              {getStatusIcon(permitStatus)}
+              {permitStatus || 'N/A'}
             </span>
           </div>
 
@@ -281,7 +295,7 @@ export default function PermitDetails() {
               <div>
                 <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '2px' }}>Date Submitted</p>
                 <p style={{ fontSize: '14px', color: '#1E293B', fontWeight: '500' }}>
-                  {formatDate(permit['Date Submitted'])}
+                  {formatDate(dateSubmitted)}
                 </p>
               </div>
             </div>
@@ -301,7 +315,7 @@ export default function PermitDetails() {
               <div>
                 <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '2px' }}>Date Approved</p>
                 <p style={{ fontSize: '14px', color: '#1E293B', fontWeight: '500' }}>
-                  {formatDate(permit['Date Approved'])}
+                  {formatDate(dateApproved)}
                 </p>
               </div>
             </div>

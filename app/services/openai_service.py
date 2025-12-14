@@ -2,13 +2,18 @@ import openai
 import logging
 from typing import List, Dict, Any
 from app.config import settings
+import httpx
 
 logger = logging.getLogger(__name__)
 
 class OpenAIService:
     def __init__(self):
         openai.api_key = settings.OPENAI_API_KEY
-        self.client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
+        # Create OpenAI client with timeout configuration (no proxies)
+        self.client = openai.OpenAI(
+            api_key=settings.OPENAI_API_KEY,
+            timeout=httpx.Timeout(60.0, connect=10.0)
+        )
     
     async def process_chat_message(self, message: str, context: Dict[str, Any] = None) -> tuple:
         """

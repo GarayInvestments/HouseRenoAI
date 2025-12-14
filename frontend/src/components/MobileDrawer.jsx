@@ -13,23 +13,23 @@ const navItems = [
 ];
 
 export default function MobileDrawer() {
-  const { isMobileDrawerOpen, setMobileDrawerOpen, currentView, setCurrentView } = useAppStore();
+  const { drawerOpen, setDrawerOpen, currentView, setCurrentView } = useAppStore();
 
   // Prevent body scroll when drawer is open
   useEffect(() => {
-    if (isMobileDrawerOpen) {
+    if (drawerOpen) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
     }
     return () => { document.body.style.overflow = 'unset'; };
-  }, [isMobileDrawerOpen]);
+  }, [drawerOpen]);
 
-  if (!isMobileDrawerOpen) return null;
+  if (!drawerOpen) return null;
 
   const handleNavClick = (viewId) => {
     setCurrentView(viewId);
-    setMobileDrawerOpen(false);
+    setDrawerOpen(false);
   };
 
   return (
@@ -46,7 +46,7 @@ export default function MobileDrawer() {
           animation: 'fadeIn 0.3s ease'
         }}
         className="lg:hidden"
-        onClick={() => setMobileDrawerOpen(false)}
+        onClick={() => setDrawerOpen(false)}
       />
 
       {/* Drawer with slide animation */}
@@ -107,7 +107,7 @@ export default function MobileDrawer() {
             </h1>
           </div>
           <button
-            onClick={() => setMobileDrawerOpen(false)}
+            onClick={() => setDrawerOpen(false)}
             style={{
               padding: '10px',
               border: 'none',

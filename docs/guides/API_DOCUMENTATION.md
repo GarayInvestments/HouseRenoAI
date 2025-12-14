@@ -1,5 +1,9 @@
 # House Renovators AI Portal - API Documentation
 
+**Version**: 3.2 (Phase F - Frontend CRUD Completion)  
+**Last Updated**: December 13, 2025  
+**Status**: PostgreSQL + Supabase Auth (Phases D-E locked ✅)
+
 ## 🌐 **Base URL**
 ```
 Production: https://api.houserenovatorsllc.com
@@ -7,191 +11,172 @@ Local Dev:  http://localhost:8000
 ```
 
 ## 📖 **Interactive Documentation**
-- **Swagger UI**: https://api.houserenovatorsllc.com/docs
-- **ReDoc**: https://api.houserenovatorsllc.com/redoc
+- **Swagger UI**: https://api.houserenovatorsllc.com/docs (enabled only when `DEBUG=true`)
+- **ReDoc**: https://api.houserenovatorsllc.com/redoc (enabled only when `DEBUG=true`)
 
 ---
 
-## 🏗️ **Permit Management API**
+## 🏗️ **Permit Management API** (PostgreSQL)
 
-### **GET /v1/permits/**
-Get all permits from Google Sheets
+All endpoints below are PostgreSQL-backed and require a Supabase JWT:
 
-**Response**: Array of permit objects
+`Authorization: Bearer <SUPABASE_ACCESS_TOKEN>`
+
+Dates are ISO-8601 (e.g. `2025-12-13T15:04:05Z`).
+
+### **GET /v1/permits**
+List permits (paginated).
+
+**Query Parameters**:
+- `project_id` (uuid, optional)
+- `status_filter` (string, optional)
+- `jurisdiction` (string, optional) (stored in `extra.jurisdiction`)
+- `skip` (int, default 0)
+- `limit` (int, default 100)
+
+**Response**:
 ```json
-[
-  {
-    "Permit ID": "3adc25e3",
-    "Project ID": "86d7ce24", 
-    "Permit Number": "BC-25-0409",
-    "Date Submitted": "5/21/2025",
-    "Date Approved": "5/21/2025",
-    "Permit Status": "Approved",
-    "City Portal Link": "",
-    "File Upload": "Permits_Images/3adc25e3.File Upload.144559.jpg"
-  }
-]
+{
+  "items": [
+    {
+      "permit_id": "2c6c2f1e-6ce1-4d16-8c86-0e7c7b4c5a6a",
+      "business_id": "PER-00001",
+      "project_id": "8f9b2f64-0fbb-4b70-90d9-3de0b2a2f9ad",
+      "client_id": "b0e4d9b1-9b35-4ef8-8b35-7a2c0b7f64f9",
+      "permit_number": "BC-25-0409",
+      "permit_type": "Building",
+      "status": "Draft",
+      "application_date": null,
+      "approval_date": null,
+      "expiration_date": null,
+      "issuing_authority": null,
+      "inspector_name": null,
+      "notes": null,
+      "approved_by": null,
+      "approved_at": null,
+      "extra": {"jurisdiction": "Concord"},
+      "created_at": "2025-12-13T12:00:00Z",
+      "updated_at": "2025-12-13T12:00:00Z"
+    }
+  ],
+  "total": 1,
+  "skip": 0,
+  "limit": 100
+}
 ```
 
 **Example**:
 ```bash
-curl https://api.houserenovatorsllc.com/v1/permits/
+curl "https://api.houserenovatorsllc.com/v1/permits" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+---
+
+### **POST /v1/permits**
+Create a permit.
+
+**Request Body**:
+```json
+{
+  "project_id": "8f9b2f64-0fbb-4b70-90d9-3de0b2a2f9ad",
+  "permit_type": "Building",
+  "jurisdiction": "Concord",
+  "permit_number": "BC-25-0409",
+  "application_date": "2025-12-13T12:00:00Z",
+  "issuing_authority": "City of Concord",
+  "inspector_name": "Jane Inspector",
+  "notes": "Initial submission"
+}
+```
+
+**Example**:
+```bash
+curl -X POST "https://api.houserenovatorsllc.com/v1/permits" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"project_id":"8f9b2f64-0fbb-4b70-90d9-3de0b2a2f9ad","permit_type":"Building","jurisdiction":"Concord"}'
 ```
 
 ---
 
 ### **GET /v1/permits/{permit_id}**
-Get specific permit by ID
+Get a permit by UUID.
 
-**Parameters**:
-- `permit_id` (string): Unique permit identifier
+---
 
-**Response**:
-```json
-{
-  "permit_id": "3adc25e3",
-  "data": {
-    "Permit ID": "3adc25e3",
-    "Project ID": "86d7ce24",
-    "Permit Number": "BC-25-0409",
-    "Date Submitted": "5/21/2025",
-    "Date Approved": "5/21/2025", 
-    "Permit Status": "Approved",
-    "City Portal Link": "",
-    "File Upload": "Permits_Images/3adc25e3.File Upload.144559.jpg"
-  },
-  "last_updated": "5/21/2025"
-}
-```
-
-**Example**:
-```bash
-curl https://api.houserenovatorsllc.com/v1/permits/3adc25e3
-```
+### **GET /v1/permits/by-business-id/{business_id}**
+Get a permit by business ID (e.g. `PER-00001`).
 
 ---
 
 ### **PUT /v1/permits/{permit_id}**
-Update a specific permit
+Update permit fields (does not change status).
 
-**Parameters**:
-- `permit_id` (string): Unique permit identifier
+**Request Body (any fields optional)**:
+```json
+{
+  "permit_number": "BC-25-0409",
+  "permit_type": "Building",
+  "jurisdiction": "Concord",
+  "issuing_authority": "City of Concord",
+  "inspector_name": "Jane Inspector",
+  "notes": "Updated notes"
+}
+```
+
+---
+
+### **PUT /v1/permits/{permit_id}/status**
+Update permit status with history tracking.
 
 **Request Body**:
 ```json
 {
-  "updates": {
-    "Permit Status": "Approved",
-    "Date Approved": "2025-11-03"
-  },
-  "notify_team": true
+  "status": "Submitted",
+  "notes": "Submitted for review"
 }
-```
-
-**Response**:
-```json
-{
-  "status": "success",
-  "message": "Permit 3adc25e3 updated successfully"
-}
-```
-
-**Example**:
-```bash
-curl -X PUT https://api.houserenovatorsllc.com/v1/permits/3adc25e3 \
-     -H "Content-Type: application/json" \
-     -d '{"updates": {"Permit Status": "Approved"}, "notify_team": true}'
 ```
 
 ---
 
-### **GET /v1/permits/search/**
-Search permits with filters
+### **POST /v1/permits/{permit_id}/submit**
+Submit a permit for review (Draft → Submitted).
 
-**Query Parameters**:
-- `query` (string, required): Search query or "all"
-- `status` (string, optional): Filter by permit status
-- `project_id` (string, optional): Filter by project ID
-
-**Response**: Array of matching permits
-
-**Examples**:
-```bash
-# Search approved permits
-curl "https://api.houserenovatorsllc.com/v1/permits/search/?query=approved&status=approved"
-
-# Search by project
-curl "https://api.houserenovatorsllc.com/v1/permits/search/?query=all&project_id=86d7ce24"
-
-# Natural language search
-curl "https://api.houserenovatorsllc.com/v1/permits/search/?query=permits submitted this month"
+**Request Body (optional)**:
+```json
+{
+  "application_date": "2025-12-13T12:00:00Z",
+  "notes": "Submitted via portal"
+}
 ```
 
 ---
 
-### **POST /v1/permits/analyze**
-AI analysis of all permits
+### **GET /v1/permits/{permit_id}/precheck?inspection_type=...**
+Run a basic precheck to determine if an inspection can be scheduled.
 
-**Response**:
-```json
-{
-  "total_permits": 6,
-  "analysis": {
-    "summary": {
-      "total_permits": 6,
-      "approved_permits": 4,
-      "under_review_permits": 1,
-      "pending_approval_permits": 1
-    },
-    "issues": {
-      "missing_approval_dates": [
-        {
-          "Permit ID": "7f4f969c",
-          "Permit Status": "Approved"
-        }
-      ],
-      "missing_file_uploads": [
-        {
-          "Permit ID": "7f4f969c", 
-          "Permit Status": "Approved"
-        }
-      ]
-    },
-    "next_steps": {
-      "for_under_review": "Follow up on permit 'cd7193a0' to expedite review",
-      "for_missing_uploads": "Complete file uploads for permit '7f4f969c'"
-    },
-    "timeline": {
-      "average_approval_time": "1 day",
-      "longest_pending": {
-        "Permit ID": "cd7193a0",
-        "Days Pending": "Pending since 10/13/2025"
-      }
-    }
-  },
-  "generated_at": "2025-11-03T12:00:00"
-}
-```
+---
 
-**Example**:
-```bash
-curl -X POST https://api.houserenovatorsllc.com/v1/permits/analyze
-```
+### **DELETE /v1/permits/{permit_id}**
+Soft delete (sets status to `Cancelled`). Only allowed for permits in `Draft` or `Submitted`.
 
 ---
 
 ## 🤖 **AI Chat API**
 
-### **POST /v1/chat/**
-Process chat message with AI and permit data access
+**Authentication**: Not required (public endpoint for MVP)
+
+### **POST /v1/chat**
+Process chat message with AI using smart context loading (only fetches relevant data).
 
 **Request Body**:
 ```json
 {
   "message": "How many permits are currently approved?",
+  "session_id": "user-123-session",
   "context": {
-    "user_id": "optional",
-    "session_id": "optional"
+    "user_id": "optional"
   }
 }
 ```
@@ -199,25 +184,27 @@ Process chat message with AI and permit data access
 **Response**:
 ```json
 {
-  "response": "Out of the recent permits, four are currently approved. Here are the details:\n\n1. **Permit Number**: BC-25-0409\n   - **Status**: Approved\n   - **Approval Date**: 5/21/2025\n\n2. **Permit Number**: BP-25-35\n   - **Status**: Approved\n   - **Approval Date**: 5/6/2025...",
+  "response": "Based on the database, you have 4 permits currently approved...",
   "action_taken": null,
-  "data_updated": false
+  "data_updated": false,
+  "function_results": [],
+  "contexts_loaded": ["database"]
 }
 ```
 
 **Example Questions**:
 ```bash
 # Count permits by status
-curl -X POST https://api.houserenovatorsllc.com/v1/chat/ \
+curl -X POST https://api.houserenovatorsllc.com/v1/chat \
      -H "Content-Type: application/json" \
-     -d '{"message": "How many permits are approved?"}'
+     -d '{"message": "How many permits are approved?", "session_id": "user-123"}'
 
 # Find specific permits
-curl -X POST https://api.houserenovatorsllc.com/v1/chat/ \
+curl -X POST https://api.houserenovatorsllc.com/v1/chat \
      -H "Content-Type: application/json" \
-     -d '{"message": "Show me permits that need file uploads"}'
+     -d '{"message": "Show me permits for project PER-00001", "session_id": "user-123"}'
 
-# Timeline questions
+# QuickBooks queries
 curl -X POST https://api.houserenovatorsllc.com/v1/chat/ \
      -H "Content-Type: application/json" \
      -d '{"message": "What permits were submitted this month?"}'
@@ -238,12 +225,14 @@ Get chat system status
 {
   "status": "operational",
   "openai_status": "connected",
-  "sheets_status": "connected", 
+  "database_status": "connected",
+  "quickbooks_status": "authenticated",
   "features": [
     "Natural language queries",
-    "Permit data access",
-    "Project tracking",
-    "Automated notifications"
+    "Smart context loading (80% API reduction)",
+    "Session memory (10-min TTL)",
+    "QuickBooks integration",
+    "Multi-user support"
   ]
 }
 ```
@@ -277,31 +266,27 @@ Detailed health status
 ```json
 {
   "status": "healthy",
-  "services": {
-    "database": "operational",
-    "openai": "connected", 
-    "google_sheets": "connected"
-  },
-  "version": "1.0.0",
-  "uptime": "2 hours"
+  "api_version": "v1",
+  "debug_mode": false
 }
 ```
 
 ---
 
-### **GET /debug/**
-Google service initialization status
+### **GET /debug**
+System configuration status
 
 **Response**:
 ```json
 {
-  "google_service_initialized": {
-    "credentials": true,
-    "sheets_service": true,
-    "drive_service": true
+  "database_url_configured": true,
+  "supabase_url_configured": true,
+  "quickbooks_configured": {
+    "client_id": true,
+    "environment": "production",
+    "tokens_in_database": true
   },
-  "environment": "production",
-  "debug_mode": false
+  "google_sheets": "DEPRECATED (Phase D.3 complete)"
 }
 ```
 
@@ -327,10 +312,10 @@ Google service initialization status
 }
 ```
 
-### **Google Service Errors**
+### **Database Errors**
 ```json
 {
-  "detail": "Google service not initialized",
+  "detail": "Database connection failed",
   "status_code": 503
 }
 ```
@@ -339,12 +324,45 @@ Google service initialization status
 
 ## 🔐 **Authentication**
 
-**Current Status**: No authentication required (internal API)
+**Status**: Supabase Auth with JWT tokens (Phase E complete - Dec 13, 2025)
 
-**Future Plans**: 
-- API key authentication
-- JWT token-based auth
-- Role-based access control
+### **Auth Flow**
+1. **Frontend**: User signs up/logs in via Supabase client SDK (`@supabase/supabase-js`)
+2. **Supabase**: Returns JWT access token (15-min expiry)
+3. **Frontend**: Sends token in `Authorization: Bearer <token>` header
+4. **Backend**: Verifies JWT and maps to User model in database
+
+### **Protected Routes**
+All routes except the following require authentication:
+- `/` (health check)
+- `/health`, `/debug`, `/version`
+- `/docs`, `/redoc`, `/openapi.json`
+- `/v1/auth/supabase/*` (Supabase auth endpoints)
+- `/v1/chat` (public for MVP)
+
+### **Auth Endpoints**
+
+**GET /v1/auth/supabase/me**
+```bash
+curl https://api.houserenovatorsllc.com/v1/auth/supabase/me \
+  -H "Authorization: Bearer $SUPABASE_TOKEN"
+```
+
+Response:
+```json
+{
+  "id": "user-uuid",
+  "email": "user@example.com",
+  "full_name": "John Doe",
+  "role": "pm",
+  "is_active": true,
+  "is_email_verified": true,
+  "created_at": "2025-12-01T00:00:00Z"
+}
+```
+
+**PUT /v1/auth/supabase/users/{user_id}/role** (Admin only)
+Update user role: `admin`, `pm`, `inspector`, `client`, `finance`
 
 ---
 
@@ -359,24 +377,24 @@ Google service initialization status
 
 ---
 
-## 🔄 **Data Sync**
+## 🔄 **Data Architecture**
 
-### **Google Sheets Integration**
-- **Real-time**: API reads directly from Google Sheets
-- **Caching**: No caching implemented (always fresh data)
-- **Updates**: Writes to Google Sheets are immediate
-- **Notifications**: Team notifications sent via Google Chat webhook
+### **Database: PostgreSQL (Supabase)**
+- **Primary Storage**: All operational data (clients, projects, permits, inspections, invoices, payments, site visits)
+- **Schema**: UUID primary keys + human-friendly business IDs (CL-00001, PRJ-00001, PER-00001)
+- **Caching**: QuickBooks data cached in `qb_customers_cache` and `qb_invoices_cache` tables
+- **Performance**: 90% reduction in API calls (Phase D.1 complete)
 
-### **Data Structure**
-Expected Google Sheets columns:
-- Permit ID
-- Project ID  
-- Permit Number
-- Date Submitted
-- Date Approved
-- Permit Status
-- City Portal Link
-- File Upload
+### **QuickBooks Integration**
+- **OAuth2**: Production-approved integration
+- **Sync**: Bi-directional sync for customers/invoices
+- **Token Storage**: Encrypted in PostgreSQL `quickbooks_tokens` table
+- **Auto-refresh**: Tokens refresh automatically before expiry
+
+### **Google Sheets (Legacy)**
+- **Status**: DEPRECATED (Phase D.3 complete - Dec 12, 2025)
+- **Remaining Use**: QuickBooks token storage only (migration TODO)
+- **All other data**: Migrated to PostgreSQL
 
 ---
 
@@ -417,35 +435,45 @@ Import this collection for testing:
 ```bash
 #!/bin/bash
 BASE_URL="https://api.houserenovatorsllc.com"
+TOKEN="your_supabase_jwt_token"
 
-echo "Testing Health Endpoints..."
+echo "Testing Health Endpoints (no auth required)..."
 curl -s "$BASE_URL/" | jq .
 curl -s "$BASE_URL/health" | jq .
-curl -s "$BASE_URL/debug/" | jq .
+curl -s "$BASE_URL/debug" | jq .
 
-echo "Testing Permit Endpoints..."
-curl -s "$BASE_URL/v1/permits/" | jq '. | length'
-curl -s "$BASE_URL/v1/permits/3adc25e3" | jq .
+echo "Testing Auth Endpoint..."
+curl -s "$BASE_URL/v1/auth/supabase/me" \
+     -H "Authorization: Bearer $TOKEN" | jq .
 
-echo "Testing Chat Endpoint..."
-curl -s -X POST "$BASE_URL/v1/chat/" \
+echo "Testing Permit Endpoints (auth required)..."
+curl -s "$BASE_URL/v1/permits" \
+     -H "Authorization: Bearer $TOKEN" | jq .
+
+curl -s "$BASE_URL/v1/permits/by-business-id/PER-00001" \
+     -H "Authorization: Bearer $TOKEN" | jq .
+
+echo "Testing Chat Endpoint (no auth for MVP)..."
+curl -s -X POST "$BASE_URL/v1/chat" \
      -H "Content-Type: application/json" \
-     -d '{"message": "How many permits are approved?"}' | jq .
-
-echo "Testing Analysis Endpoint..."
-curl -s -X POST "$BASE_URL/v1/permits/analyze" | jq .
+     -d '{"message": "How many permits are approved?", "session_id": "test-123"}' | jq .
 ```
 
 ---
 
 ## 📈 **Performance**
 
-### **Response Times** (Production)
+### **Response Times** (Production - Phase D optimizations)
 - Health check: ~50ms
-- Get all permits: ~300ms  
-- Single permit: ~150ms
-- Chat query: ~2-5s (depends on AI processing)
-- Analysis: ~3-8s (depends on data size)
+- Get permits (paginated): ~200ms  
+- Single permit by ID: ~100ms
+- Chat query: ~800ms-2s (smart context loading, 80% faster)
+- QuickBooks sync: ~500ms (cached data)
+
+**Phase D Performance Improvements**:
+- 90% reduction in QuickBooks API calls (cached in PostgreSQL)
+- 40-50% reduction in OpenAI token usage (smart context loading)
+- 2-3x faster AI chat responses
 
 ### **Optimization Tips**
 - Use specific permit IDs when possible
@@ -481,7 +509,8 @@ Extract structured data from uploaded documents (PDFs or images) using AI.
 **Response Format:**
 ```json
 {
-  "success": true,
+  "status": "success",
+  "filename": "kitchen_plans.pdf",
   "document_type": "project",
   "extracted_data": {
     "Project Name": "Kitchen Renovation",
@@ -491,7 +520,11 @@ Extract structured data from uploaded documents (PDFs or images) using AI.
     "Start Date": "2025-12-01",
     "Address": "123 Main St"
   },
-  "client_id": "CLI-001"
+  "applicant_info": {
+    "Applicant Name": "John Contractor",
+    "Applicant Phone": "555-0100"
+  },
+  "message": "Data extracted successfully. Review and confirm to create project."
 }
 ```
 
@@ -555,17 +588,17 @@ Create a project or permit record from AI-extracted document data.
 **Response Format:**
 ```json
 {
-  "success": true,
+  "status": "success",
   "message": "Project created successfully",
-  "record_id": "PROJ-123",
-  "created_data": {
+  "record_id": "P-001",
+  "data": {
     "Project Name": "Kitchen Renovation",
     "Description": "Complete kitchen remodel",
     "Status": "Planning",
     "Budget": "$25,000",
     "Start Date": "2025-12-01",
     "Client ID": "CLI-001",
-    "Created Date": "2025-11-04"
+    "Project ID": "P-001"
   }
 }
 ```
@@ -686,25 +719,35 @@ const result = await response.json();
 
 ## 🆕 **Version History**
 
-### **v1.1.0** (Current) - November 2025
+### **v3.2** (Current) - December 13, 2025 🔥
+**Phase F: Frontend CRUD Completion (In Progress)**
+- 🚧 Permits page field mapping fix
+- ⏳ Inspections, Invoices, Payments, Site Visits pages
+
+### **v3.1** - December 12, 2025 🔒 **LOCKED**
+**Phase D-E Complete: Performance & Production Hardening**
+- ✅ PostgreSQL migration (Phases A-C complete)
+- ✅ 90% QuickBooks API reduction (cached in database)
+- ✅ 40-50% OpenAI token reduction (smart context loading)
+- ✅ 2-3x faster AI responses
+- ✅ Supabase Auth integration (JWT with refresh)
+- ✅ Test coverage: 90/91 tests (99%)
+- ✅ Google Sheets retired (QB tokens only)
+
+### **v1.1.0** - November 2025
+**Document Processing**
 - ✅ AI Document Processing (GPT-4 Vision)
 - ✅ PDF and Image Upload
 - ✅ Automated Data Extraction
-- ✅ Editable Field Validation
-- ✅ One-Click Record Creation
-- ✅ Enhanced Status Tracking
-- ✅ Client Status Breakdown
 
 ### **v1.0.0** - November 2025
-- ✅ Full Google Sheets integration
+**MVP Launch**
 - ✅ AI chat with permit data access
 - ✅ Complete CRUD operations
-- ✅ Real-time analysis and insights
-- ✅ Production deployment
+- ✅ Production deployment (Fly.io + Cloudflare)
 
 ### **Upcoming Features**
-- v1.2.0: Authentication and rate limiting
-- v1.3.0: Webhook endpoints for real-time updates
-- v1.4.0: Advanced analytics and reporting
-- v1.5.0: Batch document processing
-- v2.0.0: Multi-project support
+- v3.3: Frontend CRUD completion (Phases F.2-F.4)
+- v3.4: Advanced site visits features (GPS, photo AI)
+- v3.5: Role-based access control (RBAC)
+- v4.0: Multi-jurisdiction support

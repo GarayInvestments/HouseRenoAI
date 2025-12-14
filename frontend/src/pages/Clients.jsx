@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Search, Phone, Mail, MapPin, User, Loader2, AlertCircle, Plus, Edit2, Trash2 } from 'lucide-react';
 import api from '../lib/api';
 import useAppStore from '../stores/appStore';
@@ -39,7 +39,8 @@ export default function Clients() {
     fetchClients();
   }, []);
 
-  const fetchClients = async () => {
+  // Stable fetch function - prevents unnecessary re-renders
+  const fetchClients = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -54,7 +55,7 @@ export default function Clients() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const handleOpenCreate = () => {
     setEditingClient(null);
@@ -72,7 +73,7 @@ export default function Clients() {
     setIsModalOpen(true);
   };
 
-  const handleOpenEdit = (client, e) => {
+  const handleOpenEdit = useCallback((client, e) => {
     e.stopPropagation(); // Prevent card click
     setEditingClient(client);
     setFormData({
@@ -87,15 +88,15 @@ export default function Clients() {
       status: client['Status'] || 'Active',
     });
     setIsModalOpen(true);
-  };
+  }, []);
 
-  const handleOpenDelete = (client, e) => {
+  const handleOpenDelete = useCallback((client, e) => {
     e.stopPropagation(); // Prevent card click
     setDeletingClient(client);
     setIsDeleteDialogOpen(true);
-  };
+  }, []);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     
     try {
@@ -113,13 +114,14 @@ export default function Clients() {
       setEditingClient(null);
     } catch (err) {
       console.error('Failed to save client:', err);
-      alert('Failed to save client. Please try again.');
+      // Show error inline instead of blocking alert
+      setError('Failed to save client. Please try again.');
     } finally {
       setSaving(false);
     }
-  };
+  }, [editingClient, formData, fetchClients]);
 
-  const handleDelete = async () => {
+  const handleDelete = useCallback(async () => {
     try {
       const clientId = deletingClient['Client ID'] || deletingClient['ID'];
       await api.deleteClient(clientId);
@@ -128,65 +130,88 @@ export default function Clients() {
       setDeletingClient(null);
     } catch (err) {
       console.error('Failed to delete client:', err);
-      alert('Failed to delete client. Please try again.');
+      // Show error inline instead of blocking alert
+      setError('Failed to delete client. Please try again.');
+      setIsDeleteDialogOpen(false);
+      setDeletingClient(null);
     }
-  };
+  }, [deletingClient, fetchClients]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  // Memoize project counts - avoid recalculating on every render
+  const projectCountsByClient = useMemo(() => {
+    const counts = {};
+    projects.forEach(project => {
+      const clientId = project['Client ID'];
+      if (clientId) {
+        counts[clientId] = (counts[clientId] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [projects]);
+
+  // Memoize status counts - expensive computation only runs when projects change
+  const statusCountsByClient = useMemo(() => {
+    const statusMap = {};
+    
+    projects.forEach(project => {
+      const clientId = project['Client ID'];
+      if (!clientId) return;
+      
+      if (!statusMap[clientId]) {
+        statusMap[clientId] = { active: 0, completed: 0, planning: 0, other: 0 };
+      }
+      
+      const status = (project.Status || '').toLowerCase().trim();
+      
+      if (status === 'permit approved' || status === 'active') {
+        statusMap[clientId].active++;
+      } else if (status === 'completed' || status === 'final inspection complete') {
+        statusMap[clientId].completed++;
+      } else if (status === 'permit submitted' || status === 'planning') {
+        statusMap[clientId].planning++;
+      } else if (status === 'closed / archived' || status === 'inquiry received') {
+        statusMap[clientId].other++;
+      } else if (status) {
+        statusMap[clientId].other++;
+      }
+    });
+    
+    return statusMap;
+  }, [projects]);
+
   const getProjectCount = (clientId) => {
-    return projects.filter(project => project['Client ID'] === clientId).length;
+    return projectCountsByClient[clientId] || 0;
   };
 
   const getProjectStatusCounts = (clientId) => {
-    const clientProjects = projects.filter(project => project['Client ID'] === clientId);
-    const statusCounts = {
-      active: 0,
-      completed: 0,
-      planning: 0,
-      other: 0
-    };
-
-    clientProjects.forEach(project => {
-      const status = (project.Status || '').toLowerCase().trim();
-      
-      // Match the actual status values from Google Sheets
-      if (status === 'permit approved' || status === 'active') {
-        statusCounts.active++;
-      } else if (status === 'completed' || status === 'final inspection complete') {
-        statusCounts.completed++;
-      } else if (status === 'permit submitted' || status === 'planning') {
-        statusCounts.planning++;
-      } else if (status === 'closed / archived' || status === 'inquiry received') {
-        statusCounts.other++;
-      } else if (status) {
-        // Any other non-empty status
-        statusCounts.other++;
-      }
-    });
-
-    return statusCounts;
+    return statusCountsByClient[clientId] || { active: 0, completed: 0, planning: 0, other: 0 };
   };
 
-  const filteredClients = clients.filter((client) => {
-    if (!searchQuery) return true;
+  // Memoize filtered clients - normalize search query once, filter only when dependencies change
+  const filteredClients = useMemo(() => {
+    if (!searchQuery) return clients;
     
-    const query = searchQuery.toLowerCase();
-    const clientName = (client['Full Name'] || client['Client Name'] || '').toLowerCase();
-    const email = (client['Email'] || '').toLowerCase();
-    const phone = (client['Phone'] || '').toLowerCase();
-    const address = (client['Address'] || '').toLowerCase();
+    const query = searchQuery.toLowerCase(); // Normalize once
     
-    return (
-      clientName.includes(query) ||
-      email.includes(query) ||
-      phone.includes(query) ||
-      address.includes(query)
-    );
-  });
+    return clients.filter((client) => {
+      const clientName = (client['Full Name'] || client['Client Name'] || '').toLowerCase();
+      const email = (client['Email'] || '').toLowerCase();
+      const phone = (client['Phone'] || '').toLowerCase();
+      const address = (client['Address'] || '').toLowerCase();
+      
+      return (
+        clientName.includes(query) ||
+        email.includes(query) ||
+        phone.includes(query) ||
+        address.includes(query)
+      );
+    });
+  }, [clients, searchQuery]);
 
   if (loading) {
     return <LoadingScreen />;
@@ -252,8 +277,9 @@ export default function Clients() {
               cursor: 'pointer',
               transition: 'all 0.2s'
             }}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#1D4ED8'}
-            onMouseLeave={(e) => e.target.style.backgroundColor = '#2563EB'}
+            // CSS-only hover - no React state change
+            onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#1D4ED8'; }}
+            onMouseOut={(e) => { e.currentTarget.style.backgroundColor = '#2563EB'; }}
           >
             <Plus size={18} />
             New Client
@@ -288,13 +314,14 @@ export default function Clients() {
               outline: 'none',
               transition: 'all 0.2s ease'
             }}
+            // CSS-only focus effects - no state updates
             onFocus={(e) => {
-              e.target.style.borderColor = '#2563EB';
-              e.target.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.1)';
+              e.currentTarget.style.borderColor = '#2563EB';
+              e.currentTarget.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.1)';
             }}
             onBlur={(e) => {
-              e.target.style.borderColor = '#E2E8F0';
-              e.target.style.boxShadow = 'none';
+              e.currentTarget.style.borderColor = '#E2E8F0';
+              e.currentTarget.style.boxShadow = 'none';
             }}
           />
         </div>
@@ -353,11 +380,12 @@ export default function Clients() {
                     transition: 'all 0.2s ease',
                     boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)'
                   }}
-                  onMouseEnter={(e) => {
+                  // CSS-only hover - no state updates, prevents re-renders
+                  onMouseOver={(e) => {
                     e.currentTarget.style.boxShadow = '0 10px 20px -5px rgba(0, 0, 0, 0.1)';
                     e.currentTarget.style.transform = 'translateY(-2px)';
                   }}
-                  onMouseLeave={(e) => {
+                  onMouseOut={(e) => {
                     e.currentTarget.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.05)';
                     e.currentTarget.style.transform = 'translateY(0)';
                   }}
@@ -398,8 +426,9 @@ export default function Clients() {
                           justifyContent: 'center',
                           transition: 'all 0.2s'
                         }}
-                        onMouseEnter={(e) => e.target.style.backgroundColor = '#E2E8F0'}
-                        onMouseLeave={(e) => e.target.style.backgroundColor = '#F1F5F9'}
+                        // CSS-only hover
+                        onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#E2E8F0'; }}
+                        onMouseOut={(e) => { e.currentTarget.style.backgroundColor = '#F1F5F9'; }}
                       >
                         <Edit2 size={16} style={{ color: '#475569' }} />
                       </button>
@@ -416,8 +445,9 @@ export default function Clients() {
                           justifyContent: 'center',
                           transition: 'all 0.2s'
                         }}
-                        onMouseEnter={(e) => e.target.style.backgroundColor = '#FECACA'}
-                        onMouseLeave={(e) => e.target.style.backgroundColor = '#FEE2E2'}
+                        // CSS-only hover
+                        onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#FECACA'; }}
+                        onMouseOut={(e) => { e.currentTarget.style.backgroundColor = '#FEE2E2'; }}
                       >
                         <Trash2 size={16} style={{ color: '#DC2626' }} />
                       </button>

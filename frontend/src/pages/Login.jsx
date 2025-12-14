@@ -30,22 +30,14 @@ export default function Login() {
 
   return (
     <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #334155 100%)',
-      padding: '20px'
+      background: 'white',
+      borderRadius: '16px',
+      boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
+      padding: '48px',
+      maxWidth: '440px',
+      width: '100%'
     }}>
-      <div style={{
-        background: 'white',
-        borderRadius: '16px',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
-        padding: '48px',
-        maxWidth: '440px',
-        width: '100%'
-      }}>
-        {/* Logo */}
+      {/* Logo */}
         <div style={{
           display: 'flex',
           justifyContent: 'center',
@@ -233,7 +225,6 @@ export default function Login() {
         }}>
           © 2025 House Renovators LLC. All rights reserved.
         </div>
-      </div>
     </div>
   );
 }

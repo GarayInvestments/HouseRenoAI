@@ -14,8 +14,8 @@ from datetime import datetime, timezone
 import logging
 
 from app.db.session import get_db
-from app.db.models import Permit
-from app.routes.auth import get_current_user
+from app.db.models import Permit, User
+from app.routes.auth_supabase import get_current_user
 from app.services.permit_service import PermitService
 from pydantic import BaseModel, Field
 
@@ -116,7 +116,7 @@ class PrecheckResult(BaseModel):
 async def create_permit(
     permit_data: PermitCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """
     Create a new permit for a project.
@@ -162,7 +162,7 @@ async def list_permits(
     skip: int = 0,
     limit: int = 100,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """
     List permits with optional filtering.
@@ -199,7 +199,7 @@ async def list_permits(
 async def get_permit_by_business_id(
     business_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """
     Get a permit by business ID (e.g., PER-00001).
@@ -229,7 +229,7 @@ async def get_permit_by_business_id(
 async def get_permit(
     permit_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """
     Get a permit by ID.
@@ -260,7 +260,7 @@ async def update_permit(
     permit_id: UUID,
     permit_data: PermitUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """
     Update a permit's details (does not change status).
@@ -317,7 +317,7 @@ async def update_permit_status(
     permit_id: UUID,
     status_data: PermitStatusUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """
     Update a permit's status with history tracking.
@@ -362,7 +362,7 @@ async def submit_permit(
     permit_id: UUID,
     submit_data: PermitSubmit,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """
     Submit a permit for review (changes status from Draft to Submitted).
@@ -415,7 +415,7 @@ async def precheck_permit(
     permit_id: UUID,
     inspection_type: str,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """
     Run AI-powered precheck to determine if inspection can be scheduled.
@@ -474,7 +474,7 @@ async def precheck_permit(
 async def delete_permit(
     permit_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """
     Delete a permit (soft delete - changes status to Cancelled).
@@ -512,3 +512,4 @@ async def delete_permit(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete permit: {str(e)}"
         )
+

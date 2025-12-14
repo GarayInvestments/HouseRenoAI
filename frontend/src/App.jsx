@@ -2,10 +2,8 @@ import { useState, useEffect } from 'react';
 import { useAppStore } from './stores/appStore';
 import { useAuthStore } from './stores/authStore';
 import LoadingScreen from './components/LoadingScreen';
-import Sidebar from './components/Sidebar';
-import TopBar from './components/TopBar';
-import MobileDrawer from './components/MobileDrawer';
-import BottomNav from './components/BottomNav';
+import AppLayout from './layouts/AppLayout';
+import AuthLayout from './layouts/AuthLayout';
 import Dashboard from './pages/Dashboard';
 import AIAssistant from './pages/AIAssistantNew';
 import Permits from './pages/Permits';
@@ -24,8 +22,24 @@ import AuthResetPassword from './pages/AuthResetPassword';
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
-  const { currentView, currentProjectId, currentPermitId, currentClientId, setCurrentView } = useAppStore();
+  const { currentView, currentProjectId, currentPermitId, currentClientId, setCurrentView, setIsMobile } = useAppStore();
   const { initAuth, isAuthenticated } = useAuthStore();
+
+  // Handle window resize for mobile detection
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    
+    // Set initial value
+    handleResize();
+    
+    // Add listener
+    window.addEventListener('resize', handleResize);
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', handleResize);
+  }, [setIsMobile]);
 
   useEffect(() => {
     // Check authentication and URL path on initial load
@@ -136,36 +150,20 @@ function App() {
     }
   };
 
-  // Public pages (no sidebar/topbar)
+  // Public pages (no sidebar/topbar) - Use AuthLayout
   const isPublicPage = ['login', 'privacy', 'terms', 'auth-confirm', 'auth-reset-password'].includes(currentView);
 
   if (isPublicPage) {
+    // Use AuthLayout for login/auth pages
+    if (currentView === 'login' || currentView === 'auth-confirm' || currentView === 'auth-reset-password') {
+      return <AuthLayout>{renderContent()}</AuthLayout>;
+    }
+    // No layout for privacy/terms (keep existing simple structure)
     return renderContent();
   }
 
-  return (
-    <div className="flex h-screen overflow-hidden">
-      {/* Sidebar - Desktop */}
-      <Sidebar />
-
-      {/* Mobile Drawer */}
-      <MobileDrawer />
-
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden bg-gray-50">
-        {/* Top Bar */}
-        <TopBar />
-
-        {/* Page Content */}
-        <main className="flex-1 overflow-y-auto">
-          {renderContent()}
-        </main>
-
-        {/* Bottom Navigation - Mobile Only */}
-        <BottomNav />
-      </div>
-    </div>
-  );
+  // Authenticated pages - Use AppLayout
+  return <AppLayout>{renderContent()}</AppLayout>;
 }
 
 export default App;

@@ -4,7 +4,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useState, useRef, useEffect } from 'react';
 
 export default function TopBar() {
-  const { connectionStatus, setMobileDrawerOpen } = useAppStore();
+  const { connectionStatus, setDrawerOpen } = useAppStore();
   const { currentUser, logout } = useAuthStore();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -54,7 +54,7 @@ export default function TopBar() {
         }}>
           {/* Left: Mobile Menu Button */}
           <button
-            onClick={() => setMobileDrawerOpen(true)}
+            onClick={() => setDrawerOpen(true)}
             className="mobile-only"
             style={{
               padding: '10px',

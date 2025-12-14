@@ -1,20 +1,34 @@
 import { FileText, Plus, Search, Filter, CheckCircle, Clock, AlertCircle, Loader2, User, FolderKanban } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import api from '../lib/api';
 import { useAppStore } from '../stores/appStore';
+import { usePermitsStore } from '../stores/permitsStore';
 import LoadingScreen from '../components/LoadingScreen';
 import ErrorState from '../components/ErrorState';
 
 export default function Permits() {
-  const { navigateToPermit, permitsFilter, setPermitsFilter } = useAppStore();
+  const { navigateToPermit } = useAppStore();
+  
+  // Use permitsStore for data and filtering
+  const { 
+    permits, 
+    loading, 
+    error, 
+    filter,
+    setPermits,
+    setLoading,
+    setError,
+    setFilter,
+    getFilteredPermits,
+    isCacheValid
+  } = usePermitsStore();
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [hoveredCard, setHoveredCard] = useState(null);
   const [hoveredButton, setHoveredButton] = useState(false);
-  const [permits, setPermits] = useState([]);
   const [projects, setProjects] = useState([]);
   const [clients, setClients] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [clientFilter, setClientFilter] = useState(null); // Local client filter
 
   useEffect(() => {
     fetchAllData();
@@ -23,17 +37,24 @@ export default function Permits() {
   }, []);
 
   const fetchAllData = async () => {
+    // Use cache if valid
+    if (isCacheValid() && permits.length > 0) {
+      return;
+    }
+    
     try {
       setLoading(true);
       setError(null);
       
       // Fetch all data in parallel
-      const [permitsData, projectsData, clientsData] = await Promise.all([
+      const [permitsResponse, projectsData, clientsData] = await Promise.all([
         api.getPermits(),
         api.getProjects(),
         api.getClients()
       ]);
       
+      // Handle paginated response from permits endpoint
+      const permitsData = permitsResponse?.items || permitsResponse || [];
       setPermits(Array.isArray(permitsData) ? permitsData : []);
       setProjects(Array.isArray(projectsData) ? projectsData : []);
       setClients(Array.isArray(clientsData) ? clientsData : []);
@@ -45,49 +66,71 @@ export default function Permits() {
   };
 
   const getProjectName = (projectId) => {
-    const project = projects.find(p => p['Project ID'] === projectId);
-    return project?.['Project Name'] || projectId || 'Unknown Project';
+    const project = projects.find(p => 
+      p['Project ID'] === projectId || 
+      p.project_id === projectId
+    );
+    return project?.['Project Name'] || project?.project_name || projectId || 'Unknown Project';
   };
 
   const getClientNameForPermit = (permit) => {
     // First, find the project for this permit
-    const project = projects.find(p => p['Project ID'] === permit['Project ID']);
+    const permitProjectId = permit['Project ID'] || permit.project_id;
+    const project = projects.find(p => 
+      p['Project ID'] === permitProjectId || 
+      p.project_id === permitProjectId
+    );
     if (!project) return null;
     
     // Then find the client using the project's client ID
-    const clientId = project['Client ID'];
+    const clientId = project['Client ID'] || project.client_id;
     if (!clientId) return null;
     
-    const client = clients.find(c => c['Client ID'] === clientId || c['ID'] === clientId);
-    return client?.['Full Name'] || client?.['Client Name'] || clientId;
+    const client = clients.find(c => 
+      c['Client ID'] === clientId || 
+      c['ID'] === clientId ||
+      c.client_id === clientId ||
+      c.id === clientId
+    );
+    return client?.['Full Name'] || client?.['Client Name'] || client?.full_name || clientId;
   };
 
-  // Apply client filter first if present
-  let baseFilteredPermits = permits;
-  if (permitsFilter?.clientId) {
-    // Get all project IDs for this client
-    const clientProjectIds = projects
-      .filter(p => p['Client ID'] === permitsFilter.clientId)
-      .map(p => p['Project ID']);
-    // Filter permits by those project IDs
-    baseFilteredPermits = permits.filter(permit => clientProjectIds.includes(permit['Project ID']));
-  }
-
-  // Then apply search filter
-  const filteredPermits = baseFilteredPermits.filter(permit =>
-    permit['Permit Number']?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    permit['Permit Status']?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Memoized filtered permits (status filter + client filter + search)
+  const filteredPermits = useMemo(() => {
+    let result = getFilteredPermits(); // Apply status filter from store
+    
+    // Apply client filter
+    if (clientFilter) {
+      // Get all project IDs for this client
+      const clientProjectIds = projects
+        .filter(p => p['Client ID'] === clientFilter)
+        .map(p => p['Project ID']);
+      // Filter permits by those project IDs
+      result = result.filter(permit => clientProjectIds.includes(permit['Project ID']));
+    }
+    
+    // Apply search filter
+    if (searchTerm) {
+      result = result.filter(permit => {
+        const permitNumber = permit['Permit Number'] || permit.permit_number || permit.business_id || '';
+        const permitStatus = permit['Permit Status'] || permit.status || '';
+        return permitNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+               permitStatus.toLowerCase().includes(searchTerm.toLowerCase());
+      });
+    }
+    
+    return result;
+  }, [permits, filter, clientFilter, searchTerm, projects]);
 
   // Get client name for filter badge
   const getFilteredClientName = () => {
-    if (!permitsFilter?.clientId) return null;
-    const client = clients.find(c => c['Client ID'] === permitsFilter.clientId || c['ID'] === permitsFilter.clientId);
-    return client?.['Full Name'] || client?.['Client Name'] || permitsFilter.clientId;
+    if (!clientFilter) return null;
+    const client = clients.find(c => c['Client ID'] === clientFilter || c['ID'] === clientFilter);
+    return client?.['Full Name'] || client?.['Client Name'] || clientFilter;
   };
 
-  const clearFilter = () => {
-    setPermitsFilter(null);
+  const clearClientFilter = () => {
+    setClientFilter(null);
   };
 
   const getStatusColor = (status) => {
@@ -162,13 +205,13 @@ export default function Permits() {
                 color: '#64748B',
                 fontSize: '14px'
               }}>
-                {permitsFilter?.clientId 
+                {clientFilter 
                   ? `Showing permits for ${getFilteredClientName()}` 
                   : 'Manage and track all your building permits'
                 }
               </p>
             </div>
-            {permitsFilter?.clientId && (
+            {clientFilter && (
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -181,7 +224,7 @@ export default function Permits() {
               }}>
                 <span style={{ fontWeight: '500' }}>Client: {getFilteredClientName()}</span>
                 <button
-                  onClick={clearFilter}
+                  onClick={clearClientFilter}
                   style={{
                     background: 'none',
                     border: 'none',
@@ -356,14 +399,16 @@ export default function Permits() {
             margin: '0 auto'
           }}>
             {filteredPermits.map((permit) => {
-              const statusStyle = getStatusColor(permit['Permit Status']);
-              const isHovered = hoveredCard === permit['Permit ID'];
+              const permitStatus = permit['Permit Status'] || permit.status;
+              const permitId = permit['Permit ID'] || permit.permit_id;
+              const statusStyle = getStatusColor(permitStatus);
+              const isHovered = hoveredCard === permitId;
 
               return (
                 <div
-                  key={permit['Permit ID']}
-                  onClick={() => navigateToPermit(permit['Permit ID'])}
-                  onMouseEnter={() => setHoveredCard(permit['Permit ID'])}
+                  key={permitId}
+                  onClick={() => navigateToPermit(permitId)}
+                  onMouseEnter={() => setHoveredCard(permitId)}
                   onMouseLeave={() => setHoveredCard(null)}
                   style={{
                   backgroundColor: '#FFFFFF',
@@ -403,13 +448,15 @@ export default function Permits() {
                         fontWeight: '600',
                         color: '#1E293B',
                         marginBottom: '4px'
-                      }}>{permit['Permit Number'] || 'Unknown Permit'}</h3>
+                      }}>
+                        {permit['Permit Number'] || permit.permit_number || permit.business_id || 'Unknown Permit'}
+                      </h3>
                       <div style={{
                         display: 'flex',
                         flexDirection: 'column',
                         gap: '2px'
                       }}>
-                        {permit['Project ID'] && (
+                        {(permit['Project ID'] || permit.project_id) && (
                           <p style={{
                             fontSize: '12px',
                             color: '#64748B',
@@ -418,7 +465,7 @@ export default function Permits() {
                             gap: '4px'
                           }}>
                             <FolderKanban size={12} />
-                            {getProjectName(permit['Project ID'])}
+                            {getProjectName(permit['Project ID'] || permit.project_id)}
                           </p>
                         )}
                         {getClientNameForPermit(permit) && (
@@ -456,13 +503,13 @@ export default function Permits() {
                       fontWeight: '500',
                       border: `1px solid ${statusStyle.border}`
                     }}>
-                      {getStatusIcon(permit['Permit Status'])}
-                      {permit['Permit Status'] || 'Unknown'}
+                      {getStatusIcon(permitStatus)}
+                      {permitStatus || 'Unknown'}
                     </span>
                     <span style={{
                       fontSize: '13px',
                       color: '#64748B'
-                    }}>{formatDate(permit['Date Submitted'])}</span>
+                    }}>{formatDate(permit['Date Submitted'] || permit.application_date)}</span>
                   </div>
                 </div>
               );

@@ -1,19 +1,33 @@
 import { FolderKanban, Plus, Search, MapPin, Users, Calendar, AlertCircle, Loader2 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import api from '../lib/api';
 import { useAppStore } from '../stores/appStore';
+import { useProjectsStore } from '../stores/projectsStore';
 import LoadingScreen from '../components/LoadingScreen';
 import ErrorState from '../components/ErrorState';
 
 export default function Projects() {
-  const { navigateToProject, projectsFilter, setProjectsFilter } = useAppStore();
+  const { navigateToProject } = useAppStore();
+  
+  // Use projectsStore for data and filtering
+  const { 
+    projects, 
+    loading, 
+    error, 
+    filter,
+    setProjects,
+    setLoading,
+    setError,
+    setFilter,
+    getFilteredProjects,
+    isCacheValid
+  } = useProjectsStore();
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [hoveredCard, setHoveredCard] = useState(null);
   const [hoveredButton, setHoveredButton] = useState(false);
-  const [projects, setProjects] = useState([]);
   const [clients, setClients] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [clientFilter, setClientFilter] = useState(null); // Local client filter
 
   useEffect(() => {
     fetchProjects();
@@ -22,6 +36,11 @@ export default function Projects() {
   }, []);
 
   const fetchProjects = async () => {
+    // Use cache if valid
+    if (isCacheValid() && projects.length > 0) {
+      return;
+    }
+    
     try {
       setLoading(true);
       setError(null);
@@ -38,27 +57,35 @@ export default function Projects() {
     }
   };
 
-  // Apply client filter first if present
-  let baseFilteredProjects = projects;
-  if (projectsFilter?.clientId) {
-    baseFilteredProjects = projects.filter(project => project['Client ID'] === projectsFilter.clientId);
-  }
-
-  // Then apply search filter
-  const filteredProjects = baseFilteredProjects.filter(project =>
-    project['Project Name']?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    project['Project Address']?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Memoized filtered projects (status filter + client filter + search)
+  const filteredProjects = useMemo(() => {
+    let result = getFilteredProjects(); // Apply status filter from store
+    
+    // Apply client filter
+    if (clientFilter) {
+      result = result.filter(project => project['Client ID'] === clientFilter);
+    }
+    
+    // Apply search filter
+    if (searchTerm) {
+      result = result.filter(project =>
+        project['Project Name']?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        project['Project Address']?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    return result;
+  }, [projects, filter, clientFilter, searchTerm]);
 
   // Get client name for filter badge
   const getFilteredClientName = () => {
-    if (!projectsFilter?.clientId) return null;
-    const client = clients.find(c => c['Client ID'] === projectsFilter.clientId || c['ID'] === projectsFilter.clientId);
-    return client?.['Full Name'] || client?.['Client Name'] || projectsFilter.clientId;
+    if (!clientFilter) return null;
+    const client = clients.find(c => c['Client ID'] === clientFilter || c['ID'] === clientFilter);
+    return client?.['Full Name'] || client?.['Client Name'] || clientFilter;
   };
 
-  const clearFilter = () => {
-    setProjectsFilter(null);
+  const clearClientFilter = () => {
+    setClientFilter(null);
   };
 
   // Get client name for a project card
@@ -157,7 +184,7 @@ export default function Projects() {
                 fontWeight: '600',
                 color: '#1E293B'
               }}>Projects</h1>
-              {projectsFilter?.clientId && (
+              {clientFilter && (
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -170,7 +197,7 @@ export default function Projects() {
                 }}>
                   <span>Client: {getFilteredClientName()}</span>
                   <button
-                    onClick={clearFilter}
+                    onClick={clearClientFilter}
                     style={{
                       background: 'none',
                       border: 'none',
@@ -192,7 +219,7 @@ export default function Projects() {
               color: '#64748B',
               fontSize: '14px'
             }}>
-              {projectsFilter?.clientId 
+              {clientFilter 
                 ? `Showing projects for ${getFilteredClientName()}`
                 : 'Track and manage all your construction projects'}
             </p>
