@@ -9,6 +9,7 @@ import AIAssistant from './pages/AIAssistantNew';
 import Permits from './pages/Permits';
 import PermitDetails from './pages/PermitDetails';
 import Inspections from './pages/Inspections';
+import InspectionDetails from './pages/InspectionDetails';
 import Projects from './pages/Projects';
 import ProjectDetails from './pages/ProjectDetails';
 import Clients from './pages/Clients';
@@ -23,7 +24,7 @@ import AuthResetPassword from './pages/AuthResetPassword';
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
-  const { currentView, currentProjectId, currentPermitId, currentClientId, setCurrentView, setIsMobile } = useAppStore();
+  const { currentView, currentProjectId, currentPermitId, currentInspectionId, currentClientId, setCurrentView, setIsMobile } = useAppStore();
   const { initAuth, isAuthenticated } = useAuthStore();
 
   // Handle window resize for mobile detection
@@ -114,6 +115,11 @@ function App() {
     // If viewing permit details
     if (currentView === 'permit-details' && currentPermitId) {
       return <PermitDetails />;
+    }
+
+    // If viewing inspection details
+    if (currentView === 'inspection-details' && currentInspectionId) {
+      return <InspectionDetails />;
     }
 
     // If viewing client details
