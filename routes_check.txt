@@ -1,0 +1,122 @@
+[
+  {
+    "path": "/v1/auth/supabase/me",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "path": "/v1/auth/supabase/me/metadata",
+    "methods": [
+      "PUT"
+    ]
+  },
+  {
+    "path": "/v1/auth/supabase/users/{user_id}",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "path": "/v1/auth/supabase/users/{user_id}/role",
+    "methods": [
+      "PUT"
+    ]
+  },
+  {
+    "path": "/v1/auth/supabase/users/{user_id}",
+    "methods": [
+      "DELETE"
+    ]
+  },
+  {
+    "path": "/v1/auth/supabase/health",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "path": "/v1/chat/",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "path": "/v1/chat/query",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "path": "/v1/chat/memory/{session_id}",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "path": "/v1/chat/memory/{session_id}/clear",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "path": "/v1/chat/memory/stats",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "path": "/v1/chat/sessions",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "path": "/v1/chat/sessions",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "path": "/v1/chat/sessions/{session_id}",
+    "methods": [
+      "DELETE"
+    ]
+  },
+  {
+    "path": "/v1/chat/sessions/{session_id}",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "path": "/v1/chat/sessions/{session_id}/metadata",
+    "methods": [
+      "PUT"
+    ]
+  },
+  {
+    "path": "/v1/chat/status",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "path": "/v1/permits",
+    "methods": [
+      "POST"
+    ]
+  },
+  {
+    "path": "/v1/permits",
+    "methods": [
+      "GET"
+    ]
+  },
+  {
+    "path": "/v1/permits/by-business-id/{business_id}",
+    "methods": [
+      "GET"
+    ]
+  }
+]

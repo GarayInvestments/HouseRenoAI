@@ -20,8 +20,7 @@ from app.services.inspection_service import InspectionService
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/inspections", tags=["inspections"])
-
+router = APIRouter()
 
 # Pydantic Models
 class InspectionCreate(BaseModel):
@@ -61,8 +60,8 @@ class InspectionResponse(BaseModel):
     assigned_to: Optional[UUID]
     result: Optional[str]
     notes: Optional[str]
-    photos: Optional[dict]
-    deficiencies: Optional[dict]
+    photos: Optional[List[dict]] = None
+    deficiencies: Optional[List[dict]] = None
     extra: Optional[dict]
     created_at: datetime
     updated_at: datetime
@@ -292,7 +291,7 @@ async def add_inspection_photo(
             db=db,
             inspection_id=str(inspection_id),
             photo_url=photo.url,
-            uploaded_by=current_user.get("email"),
+            uploaded_by=current_user.email,
             timestamp=photo.timestamp,
             gps=photo.gps,
             notes=photo.notes
