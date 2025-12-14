@@ -16,22 +16,39 @@ const usePaymentsStore = create((set, get) => ({
   selectedPayment: null,
   qbSyncStatus: 'idle', // 'idle', 'syncing', 'success', 'error'
   qbSyncError: null,
+  lastSyncTime: null,
+  nextSyncTime: null,
+  syncStatusData: null,
 
   // Actions
   setFilter: (filter) => set({ filter }),
   
   setSelectedPayment: (payment) => set({ selectedPayment: payment }),
 
-  // Fetch all payments
+  // Fetch all payments (from cache)
   fetchPayments: async () => {
     set({ loading: true, error: null });
     try {
-      const data = await api.getPayments();
-      const paymentsArray = data?.items || data || [];
+      // Fetch from cache endpoint
+      const response = await fetch('/v1/quickbooks/sync/payments/cached', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('supabase_token')}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Failed to fetch payments from cache');
+      
+      const data = await response.json();
+      const paymentsArray = data?.payments || [];
+      
       set({ 
         payments: Array.isArray(paymentsArray) ? paymentsArray : [], 
         loading: false 
       });
+      
+      // Fetch sync status
+      await get().fetchSyncStatus();
+      
       return paymentsArray;
     } catch (error) {
       console.error('Failed to fetch payments:', error);
@@ -41,6 +58,43 @@ const usePaymentsStore = create((set, get) => ({
         payments: []
       });
       return [];
+    }
+  },
+  
+  // Fetch sync status
+  fetchSyncStatus: async () => {
+    try {
+      const response = await fetch('/v1/quickbooks/sync/status', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('supabase_token')}`
+        }
+      });
+      
+      if (!response.ok) return;
+      
+      const data = await response.json();
+      const paymentStatus = data?.status?.find(s => s.entity_type === 'payments');
+      
+      if (paymentStatus) {
+        set({ 
+          lastSyncTime: paymentStatus.last_sync_at,
+          syncStatusData: paymentStatus
+        });
+      }
+      
+      // Fetch scheduler status for next sync time
+      const schedResponse = await fetch('/v1/quickbooks/sync/scheduler', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('supabase_token')}`
+        }
+      });
+      
+      if (schedResponse.ok) {
+        const schedData = await schedResponse.json();
+        set({ nextSyncTime: schedData.next_run_time });
+      }
+    } catch (error) {
+      console.error('Failed to fetch sync status:', error);
     }
   },
 
@@ -69,7 +123,16 @@ const usePaymentsStore = create((set, get) => ({
   syncWithQuickBooks: async () => {
     set({ qbSyncStatus: 'syncing', qbSyncError: null });
     try {
-      await api.syncPayments();
+      const response = await fetch('/v1/quickbooks/sync/payments', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('supabase_token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) throw new Error('Sync failed');
+      
       const { fetchPayments } = get();
       await fetchPayments();
       set({ qbSyncStatus: 'success' });

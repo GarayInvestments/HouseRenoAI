@@ -16,22 +16,39 @@ const useInvoicesStore = create((set, get) => ({
   selectedInvoice: null,
   qbSyncStatus: 'idle', // 'idle', 'syncing', 'success', 'error'
   qbSyncError: null,
+  lastSyncTime: null,
+  nextSyncTime: null,
+  syncStatusData: null,
 
   // Actions
   setFilter: (filter) => set({ filter }),
   
   setSelectedInvoice: (invoice) => set({ selectedInvoice: invoice }),
 
-  // Fetch all invoices
+  // Fetch all invoices (from cache)
   fetchInvoices: async () => {
     set({ loading: true, error: null });
     try {
-      const data = await api.getInvoices();
-      const invoicesArray = data?.items || data || [];
+      // Fetch from cache endpoint
+      const response = await fetch('/v1/quickbooks/sync/invoices/cached', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('supabase_token')}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Failed to fetch invoices from cache');
+      
+      const data = await response.json();
+      const invoicesArray = data?.invoices || [];
+      
       set({ 
         invoices: Array.isArray(invoicesArray) ? invoicesArray : [], 
         loading: false 
       });
+      
+      // Fetch sync status
+      await get().fetchSyncStatus();
+      
       return invoicesArray;
     } catch (error) {
       console.error('Failed to fetch invoices:', error);
@@ -41,6 +58,43 @@ const useInvoicesStore = create((set, get) => ({
         invoices: []
       });
       return [];
+    }
+  },
+  
+  // Fetch sync status
+  fetchSyncStatus: async () => {
+    try {
+      const response = await fetch('/v1/quickbooks/sync/status', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('supabase_token')}`
+        }
+      });
+      
+      if (!response.ok) return;
+      
+      const data = await response.json();
+      const invoiceStatus = data?.status?.find(s => s.entity_type === 'invoices');
+      
+      if (invoiceStatus) {
+        set({ 
+          lastSyncTime: invoiceStatus.last_sync_at,
+          syncStatusData: invoiceStatus
+        });
+      }
+      
+      // Fetch scheduler status for next sync time
+      const schedResponse = await fetch('/v1/quickbooks/sync/scheduler', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('supabase_token')}`
+        }
+      });
+      
+      if (schedResponse.ok) {
+        const schedData = await schedResponse.json();
+        set({ nextSyncTime: schedData.next_run_time });
+      }
+    } catch (error) {
+      console.error('Failed to fetch sync status:', error);
     }
   },
 
@@ -155,8 +209,16 @@ const useInvoicesStore = create((set, get) => ({
   syncWithQuickBooks: async () => {
     set({ qbSyncStatus: 'syncing', qbSyncError: null });
     try {
-      // This would call a QB sync endpoint
-      await api.syncPayments(); // Reuse payments sync for now
+      const response = await fetch('/v1/quickbooks/sync/invoices', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('supabase_token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) throw new Error('Sync failed');
+      
       const { fetchInvoices } = get();
       await fetchInvoices();
       set({ qbSyncStatus: 'success' });

@@ -1,4 +1,4 @@
-import { FileText, Plus, Search, Filter, Calendar, DollarSign, Building2, User, Loader2, CheckCircle, Clock, XCircle, AlertCircle, RefreshCw } from 'lucide-react';
+import { FileText, Plus, Search, Filter, Calendar, DollarSign, Building2, User, Loader2, CheckCircle, Clock, XCircle, AlertCircle, RefreshCw, Database } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import api from '../lib/api';
 import { useAppStore } from '../stores/appStore';
@@ -21,7 +21,9 @@ export default function Invoices() {
     getInvoiceStats,
     syncWithQuickBooks,
     qbSyncStatus,
-    qbSyncError
+    qbSyncError,
+    lastSyncTime,
+    nextSyncTime
   } = useInvoicesStore();
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -75,6 +77,41 @@ export default function Invoices() {
     if (!dateString) return 'Not set';
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  // Format currency
+  const formatCurrency = (amount) => {
+    if (amount === null || amount === undefined) return '$0.00';
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(amount);
+  };
+  
+  // Calculate time since last sync
+  const getTimeSinceSync = () => {
+    if (!lastSyncTime) return null;
+    const now = new Date();
+    const syncDate = new Date(lastSyncTime);
+    const diffMs = now - syncDate;
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    
+    if (diffHours < 1) return `${diffMins} min ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    return `${Math.floor(diffHours / 24)}d ago`;
+  };
+  
+  // Get sync freshness color
+  const getSyncFreshnessColor = () => {
+    if (!lastSyncTime) return '#6B7280'; // Gray
+    const now = new Date();
+    const syncDate = new Date(lastSyncTime);
+    const diffHours = (now - syncDate) / (1000 * 60 * 60);
+    
+    if (diffHours < 4) return '#10B981'; // Green - fresh
+    if (diffHours < 8) return '#F59E0B'; // Yellow - stale
+    return '#EF4444'; // Red - very stale
   };
 
   // Format currency
@@ -231,6 +268,62 @@ export default function Invoices() {
             New Invoice
           </button>
         </div>
+      </div>
+
+      {/* Sync Status Banner */}
+      <div style={{
+        backgroundColor: 'white',
+        borderRadius: '12px',
+        padding: '16px 20px',
+        marginBottom: '20px',
+        border: '1px solid #E5E7EB',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '12px'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Database size={18} color={getSyncFreshnessColor()} />
+            <span style={{ fontSize: '14px', color: '#6B7280', fontWeight: '500' }}>
+              Reading from cache
+            </span>
+          </div>
+          
+          {lastSyncTime && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                backgroundColor: getSyncFreshnessColor()
+              }} />
+              <span style={{ fontSize: '14px', color: '#374151' }}>
+                Last synced: <strong>{getTimeSinceSync()}</strong>
+              </span>
+            </div>
+          )}
+          
+          {nextSyncTime && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Clock size={16} color='#6B7280' />
+              <span style={{ fontSize: '14px', color: '#6B7280' }}>
+                Next: {new Date(nextSyncTime).toLocaleTimeString('en-US', { 
+                  hour: 'numeric', 
+                  minute: '2-digit',
+                  hour12: true 
+                })}
+              </span>
+            </div>
+          )}
+        </div>
+        
+        {qbSyncError && (
+          <span style={{ fontSize: '13px', color: '#EF4444' }}>
+            {qbSyncError}
+          </span>
+        )}
       </div>
 
       {/* Error banner for QB sync */}
