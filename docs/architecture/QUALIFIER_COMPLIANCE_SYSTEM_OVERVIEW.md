@@ -41,8 +41,7 @@ This document clarifies that distinction and establishes the future direction of
   - Permit application reviews
   - Client meetings
 - **Minimum requirement**: Tracked per permit (at least one action required)
-- **Backfilling**: Normal operational workflow (oversight may be recorded after the fact)
-- **Timestamp transparency**: System records both oversight_date (when occurred) and recorded_at (when entered)
+- **Recording**: May be entered at time of occurrence or later; oversight date is authoritative
 
 ### Project Relationships
 - **Project ↔ Licensed Business**: **1:1** (project belongs to exactly one Licensed Business)
@@ -274,23 +273,13 @@ This standard intentionally:
 
 * * *
 
-### Oversight Recording and Backfilling
+### Oversight Recording
 
-Oversight actions may be recorded contemporaneously or entered after the fact based on operational realities. The system permits backdated oversight entries to reflect real-world supervision that was not immediately documented. Once recorded, an oversight action is treated as valid for compliance tracking purposes.
+Oversight actions may be recorded at the time they occur or entered later based on operational workflow. The system treats the recorded oversight date as the authoritative date for compliance purposes. As long as the oversight date reflects when the action occurred, the record is considered valid.
 
-The system retains both the date the oversight occurred and the date it was recorded to preserve an accurate historical record:
-
-- **oversight_date** (or `action_date`) - When the oversight activity occurred in the real world
-- **recorded_at** (or `created_at`) - When the entry was made in the system
-
-**Key Principles**:
-
-1. **Backfilling is explicitly allowed** - Oversight actions may be entered at any time, including past dates
-2. **No compliance tiers** - Once recorded, oversight is treated as valid regardless of entry timing
-3. **Transparency over enforcement** - The system is a recordkeeping tool, not a real-time policing mechanism
-4. **Audit trail preserved** - Timestamp differences provide historical context without blocking operations
-
-**Rationale**: This approach balances compliance recordkeeping with operational flexibility. Construction oversight often involves field work, travel, and delayed documentation. The system accommodates this reality while maintaining clear records for audit purposes.
+The system retains both dates for historical record:
+- **oversight_date** (or `action_date`) - When the oversight activity occurred
+- **recorded_at** (or `created_at`) - When the entry was made (auto-timestamped)
 
 * * *
 
