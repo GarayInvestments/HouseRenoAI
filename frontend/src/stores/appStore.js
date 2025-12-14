@@ -25,6 +25,10 @@ export const useAppStore = create((set, get) => ({
   setCurrentClientId: (id) => set({ currentClientId: id }),
   navigateToClient: (id) => set({ currentView: 'client-details', currentClientId: id }),
   navigateToClients: () => set({ currentView: 'clients', currentClientId: null }),
+  currentInspectionId: null,
+  setCurrentInspectionId: (id) => set({ currentInspectionId: id }),
+  navigateToInspectionDetails: (id) => set({ currentView: 'inspection-details', currentInspectionId: id }),
+  navigateToInspections: () => set({ currentView: 'inspections', currentInspectionId: null }),
   
   // Mobile UI
   isMobile: window.innerWidth <= 768,

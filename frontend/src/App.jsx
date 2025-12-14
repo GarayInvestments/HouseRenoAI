@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard';
 import AIAssistant from './pages/AIAssistantNew';
 import Permits from './pages/Permits';
 import PermitDetails from './pages/PermitDetails';
+import Inspections from './pages/Inspections';
 import Projects from './pages/Projects';
 import ProjectDetails from './pages/ProjectDetails';
 import Clients from './pages/Clients';
@@ -133,6 +134,8 @@ function App() {
         return <AIAssistant />;
       case 'permits':
         return <Permits />;
+      case 'inspections':
+        return <Inspections />;
       case 'projects':
         return <Projects />;
       case 'clients':

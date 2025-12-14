@@ -374,6 +374,20 @@ class ApiService {
     });
   }
 
+  async addInspectionPhoto(inspectionId, photoData) {
+    return this.request(`/inspections/${inspectionId}/photos`, {
+      method: 'POST',
+      body: JSON.stringify(photoData),
+    });
+  }
+
+  async addInspectionDeficiency(inspectionId, deficiencyData) {
+    return this.request(`/inspections/${inspectionId}/deficiencies`, {
+      method: 'POST',
+      body: JSON.stringify(deficiencyData),
+    });
+  }
+
   // Site Visits endpoints
   async getSiteVisits() {
     return this.request('/site-visits', {
