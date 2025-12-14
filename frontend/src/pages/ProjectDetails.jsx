@@ -108,12 +108,22 @@ export default function ProjectDetails() {
       Object.keys(editedProject).forEach(key => {
         const dbFieldName = fieldMapping[key];
         if (dbFieldName) {
-          mappedData[dbFieldName] = editedProject[key];
+          const value = editedProject[key];
+          // Skip empty strings - send null or omit entirely
+          if (value !== '' && value !== null && value !== undefined) {
+            mappedData[dbFieldName] = value;
+          }
         }
       });
       
       console.log('Sending mapped data to API:', mappedData);
       console.log('Original editedProject:', editedProject);
+      
+      if (Object.keys(mappedData).length === 0) {
+        alert('No changes to save');
+        setIsSaving(false);
+        return;
+      }
       
       await api.updateProject(currentProjectId, mappedData, false);
       setProject({ ...project, ...editedProject });

@@ -144,11 +144,12 @@ app.include_router(qualifiers_router, prefix=f"/{settings.API_VERSION}/qualifier
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request, exc):
     """Log and return detailed validation errors"""
+    body = await request.body()
     logger.error(f"Validation error for {request.method} {request.url}: {exc.errors()}")
-    logger.error(f"Request body: {await request.body()}")
+    logger.error(f"Request body: {body.decode('utf-8')}")
     return JSONResponse(
         status_code=422,
-        content={"detail": exc.errors(), "body": str(await request.body())}
+        content={"detail": exc.errors(), "body": body.decode('utf-8')[:500]}
     )
 
 @app.get("/")
