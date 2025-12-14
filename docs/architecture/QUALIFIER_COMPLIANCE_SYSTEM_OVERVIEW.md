@@ -271,6 +271,53 @@ This standard intentionally:
 - Aligns with how inspectors and licensing boards evaluate supervision
 - Prioritizes **provable oversight over activity volume**
 
+* * *
+
+### Qualifier Exit Impact on Active Projects
+
+When a qualifier's relationship with a Licensed Business ends, the following rules apply immediately:
+
+1. **All active projects under that Licensed Business enter a frozen compliance state**
+
+    - No new permits may be created
+    - No existing permits may advance status
+    - No inspections may be scheduled or completed
+    - No compliance milestones may be closed
+
+2. **Projects may not be reassigned to a new qualifier**
+
+    - Mid-project qualifier substitution is prohibited
+    - This prevents retroactive ambiguity of legal responsibility
+
+3. **Permitted continuation requires explicit compliance justification**
+
+    - Any action taken on an affected project after qualifier exit requires:
+
+        - A logged compliance justification
+        - Identification of interim risk mitigation
+        - Explicit acknowledgement of regulatory exposure
+
+4. **System responsibility**
+
+    - The system must surface affected projects immediately upon qualifier exit
+    - Compliance reports must flag all frozen projects as "Qualifier Absent"
+
+**Regulatory Rationale**
+
+North Carolina licensing enforcement evaluates responsibility based on **who was legally accountable at the time work occurred**. Allowing silent continuation after qualifier exit creates indefensible gaps and license rental risk.
+
+This policy ensures:
+
+- Clear cutoff of responsibility
+- No implied or retroactive supervision
+- Audit-safe documentation of any exceptional continuation
+
+**Why This Is the Right Line**
+
+- It does **not** invent a new qualifier midstream
+- It forces conscious, documented decisions
+- It mirrors how boards treat suspended or expired license situations
+
 ---
 
 ## 7. What This Means for the Application and Copilot
