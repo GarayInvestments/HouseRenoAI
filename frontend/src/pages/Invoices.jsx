@@ -114,15 +114,6 @@ export default function Invoices() {
     return '#EF4444'; // Red - very stale
   };
 
-  // Format currency
-  const formatCurrency = (amount) => {
-    if (amount === null || amount === undefined) return '$0.00';
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
-  };
-
   // Memoized filtered invoices (status filter + search)
   const filteredInvoices = useMemo(() => {
     let result = getFilteredInvoices(); // Apply status filter from store
