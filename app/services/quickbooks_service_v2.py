@@ -156,29 +156,35 @@ class QuickBooksService:
             access_expires_at = now + timedelta(seconds=expires_in)
             refresh_expires_at = now + timedelta(days=100)  # QB refresh tokens last 100 days
             
-            # Deactivate old tokens for this realm
-            await self.db.execute(
-                select(QuickBooksToken)
-                .where(QuickBooksToken.realm_id == realm_id)
-            )
-            old_tokens = await self.db.execute(
+            # Check if token already exists for this realm
+            result = await self.db.execute(
                 select(QuickBooksToken).where(QuickBooksToken.realm_id == realm_id)
             )
-            for old_token in old_tokens.scalars():
-                old_token.is_active = False
+            existing_token = result.scalar_one_or_none()
             
-            # Create new token record
-            new_token = QuickBooksToken(
-                realm_id=realm_id,
-                access_token=access_token,
-                refresh_token=refresh_token,
-                access_token_expires_at=access_expires_at,
-                refresh_token_expires_at=refresh_expires_at,
-                environment=self.environment,
-                is_active=True
-            )
+            if existing_token:
+                # Update existing token
+                existing_token.access_token = access_token
+                existing_token.refresh_token = refresh_token
+                existing_token.access_token_expires_at = access_expires_at
+                existing_token.refresh_token_expires_at = refresh_expires_at
+                existing_token.environment = self.environment
+                existing_token.is_active = True
+                logger.info(f"Updated existing tokens for realm: {realm_id}")
+            else:
+                # Create new token record
+                new_token = QuickBooksToken(
+                    realm_id=realm_id,
+                    access_token=access_token,
+                    refresh_token=refresh_token,
+                    access_token_expires_at=access_expires_at,
+                    refresh_token_expires_at=refresh_expires_at,
+                    environment=self.environment,
+                    is_active=True
+                )
+                self.db.add(new_token)
+                logger.info(f"Created new tokens for realm: {realm_id}")
             
-            self.db.add(new_token)
             await self.db.commit()
             
             # Update instance state
