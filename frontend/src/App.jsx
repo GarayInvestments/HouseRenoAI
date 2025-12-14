@@ -19,6 +19,9 @@ import Projects from './pages/Projects';
 import ProjectDetails from './pages/ProjectDetails';
 import Clients from './pages/Clients';
 import ClientDetails from './pages/ClientDetails';
+import LicensedBusinesses from './pages/LicensedBusinesses';
+import Qualifiers from './pages/Qualifiers';
+import OversightActions from './pages/OversightActions';
 import Documents from './pages/Documents';
 import Settings from './pages/Settings';
 import PrivacyPolicy from './pages/PrivacyPolicy';
@@ -29,7 +32,19 @@ import AuthResetPassword from './pages/AuthResetPassword';
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
-  const { currentView, currentProjectId, currentPermitId, currentInspectionId, currentInvoiceId, currentSiteVisitId, currentClientId, setCurrentView, setIsMobile } = useAppStore();
+  const { 
+    currentView, 
+    currentProjectId, 
+    currentPermitId, 
+    currentInspectionId, 
+    currentInvoiceId, 
+    currentSiteVisitId, 
+    currentClientId,
+    currentLicensedBusinessId,
+    currentQualifierId,
+    setCurrentView, 
+    setIsMobile 
+  } = useAppStore();
   const { initAuth, isAuthenticated } = useAuthStore();
 
   // Handle window resize for mobile detection
@@ -142,6 +157,17 @@ function App() {
       return <ClientDetails />;
     }
 
+    // Phase Q - Qualifier Compliance views
+    if (currentView === 'licensed-business-details' && currentLicensedBusinessId) {
+      // Detail view placeholder - for now just show list
+      return <LicensedBusinesses />;
+    }
+
+    if (currentView === 'qualifier-details' && currentQualifierId) {
+      // Detail view placeholder - for now just show list
+      return <Qualifiers />;
+    }
+
     switch (currentView) {
       case 'login':
         return <Login />;
@@ -167,6 +193,12 @@ function App() {
         return <Projects />;
       case 'clients':
         return <Clients />;
+      case 'licensed-businesses':
+        return <LicensedBusinesses />;
+      case 'qualifiers':
+        return <Qualifiers />;
+      case 'oversight-actions':
+        return <OversightActions />;
       case 'documents':
         return <Documents />;
       case 'settings':

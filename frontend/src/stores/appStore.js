@@ -43,6 +43,17 @@ export const useAppStore = create((set, get) => ({
   navigateToSiteVisits: () => set({ currentView: 'site-visits', currentSiteVisitId: null }),
   navigateToNewSiteVisit: () => set({ currentView: 'new-site-visit' }),
   
+  // Phase Q - Qualifier Compliance
+  currentLicensedBusinessId: null,
+  setCurrentLicensedBusinessId: (id) => set({ currentLicensedBusinessId: id }),
+  navigateToLicensedBusiness: (id) => set({ currentView: 'licensed-business-details', currentLicensedBusinessId: id }),
+  navigateToLicensedBusinesses: () => set({ currentView: 'licensed-businesses', currentLicensedBusinessId: null }),
+  currentQualifierId: null,
+  setCurrentQualifierId: (id) => set({ currentQualifierId: id }),
+  navigateToQualifier: (id) => set({ currentView: 'qualifier-details', currentQualifierId: id }),
+  navigateToQualifiers: () => set({ currentView: 'qualifiers', currentQualifierId: null }),
+  navigateToOversightActions: () => set({ currentView: 'oversight-actions' }),
+  
   // Mobile UI
   isMobile: window.innerWidth <= 768,
   drawerOpen: false,
