@@ -67,7 +67,25 @@ export default function InvoiceDetails() {
   const handleSave = async () => {
     try {
       setIsSaving(true);
-      await api.updateInvoice(currentInvoiceId, editedInvoice);
+      
+      // Map frontend display field names to backend database column names
+      const fieldMapping = {
+        'Invoice Status': 'status',
+        'Invoice Date': 'invoice_date',
+        'Due Date': 'due_date',
+        'Subtotal': 'subtotal',
+        'Tax Amount': 'tax_amount',
+        'Total Amount': 'total_amount'
+      };
+      
+      // Convert editedInvoice keys from display names to database column names
+      const mappedData = {};
+      Object.keys(editedInvoice).forEach(key => {
+        const dbFieldName = fieldMapping[key] || key;
+        mappedData[dbFieldName] = editedInvoice[key];
+      });
+      
+      await api.updateInvoice(currentInvoiceId, mappedData);
       await loadInvoiceDetails(); // Reload to get fresh data
       setIsEditing(false);
       setEditedInvoice(null);

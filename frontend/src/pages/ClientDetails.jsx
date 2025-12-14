@@ -82,7 +82,28 @@ export default function ClientDetails() {
   const handleSave = async () => {
     try {
       setIsSaving(true);
-      await api.updateClient(currentClientId, editedClient);
+      
+      // Map frontend display field names to backend database column names
+      const fieldMapping = {
+        'Client Name': 'full_name',
+        'Company Name': 'company_name',
+        'Email': 'email',
+        'Phone': 'phone',
+        'Preferred Contact Method': 'preferred_contact',
+        'Address': 'address',
+        'City': 'city',
+        'State': 'state',
+        'ZIP': 'zip_code'
+      };
+      
+      // Convert editedClient keys from display names to database column names
+      const mappedData = {};
+      Object.keys(editedClient).forEach(key => {
+        const dbFieldName = fieldMapping[key] || key;
+        mappedData[dbFieldName] = editedClient[key];
+      });
+      
+      await api.updateClient(currentClientId, mappedData);
       setClient({ ...client, ...editedClient });
       setIsEditing(false);
       setEditedClient(null);

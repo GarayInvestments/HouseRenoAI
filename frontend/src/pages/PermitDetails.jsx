@@ -108,7 +108,23 @@ export default function PermitDetails() {
   const handleSave = async () => {
     try {
       setIsSaving(true);
-      await api.updatePermit(currentPermitId, editedPermit);
+      
+      // Map frontend display field names to backend database column names
+      const fieldMapping = {
+        'Permit Number': 'permit_number',
+        'Permit Status': 'status',
+        'Date Submitted': 'application_date',
+        'Date Approved': 'approval_date'
+      };
+      
+      // Convert editedPermit keys from display names to database column names
+      const mappedData = {};
+      Object.keys(editedPermit).forEach(key => {
+        const dbFieldName = fieldMapping[key] || key;
+        mappedData[dbFieldName] = editedPermit[key];
+      });
+      
+      await api.updatePermit(currentPermitId, mappedData);
       setPermit({ ...permit, ...editedPermit });
       setIsEditing(false);
       setEditedPermit(null);

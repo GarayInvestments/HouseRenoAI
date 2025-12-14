@@ -87,7 +87,34 @@ export default function ProjectDetails() {
   const handleSave = async () => {
     try {
       setIsSaving(true);
-      await api.updateProject(currentProjectId, editedProject, false);
+      
+      // Map frontend display field names to backend database column names
+      const fieldMapping = {
+        'Project Name': 'project_name',
+        'Project Status': 'status',
+        'Project Type': 'type',
+        'Project Address': 'project_address',
+        'Start Date': 'start_date',
+        'Project Cost (Materials + Labor)': 'project_cost',
+        'HR Service Fee': 'service_fee',
+        'City': 'city',
+        'County': 'county',
+        'Jurisdiction': 'jurisdiction',
+        'Primary Inspector': 'primary_inspector',
+        'Licensed Business': 'licensed_business_id',
+        'Qualifier': 'qualifier_id',
+        'Engagement Model': 'engagement_model',
+        'Notes': 'compliance_notes'
+      };
+      
+      // Convert editedProject keys from display names to database column names
+      const mappedData = {};
+      Object.keys(editedProject).forEach(key => {
+        const dbFieldName = fieldMapping[key] || key;
+        mappedData[dbFieldName] = editedProject[key];
+      });
+      
+      await api.updateProject(currentProjectId, mappedData, false);
       setProject({ ...project, ...editedProject });
       setIsEditing(false);
       setEditedProject(null);
