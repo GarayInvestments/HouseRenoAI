@@ -108,7 +108,14 @@ export default function ProjectDetails() {
       Object.keys(editedProject).forEach(key => {
         const dbFieldName = fieldMapping[key];
         if (dbFieldName) {
-          const value = editedProject[key];
+          let value = editedProject[key];
+          
+          // Convert date strings to ISO datetime format
+          if (dbFieldName === 'start_date' && value && value.length === 10) {
+            // Input date is YYYY-MM-DD, convert to ISO datetime
+            value = `${value}T00:00:00Z`;
+          }
+          
           // Skip empty strings - send null or omit entirely
           if (value !== '' && value !== null && value !== undefined) {
             mappedData[dbFieldName] = value;
