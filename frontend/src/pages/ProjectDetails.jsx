@@ -459,9 +459,8 @@ export default function ProjectDetails() {
               <div style={{ flex: 1 }}>
                 <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '2px' }}>Type</p>
                 {isEditing ? (
-                  <input
-                    type="text"
-                    value={editedProject?.['Project Type'] || ''}
+                  <select
+                    value={editedProject?.['Project Type'] || editedProject?.project_type || ''}
                     onChange={(e) => handleEditChange('Project Type', e.target.value)}
                     style={{
                       width: '100%',
@@ -472,11 +471,15 @@ export default function ProjectDetails() {
                       borderRadius: '6px',
                       outline: 'none'
                     }}
-                    placeholder="Project Type"
-                  />
+                  >
+                    <option value="">Select type...</option>
+                    {PROJECT_TYPE_OPTIONS.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
                 ) : (
                   <p style={{ fontSize: '14px', color: '#1E293B', fontWeight: '500' }}>
-                    {project['Project Type'] || 'N/A'}
+                    {formatEnumLabel(project['Project Type'] || project.project_type) || 'N/A'}
                   </p>
                 )}
               </div>

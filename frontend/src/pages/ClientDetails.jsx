@@ -6,6 +6,7 @@ import { useProjectsStore } from '../stores/projectsStore';
 import { usePermitsStore } from '../stores/permitsStore';
 import LoadingScreen from '../components/LoadingScreen';
 import ErrorState from '../components/ErrorState';
+import { CLIENT_STATUS_OPTIONS, formatEnumLabel } from '../constants/enums';
 
 export default function ClientDetails() {
   const [client, setClient] = useState(null);
@@ -122,6 +123,23 @@ export default function ClientDetails() {
 
   const handleEditChange = (field, value) => {
     setEditedClient(prev => ({ ...prev, [field]: value }));
+  };
+
+  const getClientStatusColor = (status) => {
+    switch (status?.toUpperCase()) {
+      case 'ACTIVE':
+        return { bg: '#DBEAFE', text: '#2563EB', border: '#93C5FD' };
+      case 'COMPLETED':
+        return { bg: '#ECFDF5', text: '#059669', border: '#A7F3D0' };
+      case 'INTAKE':
+        return { bg: '#FEF3C7', text: '#D97706', border: '#FCD34D' };
+      case 'ON_HOLD':
+        return { bg: '#FEF2F2', text: '#DC2626', border: '#FECACA' };
+      case 'ARCHIVED':
+        return { bg: '#F3F4F6', text: '#6B7280', border: '#D1D5DB' };
+      default:
+        return { bg: '#F3F4F6', text: '#6B7280', border: '#D1D5DB' };
+    }
   };
 
   const handleRetry = async () => {
@@ -359,8 +377,46 @@ export default function ClientDetails() {
                 )}
                 <p style={{
                   fontSize: '13px',
-                  color: '#94A3B8'
+                  color: '#94A3B8',
+                  marginBottom: '8px'
                 }}>Client ID: {clientId}</p>
+                {/* Client Status */}
+                {isEditing ? (
+                  <select
+                    value={editedClient?.status || client?.status || ''}
+                    onChange={(e) => handleEditChange('status', e.target.value)}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                      fontWeight: '500',
+                      border: '2px solid #2563EB',
+                      outline: 'none',
+                      backgroundColor: 'white'
+                    }}
+                  >
+                    <option value="">Select status...</option>
+                    {CLIENT_STATUS_OPTIONS.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                ) : (
+                  client?.status && (
+                    <span style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      padding: '4px 12px',
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                      fontWeight: '500',
+                      backgroundColor: getClientStatusColor(client.status).bg,
+                      color: getClientStatusColor(client.status).text,
+                      border: `1px solid ${getClientStatusColor(client.status).border}`
+                    }}>
+                      {formatEnumLabel(client.status)}
+                    </span>
+                  )
+                )}
               </div>
               <div style={{
                 width: '56px',

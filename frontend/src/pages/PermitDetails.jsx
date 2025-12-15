@@ -508,6 +508,46 @@ export default function PermitDetails() {
                 width: '40px',
                 height: '40px',
                 borderRadius: '8px',
+                backgroundColor: '#F0F9FF',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <FileText size={20} style={{ color: '#0284C7' }} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '2px' }}>Permit Type</p>
+                {isEditing ? (
+                  <select
+                    value={editedPermit?.['Permit Type'] || editedPermit?.permit_type || ''}
+                    onChange={(e) => handleEditChange('Permit Type', e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '6px 10px',
+                      border: '1px solid #D1D5DB',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      outline: 'none'
+                    }}
+                  >
+                    <option value="">Select type...</option>
+                    {PERMIT_TYPE_OPTIONS.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <p style={{ fontSize: '14px', color: '#1E293B', fontWeight: '500' }}>
+                    {formatEnumLabel(permit['Permit Type'] || permit.permit_type) || 'N/A'}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '8px',
                 backgroundColor: '#FEF3C7',
                 display: 'flex',
                 alignItems: 'center',

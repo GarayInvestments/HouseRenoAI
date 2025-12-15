@@ -5,6 +5,7 @@ import { useAppStore } from '../stores/appStore';
 import useInvoicesStore from '../stores/invoicesStore';
 import LoadingScreen from '../components/LoadingScreen';
 import ErrorState from '../components/ErrorState';
+import { INVOICE_STATUS_OPTIONS, formatEnumLabel } from '../constants/enums';
 
 export default function InvoiceDetails() {
   const { currentInvoiceId, navigateToInvoices } = useAppStore();
@@ -244,14 +245,13 @@ export default function InvoiceDetails() {
                   backgroundColor: 'white'
                 }}
               >
-                <option value="draft">Draft</option>
-                <option value="sent">Sent</option>
-                <option value="paid">Paid</option>
-                <option value="overdue">Overdue</option>
-                <option value="cancelled">Cancelled</option>
+                <option value="">Select status...</option>
+                {INVOICE_STATUS_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
               </select>
             ) : (
-              status
+              formatEnumLabel(status)
             )}
           </span>
         </div>
