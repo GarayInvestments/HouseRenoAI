@@ -296,7 +296,7 @@ export default function Inspections() {
         {/* Stats Summary */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
           gap: '16px',
           marginBottom: '24px'
         }}>
@@ -364,7 +364,7 @@ export default function Inspections() {
         ) : (
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
             gap: '20px'
           }}>
             {filteredInspections.map((inspection) => {

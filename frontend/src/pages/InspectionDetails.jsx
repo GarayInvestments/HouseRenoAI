@@ -721,7 +721,7 @@ export default function InspectionDetails() {
                 <div>No photos yet</div>
               </div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '16px' }}>
                 {photos.map((photo, idx) => (
                   <div key={idx} style={{
                     border: '1px solid #E2E8F0',

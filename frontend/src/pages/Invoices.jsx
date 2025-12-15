@@ -5,6 +5,7 @@ import { useAppStore } from '../stores/appStore';
 import useInvoicesStore from '../stores/invoicesStore';
 import LoadingScreen from '../components/LoadingScreen';
 import ErrorState from '../components/ErrorState';
+import SyncControlPanel from '../components/SyncControlPanel';
 
 export default function Invoices() {
   const { navigateToInvoiceDetails } = useAppStore();
@@ -208,35 +209,6 @@ export default function Invoices() {
         
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
           <button
-            onClick={handleSyncQuickBooks}
-            disabled={qbSyncStatus === 'syncing'}
-            style={{
-              padding: '10px 16px',
-              backgroundColor: qbSyncStatus === 'syncing' ? '#E5E7EB' : 
-                             qbSyncStatus === 'success' ? '#10B981' : 
-                             qbSyncStatus === 'error' ? '#EF4444' : '#6B7280',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: qbSyncStatus === 'syncing' ? 'not-allowed' : 'pointer',
-              fontWeight: '600',
-              fontSize: '14px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            <RefreshCw 
-              size={16} 
-              className={qbSyncStatus === 'syncing' ? 'animate-spin' : ''} 
-            />
-            {qbSyncStatus === 'syncing' ? 'Syncing...' : 
-             qbSyncStatus === 'success' ? 'Synced!' : 
-             qbSyncStatus === 'error' ? 'Sync Failed' : 'Sync QuickBooks'}
-          </button>
-          
-          <button
             onClick={() => {/* TODO: Open create invoice modal */}}
             style={{
               padding: '10px 20px',
@@ -261,84 +233,21 @@ export default function Invoices() {
         </div>
       </div>
 
-      {/* Sync Status Banner */}
-      <div style={{
-        backgroundColor: 'white',
-        borderRadius: '12px',
-        padding: '16px 20px',
-        marginBottom: '20px',
-        border: '1px solid #E5E7EB',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: '12px'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Database size={18} color={getSyncFreshnessColor()} />
-            <span style={{ fontSize: '14px', color: '#6B7280', fontWeight: '500' }}>
-              Reading from cache
-            </span>
-          </div>
-          
-          {lastSyncTime && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                backgroundColor: getSyncFreshnessColor()
-              }} />
-              <span style={{ fontSize: '14px', color: '#374151' }}>
-                Last synced: <strong>{getTimeSinceSync()}</strong>
-              </span>
-            </div>
-          )}
-          
-          {nextSyncTime && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Clock size={16} color='#6B7280' />
-              <span style={{ fontSize: '14px', color: '#6B7280' }}>
-                Next: {new Date(nextSyncTime).toLocaleTimeString('en-US', { 
-                  hour: 'numeric', 
-                  minute: '2-digit',
-                  hour12: true 
-                })}
-              </span>
-            </div>
-          )}
-        </div>
-        
-        {qbSyncError && (
-          <span style={{ fontSize: '13px', color: '#EF4444' }}>
-            {qbSyncError}
-          </span>
-        )}
+      {/* Sync Control Panel - replaces old sync status banner */}
+      <div style={{ marginBottom: '20px' }}>
+        <SyncControlPanel
+          onManualSync={handleSyncQuickBooks}
+          syncStatus={qbSyncStatus}
+          syncError={qbSyncError}
+          lastSyncTime={lastSyncTime}
+          nextSyncTime={nextSyncTime}
+        />
       </div>
-
-      {/* Error banner for QB sync */}
-      {qbSyncError && (
-        <div style={{
-          padding: '12px 16px',
-          backgroundColor: '#FEE2E2',
-          border: '1px solid #FECACA',
-          borderRadius: '8px',
-          marginBottom: '16px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          color: '#DC2626'
-        }}>
-          <AlertCircle size={16} />
-          <span style={{ fontSize: '14px' }}>{qbSyncError}</span>
-        </div>
-      )}
 
       {/* Stats Cards */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
         gap: '16px',
         marginBottom: '24px'
       }}>
@@ -564,7 +473,7 @@ export default function Invoices() {
               >
                 <div style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
                   gap: '20px',
                   alignItems: 'center'
                 }}>

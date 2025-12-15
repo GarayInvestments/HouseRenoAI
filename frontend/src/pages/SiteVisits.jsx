@@ -194,7 +194,7 @@ const SiteVisits = () => {
       {/* Stats Cards */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
         gap: '16px',
         marginBottom: '24px'
       }}>
@@ -382,7 +382,7 @@ const SiteVisits = () => {
       {!loading && filteredVisits.length > 0 && (
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(500px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
           gap: '16px'
         }}>
           {filteredVisits.map((visit) => {

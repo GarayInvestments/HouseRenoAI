@@ -1,5 +1,7 @@
 # House Renovators AI Portal - Copilot Instructions
-
+Terminal IDs:
+Backend: 982542db-e4c9-4b16-8e2a-7130aa4f95e2
+Frontend: b4c9a0ee-f567-4d03-80ce-cc4bf7db5b56
 ## 🏁 SESSION-END CHECKPOINT (CHECK BEFORE EVERY RESPONSE)
 
 **BEFORE saying "done", "complete", "that should work", or ending your turn:**

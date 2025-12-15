@@ -9,7 +9,7 @@ import { formatEnumLabel } from '../constants/enums';
 import useDetailsNavigation from '../hooks/useDetailsNavigation';
 import NavigationArrows from '../components/NavigationArrows';
 
-export default function PaymentDetails() {
+function PaymentDetails() {
   const { currentPaymentId, navigateToPayments, navigateToPaymentDetails } = useAppStore();
   const { fetchPayment, payments } = usePaymentsStore();
   
@@ -526,3 +526,5 @@ export default function PaymentDetails() {
     </div>
   );
 }
+
+export default PaymentDetails;
