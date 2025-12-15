@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { 
-  ArrowLeft, 
-  FileText, 
-  Calendar, 
+import {
+  ArrowLeft,
+  FileText,
+  Calendar,
   CheckCircle,
   Clock,
   AlertCircle,
@@ -18,7 +18,7 @@ import { useAppStore } from '../stores/appStore';
 import { PERMIT_STATUS_OPTIONS, PERMIT_TYPE_OPTIONS, formatEnumLabel } from '../constants/enums';
 
 export default function PermitDetails() {
-  const { currentPermitId, navigateToPermits } = useAppStore();
+  const { currentPermitId, navigateToPermits, navigateToProject, navigateToClient } = useAppStore();
   const [permit, setPermit] = useState(null);
   const [project, setProject] = useState(null);
   const [client, setClient] = useState(null);
@@ -33,30 +33,30 @@ export default function PermitDetails() {
       try {
         setLoading(true);
         setError(null);
-        
+
         // Fetch single permit by ID (not all permits)
         const permitData = await api.getPermit(currentPermitId);
-        
+
         if (permitData) {
           setPermit(permitData);
-          
+
           // Get project ID from permit (handle both old and new field names)
           const projectId = permitData['Project ID'] || permitData.project_id;
-          
+
           if (projectId) {
             // Fetch related project and all clients
             const [projectData, clientsData] = await Promise.all([
               api.getProject(projectId),
               api.getClients()
             ]);
-            
+
             setProject(projectData);
-            
+
             // Find related client through project
             const clientId = projectData?.['Client ID'] || projectData?.client_id;
             if (clientId && Array.isArray(clientsData)) {
-              const relatedClient = clientsData.find(c => 
-                c['Client ID'] === clientId || 
+              const relatedClient = clientsData.find(c =>
+                c['Client ID'] === clientId ||
                 c['ID'] === clientId ||
                 c.client_id === clientId ||
                 c.id === clientId
@@ -74,7 +74,7 @@ export default function PermitDetails() {
         setLoading(false);
       }
     };
-    
+
     if (currentPermitId) {
       fetchPermitDetails();
     } else {
@@ -91,7 +91,7 @@ export default function PermitDetails() {
 
     // Push a state when component mounts
     window.history.pushState({ page: 'permit-details' }, '');
-    
+
     // Listen for back button
     window.addEventListener('popstate', handlePopState);
 
@@ -106,10 +106,13 @@ export default function PermitDetails() {
     return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
   };
 
+  const toDateInput = (val) =>
+    val ? new Date(val).toISOString().split('T')[0] : '';
+
   const handleSave = async () => {
     try {
       setIsSaving(true);
-      
+
       // Map frontend display field names to backend database column names
       const fieldMapping = {
         'Permit Number': 'permit_number',
@@ -117,14 +120,14 @@ export default function PermitDetails() {
         'Date Submitted': 'application_date',
         'Date Approved': 'approval_date'
       };
-      
+
       // Convert editedPermit keys from display names to database column names
       const mappedData = {};
       Object.keys(editedPermit).forEach(key => {
         const dbFieldName = fieldMapping[key] || key;
         mappedData[dbFieldName] = editedPermit[key];
       });
-      
+
       await api.updatePermit(currentPermitId, mappedData);
       setPermit({ ...permit, ...editedPermit });
       setIsEditing(false);
@@ -267,7 +270,13 @@ export default function PermitDetails() {
             <button
               onClick={() => {
                 setIsEditing(true);
-                setEditedPermit(permit);
+                setEditedPermit({
+                  'Permit Number': permit['Permit Number'] ?? permit.permit_number,
+                  'Permit Status': permit['Permit Status'] ?? permit.status,
+                  'Date Submitted': permit['Date Submitted'] ?? permit.application_date,
+                  'Date Approved': permit['Date Approved'] ?? permit.approval_date,
+                  'Permit Type': permit['Permit Type'] ?? permit.permit_type
+                });
               }}
               style={{
                 padding: '8px 16px',
@@ -376,7 +385,7 @@ export default function PermitDetails() {
                 marginBottom: '12px'
               }}>
                 <Hash size={14} />
-                Permit ID: {permitId || business_id || 'N/A'}
+                Permit ID: {permitId || permit?.business_id || 'N/A'}
               </div>
             </div>
             {isEditing ? (
@@ -397,31 +406,32 @@ export default function PermitDetails() {
               >
                 <option value="">Select status...</option>
                 {PERMIT_STATUS_OPTIONS.map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
                 ))}
               </select>
             ) : (
-                <option value="Rejected">Rejected</option>
-                <option value="Expired">Expired</option>
-              </select>
-            ) : (
-              <span style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '8px 16px',
-                borderRadius: '8px',
-                backgroundColor: statusStyle.bg,
-                color: statusStyle.text,
-                fontSize: '14px',
-                fontWeight: '500',
-                border: `1px solid ${statusStyle.border}`,
-                textTransform: 'capitalize'
-              }}>
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  backgroundColor: statusStyle.bg,
+                  color: statusStyle.text,
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  border: `1px solid ${statusStyle.border}`,
+                  textTransform: 'capitalize'
+                }}
+              >
                 {getStatusIcon(permitStatus)}
                 {permitStatus || 'N/A'}
               </span>
             )}
+
           </div>
 
           <div style={{
@@ -448,7 +458,7 @@ export default function PermitDetails() {
                 {isEditing ? (
                   <input
                     type="date"
-                    value={editedPermit?.['Date Submitted'] || editedPermit?.application_date || ''}
+                    value={toDateInput(editedPermit?.['Date Submitted'] || editedPermit?.application_date)}
                     onChange={(e) => handleEditChange('Date Submitted', e.target.value)}
                     style={{
                       width: '100%',
@@ -484,7 +494,7 @@ export default function PermitDetails() {
                 {isEditing ? (
                   <input
                     type="date"
-                    value={editedPermit?.['Date Approved'] || editedPermit?.approval_date || ''}
+                    value={toDateInput(editedPermit?.['Date Approved'] || editedPermit?.approval_date)}
                     onChange={(e) => handleEditChange('Date Approved', e.target.value)}
                     style={{
                       width: '100%',
@@ -559,7 +569,7 @@ export default function PermitDetails() {
                 <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '2px' }}>Project</p>
                 {project ? (
                   <button
-                    onClick={() => useAppStore.getState().navigateToProject(permit['Project ID'])}
+                    onClick={() => navigateToProject(permit['Project ID'])}
                     style={{
                       fontSize: '14px',
                       color: '#2563EB',
@@ -600,7 +610,7 @@ export default function PermitDetails() {
                 <div>
                   <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '2px' }}>Client</p>
                   <button
-                    onClick={() => useAppStore.getState().navigateToClient(client['Client ID'] || client['ID'])}
+                    onClick={() => navigateToClient(client['Client ID'] || client['ID'])}
                     style={{
                       fontSize: '14px',
                       color: '#2563EB',
