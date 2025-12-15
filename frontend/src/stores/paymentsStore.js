@@ -26,29 +26,12 @@ const usePaymentsStore = create((set, get) => ({
   
   setSelectedPayment: (payment) => set({ selectedPayment: payment }),
 
-  // Fetch all payments (from cache)
+  // Fetch all payments from database
   fetchPayments: async () => {
     set({ loading: true, error: null });
     try {
-      // Get token from Supabase session (not localStorage)
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
-      
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://houserenovators-api.fly.dev';
-      const url = `${apiUrl}/v1/quickbooks/sync/cache/payments`;
-      
-      // Fetch from cache endpoint
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch payments from cache: ${response.status}`);
-      }
-      
-      const data = await response.json();
+      // Use api.js service instead of direct fetch
+      const data = await api.request('/payments');
       const paymentsArray = data?.payments || [];
       
       set({ 
@@ -109,6 +92,19 @@ const usePaymentsStore = create((set, get) => ({
       }
     } catch (error) {
       console.error('Failed to fetch sync status:', error);
+    }
+  },
+
+  // Fetch single payment by ID
+  fetchPayment: async (paymentId) => {
+    try {
+      const response = await api.request(`/payments/${paymentId}`);
+      const paymentData = response.payment || response;
+      set({ selectedPayment: paymentData });
+      return paymentData;
+    } catch (error) {
+      console.error('Failed to fetch payment:', error);
+      throw error;
     }
   },
 

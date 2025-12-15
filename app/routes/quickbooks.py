@@ -11,7 +11,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
-from app.services.quickbooks_service import get_quickbooks_service
+from app.services.quickbooks_service import get_quickbooks_service, quickbooks_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -19,9 +19,9 @@ router = APIRouter()
 
 def get_legacy_qb_service():
     """Get the legacy QuickBooks service for API operations."""
-    if not qb_service_module.quickbooks_service or qb_service_module.quickbooks_service is None:
+    if quickbooks_service is None:
         raise HTTPException(status_code=503, detail="QuickBooks service not initialized")
-    return qb_service_module.quickbooks_service
+    return quickbooks_service
 
 
 # ==================== OAUTH2 FLOW ====================

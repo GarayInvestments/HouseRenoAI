@@ -13,6 +13,7 @@ import InspectionDetails from './pages/InspectionDetails';
 import Invoices from './pages/Invoices';
 import InvoiceDetails from './pages/InvoiceDetails';
 import Payments from './pages/Payments';
+import PaymentDetails from './pages/PaymentDetails';
 import SiteVisits from './pages/SiteVisits';
 import SiteVisitDetails from './pages/SiteVisitDetails';
 import Projects from './pages/Projects';
@@ -38,6 +39,7 @@ function App() {
     currentPermitId, 
     currentInspectionId, 
     currentInvoiceId, 
+    currentPaymentId,
     currentSiteVisitId, 
     currentClientId,
     currentLicensedBusinessId,
@@ -145,6 +147,11 @@ function App() {
     // If viewing invoice details
     if (currentView === 'invoice-details' && currentInvoiceId) {
       return <InvoiceDetails />;
+    }
+
+    // If viewing payment details
+    if (currentView === 'payment-details' && currentPaymentId) {
+      return <PaymentDetails />;
     }
 
     // If viewing site visit details

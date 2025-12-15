@@ -12,6 +12,8 @@ export default function ClientDetails() {
   const [client, setClient] = useState(null);
   const [projects, setProjects] = useState([]);
   const [permits, setPermits] = useState([]);
+  const [invoices, setInvoices] = useState([]);
+  const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -42,11 +44,13 @@ export default function ClientDetails() {
         setLoading(true);
         setError(null);
         
-        // Fetch client, projects, and permits in parallel
-        const [clientData, projectsData, permitsData] = await Promise.all([
+        // Fetch client, projects, permits, invoices, and payments in parallel
+        const [clientData, projectsData, permitsData, invoicesData, paymentsData] = await Promise.all([
           api.getClient(currentClientId),
           api.getProjects(),
-          api.getPermits()
+          api.getPermits(),
+          api.getInvoices(),
+          api.getPayments()
         ]);
         
         setClient(clientData);
@@ -63,6 +67,18 @@ export default function ClientDetails() {
           ? permitsData.filter(permit => projectIds.includes(permit['Project ID']))
           : [];
         setPermits(clientPermits);
+        
+        // Filter invoices for this client
+        const clientInvoices = Array.isArray(invoicesData)
+          ? invoicesData.filter(inv => inv.client_id === currentClientId)
+          : [];
+        setInvoices(clientInvoices);
+        
+        // Filter payments for this client
+        const clientPayments = Array.isArray(paymentsData)
+          ? paymentsData.filter(pmt => pmt.client_id === currentClientId)
+          : [];
+        setPayments(clientPayments);
         
       } catch {
         setError('Failed to load client details. Please try again.');
@@ -805,6 +821,227 @@ export default function ClientDetails() {
               </div>
             </div>
           </div>
+
+          {/* Financial Summary */}
+          {(invoices.length > 0 || payments.length > 0) && (
+            <div style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '12px',
+              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)',
+              border: '1px solid #E2E8F0',
+              padding: '24px',
+              marginBottom: '24px'
+            }}>
+              <h2 style={{
+                fontSize: '18px',
+                fontWeight: '600',
+                color: '#1E293B',
+                marginBottom: '20px'
+              }}>Financial Summary</h2>
+              
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                gap: '24px'
+              }}>
+                {/* Invoices */}
+                {invoices.length > 0 && (
+                  <div>
+                    <h3 style={{
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#64748B',
+                      marginBottom: '12px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em'
+                    }}>Invoices</h3>
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px'
+                    }}>
+                      {invoices.map(invoice => (
+                        <div key={invoice.invoice_id} style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          padding: '12px',
+                          backgroundColor: '#F8FAFC',
+                          borderRadius: '8px',
+                          border: '1px solid #E2E8F0'
+                        }}>
+                          <div>
+                            <div style={{
+                              fontSize: '14px',
+                              fontWeight: '500',
+                              color: '#1E293B',
+                              marginBottom: '4px'
+                            }}>{invoice.invoice_number}</div>
+                            <div style={{
+                              fontSize: '12px',
+                              color: '#64748B'
+                            }}>
+                              {invoice.invoice_date ? new Date(invoice.invoice_date).toLocaleDateString() : 'No date'}
+                            </div>
+                          </div>
+                          <div style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'flex-end',
+                            gap: '4px'
+                          }}>
+                            <div style={{
+                              fontSize: '16px',
+                              fontWeight: '600',
+                              color: '#1E293B'
+                            }}>
+                              ${Number(invoice.total_amount || 0).toFixed(2)}
+                            </div>
+                            <div style={{
+                              fontSize: '11px',
+                              padding: '2px 8px',
+                              borderRadius: '4px',
+                              backgroundColor: invoice.status === 'PAID' ? '#DCFCE7' : invoice.status === 'SENT' ? '#FEF3C7' : '#F1F5F9',
+                              color: invoice.status === 'PAID' ? '#166534' : invoice.status === 'SENT' ? '#92400E' : '#475569',
+                              fontWeight: '500'
+                            }}>
+                              {invoice.status || 'DRAFT'}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      <div style={{
+                        marginTop: '8px',
+                        padding: '12px',
+                        backgroundColor: '#EFF6FF',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        fontWeight: '600'
+                      }}>
+                        <span style={{ color: '#1E40AF' }}>Total Invoiced</span>
+                        <span style={{ color: '#1E40AF', fontSize: '18px' }}>
+                          ${invoices.reduce((sum, inv) => sum + Number(inv.total_amount || 0), 0).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Payments */}
+                {payments.length > 0 && (
+                  <div>
+                    <h3 style={{
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#64748B',
+                      marginBottom: '12px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em'
+                    }}>Payments Received</h3>
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px'
+                    }}>
+                      {payments.map(payment => (
+                        <div key={payment.payment_id} style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          padding: '12px',
+                          backgroundColor: '#F8FAFC',
+                          borderRadius: '8px',
+                          border: '1px solid #E2E8F0'
+                        }}>
+                          <div>
+                            <div style={{
+                              fontSize: '14px',
+                              fontWeight: '500',
+                              color: '#1E293B',
+                              marginBottom: '4px'
+                            }}>{payment.payment_method || 'Payment'}</div>
+                            <div style={{
+                              fontSize: '12px',
+                              color: '#64748B'
+                            }}>
+                              {payment.payment_date ? new Date(payment.payment_date).toLocaleDateString() : 'No date'}
+                            </div>
+                          </div>
+                          <div style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'flex-end',
+                            gap: '4px'
+                          }}>
+                            <div style={{
+                              fontSize: '16px',
+                              fontWeight: '600',
+                              color: '#059669'
+                            }}>
+                              ${Number(payment.amount || 0).toFixed(2)}
+                            </div>
+                            <div style={{
+                              fontSize: '11px',
+                              padding: '2px 8px',
+                              borderRadius: '4px',
+                              backgroundColor: payment.status === 'POSTED' ? '#DCFCE7' : '#FEF3C7',
+                              color: payment.status === 'POSTED' ? '#166534' : '#92400E',
+                              fontWeight: '500'
+                            }}>
+                              {payment.status || 'PENDING'}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      <div style={{
+                        marginTop: '8px',
+                        padding: '12px',
+                        backgroundColor: '#DCFCE7',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        fontWeight: '600'
+                      }}>
+                        <span style={{ color: '#166534' }}>Total Paid</span>
+                        <span style={{ color: '#166534', fontSize: '18px' }}>
+                          ${payments.reduce((sum, pmt) => sum + Number(pmt.amount || 0), 0).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Outstanding Balance */}
+              {invoices.length > 0 && payments.length > 0 && (
+                <div style={{
+                  marginTop: '24px',
+                  padding: '16px',
+                  backgroundColor: '#FEF3C7',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  border: '2px solid #F59E0B'
+                }}>
+                  <span style={{ fontSize: '16px', fontWeight: '600', color: '#92400E' }}>
+                    Outstanding Balance
+                  </span>
+                  <span style={{ fontSize: '24px', fontWeight: '700', color: '#92400E' }}>
+                    ${
+                      (
+                        invoices.reduce((sum, inv) => sum + Number(inv.total_amount || 0), 0) -
+                        payments.reduce((sum, pmt) => sum + Number(pmt.amount || 0), 0)
+                      ).toFixed(2)
+                    }
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Notes */}
           {notes && (

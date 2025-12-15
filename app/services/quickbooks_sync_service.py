@@ -24,6 +24,7 @@ Strategy:
 """
 
 import logging
+import json
 from datetime import datetime, timezone
 from typing import List, Dict, Optional, Any
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -84,33 +85,37 @@ class QuickBooksSyncService:
                 row = result.fetchone()
                 since = row.last_sync_at if row and row.last_sync_at else None
             
-            # Build QuickBooks query with GC Compliance filter + delta filter
+            # Build QuickBooks query
+            # NOTE: CustomerTypeRef is NOT queryable - must fetch all and filter in Python
             query = "SELECT * FROM Customer"
-            
-            # CRITICAL: Only sync "GC Compliance" customers (CustomerTypeRef.value = 698682)
-            where_clauses = [f"CustomerTypeRef = '{self.GC_COMPLIANCE_CUSTOMER_TYPE}'"]
+            where_clauses = []
             
             if since:
                 # Format datetime for QuickBooks API (ISO 8601)
                 since_str = since.strftime('%Y-%m-%dT%H:%M:%S-00:00')
                 where_clauses.append(f"Metadata.LastUpdatedTime > '{since_str}'")
-                logger.info(f"[SYNC] Delta query: fetching GC Compliance customers modified after {since_str}")
+                logger.info(f"[SYNC] Delta query: fetching customers modified after {since_str}")
             else:
-                logger.info(f"[SYNC] Full sync: fetching all GC Compliance customers")
+                logger.info(f"[SYNC] Full sync: fetching all customers (will filter to GC Compliance in Python)")
             
-            query += " WHERE " + " AND ".join(where_clauses)
+            if where_clauses:
+                query += " WHERE " + " AND ".join(where_clauses)
             query += " MAXRESULTS 1000"
             
             # Fetch customers from QuickBooks with circuit breaker protection
-            # NOTE: QB Query endpoint is unreliable - may return 0 rows even when data exists
-            # CustomerTypeRef is NOT filterable via Query despite being present on Customer objects
-            # This is a QB limitation. For known IDs, use Customer.get(id) instead.
             try:
-                customers = await qb_circuit_breaker.call(
+                all_customers = await qb_circuit_breaker.call(
                     self.qb_service.query,
                     query
                 )
-                logger.info(f"[SYNC] Query returned {len(customers)} customers (note: QB Query can return 0 even when data exists)")
+                logger.info(f"[SYNC] Query returned {len(all_customers)} total customers")
+                
+                # Filter to GC Compliance customers only (CustomerTypeRef not queryable in QB API)
+                customers = [
+                    c for c in all_customers 
+                    if c.get('CustomerTypeRef', {}).get('value') == self.GC_COMPLIANCE_CUSTOMER_TYPE
+                ]
+                logger.info(f"[SYNC] Filtered to {len(customers)} GC Compliance customers (CustomerTypeRef={self.GC_COMPLIANCE_CUSTOMER_TYPE})")
             except CircuitBreakerError as e:
                 # Circuit is open - fail fast without attempting API call
                 logger.error(f"[SYNC] Circuit breaker blocked sync: {e}")
@@ -127,7 +132,7 @@ class QuickBooksSyncService:
             if not customers:
                 logger.info("[SYNC] No customers to sync")
                 await self._update_sync_status(db, 'customers', start_time, 0, 0, 0)
-                return {"records_synced": 0, "duration_ms": 0, "errors": 0}
+                return {"records_synced": 0, "duration_ms": 0, "errors": 0, "created": 0, "updated": 0, "skipped": 0}
             
             logger.info(f"[SYNC] Fetched {len(customers)} customers from QuickBooks")
             
@@ -151,6 +156,10 @@ class QuickBooksSyncService:
                         continue
                     
                     # Extract customer data
+                    # Parse QB timestamp string to datetime
+                    qb_last_modified_str = customer.get('MetaData', {}).get('LastUpdatedTime')
+                    qb_last_modified = datetime.fromisoformat(qb_last_modified_str.replace('Z', '+00:00')) if qb_last_modified_str else None
+                    
                     customer_data = {
                         'qb_customer_id': qb_customer_id,
                         'display_name': customer.get('DisplayName'),
@@ -159,8 +168,8 @@ class QuickBooksSyncService:
                         'family_name': customer.get('FamilyName'),
                         'email': customer.get('PrimaryEmailAddr', {}).get('Address') if customer.get('PrimaryEmailAddr') else None,
                         'phone': customer.get('PrimaryPhone', {}).get('FreeFormNumber') if customer.get('PrimaryPhone') else None,
-                        'qb_data': customer,  # Store full QB object as JSONB
-                        'qb_last_modified': customer.get('MetaData', {}).get('LastUpdatedTime'),
+                        'qb_data': json.dumps(customer),  # JSON-encode for JSONB column
+                        'qb_last_modified': qb_last_modified,
                         'is_active': customer.get('Active', True),
                         'sync_error': None,
                         'cached_at': datetime.now(timezone.utc)
@@ -225,7 +234,10 @@ class QuickBooksSyncService:
             return {
                 "records_synced": records_synced,
                 "duration_ms": duration_ms,
-                "errors": errors
+                "errors": errors,
+                "created": 0,  # TODO: Track created vs updated
+                "updated": records_synced,
+                "skipped": 0
             }
             
         except Exception as e:
@@ -297,7 +309,7 @@ class QuickBooksSyncService:
             if not invoices:
                 logger.info("[SYNC] No invoices to sync")
                 await self._update_sync_status(db, 'invoices', start_time, 0, 0, 0)
-                return {"records_synced": 0, "duration_ms": 0, "errors": 0}
+                return {"records_synced": 0, "duration_ms": 0, "errors": 0, "created": 0, "updated": 0, "skipped": 0}
             
             logger.info(f"[SYNC] Fetched {len(invoices)} invoices from QuickBooks")
             
@@ -326,15 +338,23 @@ class QuickBooksSyncService:
                         errors += 1
                         continue
                     
+                    # Parse QB timestamp string to datetime
+                    qb_last_modified_str = invoice.get('MetaData', {}).get('LastUpdatedTime')
+                    qb_last_modified = datetime.fromisoformat(qb_last_modified_str.replace('Z', '+00:00')) if qb_last_modified_str else None
+                    
+                    # Parse date string to date object
+                    due_date_str = invoice.get('DueDate')
+                    due_date = datetime.strptime(due_date_str, '%Y-%m-%d').date() if due_date_str else None
+                    
                     invoice_data = {
                         'qb_invoice_id': qb_invoice_id,
                         'customer_id': invoice.get('CustomerRef', {}).get('value'),
                         'doc_number': invoice.get('DocNumber'),
                         'total_amount': invoice.get('TotalAmt'),
                         'balance': invoice.get('Balance'),
-                        'due_date': invoice.get('DueDate'),
-                        'qb_data': invoice,
-                        'qb_last_modified': invoice.get('MetaData', {}).get('LastUpdatedTime'),
+                        'due_date': due_date,
+                        'qb_data': json.dumps(invoice),  # JSON-encode for JSONB column
+                        'qb_last_modified': qb_last_modified,
                         'is_active': True,  # Invoices don't have Active field
                         'sync_error': None,
                         'cached_at': datetime.now(timezone.utc)
@@ -394,7 +414,10 @@ class QuickBooksSyncService:
             return {
                 "records_synced": records_synced,
                 "duration_ms": duration_ms,
-                "errors": errors
+                "errors": errors,
+                "created": 0,  # TODO: Track created vs updated
+                "updated": records_synced,
+                "skipped": 0
             }
             
         except Exception as e:
@@ -465,7 +488,7 @@ class QuickBooksSyncService:
             if not payments:
                 logger.info("[SYNC] No payments to sync")
                 await self._update_sync_status(db, 'payments', start_time, 0, 0, 0)
-                return {"records_synced": 0, "duration_ms": 0, "errors": 0}
+                return {"records_synced": 0, "duration_ms": 0, "errors": 0, "created": 0, "updated": 0, "skipped": 0}
             
             logger.info(f"[SYNC] Fetched {len(payments)} payments from QuickBooks")
             
@@ -513,16 +536,24 @@ class QuickBooksSyncService:
                                         invoice_id = linked_txn.get('TxnId')
                                         break
                     
+                    # Parse QB timestamp string to datetime
+                    qb_last_modified_str = payment.get('MetaData', {}).get('LastUpdatedTime')
+                    qb_last_modified = datetime.fromisoformat(qb_last_modified_str.replace('Z', '+00:00')) if qb_last_modified_str else None
+                    
+                    # Parse date string to date object
+                    payment_date_str = payment.get('TxnDate')
+                    payment_date = datetime.strptime(payment_date_str, '%Y-%m-%d').date() if payment_date_str else None
+                    
                     payment_data = {
                         'qb_payment_id': qb_payment_id,
                         'customer_id': payment.get('CustomerRef', {}).get('value'),
                         'invoice_id': invoice_id,
                         'amount': payment.get('TotalAmt'),
-                        'payment_date': payment.get('TxnDate'),
+                        'payment_date': payment_date,
                         'payment_method': payment.get('PaymentMethodRef', {}).get('name'),
                         'reference_number': payment.get('PaymentRefNum'),
-                        'qb_data': payment,
-                        'qb_last_modified': payment.get('MetaData', {}).get('LastUpdatedTime'),
+                        'qb_data': json.dumps(payment),  # JSON-encode for JSONB column
+                        'qb_last_modified': qb_last_modified,
                         'is_active': True,
                         'sync_error': None,
                         'cached_at': datetime.now(timezone.utc)
@@ -585,7 +616,10 @@ class QuickBooksSyncService:
             return {
                 "records_synced": records_synced,
                 "duration_ms": duration_ms,
-                "errors": errors
+                "errors": errors,
+                "created": 0,  # TODO: Track created vs updated
+                "updated": records_synced,
+                "skipped": 0
             }
             
         except Exception as e:

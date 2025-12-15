@@ -635,12 +635,53 @@ class DBService:
                 "Business ID": payment.business_id,
                 "Client ID": payment.client_id or "",
                 "Project ID": payment.project_id or "",
+                "Invoice ID": payment.invoice_id or "",
                 "Amount": float(payment.amount) if payment.amount else 0.0,
                 "Payment Date": payment.payment_date.isoformat() if payment.payment_date else "",
                 "Payment Method": payment.payment_method or "Check",
                 "Status": payment.status or "Pending",
                 "Check Number": payment.check_number or "",
+                "Reference Number": payment.reference_number or "",
                 "QB Payment ID": payment.qb_payment_id or "",
+                "Notes": payment.notes or "",
+            }
+            
+            if payment.extra:
+                payment_dict.update(payment.extra)
+            
+            self.cache.set(cache_key, payment_dict)
+            return payment_dict
+    
+    async def get_payment_by_payment_id(self, payment_id: str) -> Optional[Dict[str, Any]]:
+        """Get single payment by payment_id (UUID)."""
+        cache_key = f"payment_uuid_{payment_id}"
+        cached = self.cache.get(cache_key)
+        if cached is not None:
+            return cached
+        
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(Payment).where(Payment.payment_id == payment_id)
+            )
+            payment = result.scalar_one_or_none()
+            
+            if not payment:
+                return None
+            
+            payment_dict = {
+                "Payment ID": payment.payment_id,
+                "Business ID": payment.business_id,
+                "Client ID": payment.client_id or "",
+                "Project ID": payment.project_id or "",
+                "Invoice ID": payment.invoice_id or "",
+                "Amount": float(payment.amount) if payment.amount else 0.0,
+                "Payment Date": payment.payment_date.isoformat() if payment.payment_date else "",
+                "Payment Method": payment.payment_method or "Check",
+                "Status": payment.status or "Pending",
+                "Check Number": payment.check_number or "",
+                "Reference Number": payment.reference_number or "",
+                "QB Payment ID": payment.qb_payment_id or "",
+                "Notes": payment.notes or "",
             }
             
             if payment.extra:
@@ -984,6 +1025,60 @@ class DBService:
             
             self.cache.set(cache_key, invoices_data)
             return invoices_data
+    
+    async def get_invoices_with_relations(self) -> List[Dict[str, Any]]:
+        """Get all invoices with client and permit information."""
+        from app.db.models import Invoice, Client, Permit, Project
+        
+        async with AsyncSessionLocal() as session:
+            # Query with joins to get related data
+            result = await session.execute(
+                select(
+                    Invoice,
+                    Client.full_name.label("customer_name"),
+                    Client.email.label("customer_email"),
+                    Permit.permit_number,
+                    Project.project_address.label("address")
+                )
+                .outerjoin(Client, Invoice.client_id == Client.client_id)
+                .outerjoin(Project, Invoice.project_id == Project.project_id)
+                .outerjoin(Permit, Invoice.project_id == Permit.project_id)
+                .order_by(Invoice.due_date.desc())
+            )
+            
+            rows = result.all()
+            invoices = []
+            
+            for row in rows:
+                invoice = row[0]
+                invoices.append({
+                    "invoice_id": str(invoice.invoice_id),
+                    "business_id": invoice.business_id,
+                    "qb_invoice_id": invoice.qb_invoice_id,
+                    "project_id": str(invoice.project_id) if invoice.project_id else None,
+                    "client_id": str(invoice.client_id) if invoice.client_id else None,
+                    "invoice_number": invoice.invoice_number,
+                    "doc_number": invoice.invoice_number,  # Alias for frontend compatibility
+                    "customer_name": row.customer_name or "Unknown Client",
+                    "customer_email": row.customer_email,
+                    "permit_number": row.permit_number,
+                    "address": row.address,
+                    "invoice_date": invoice.invoice_date.isoformat() if invoice.invoice_date else None,
+                    "due_date": invoice.due_date.isoformat() if invoice.due_date else None,
+                    "subtotal": float(invoice.subtotal) if invoice.subtotal else 0,
+                    "tax_amount": float(invoice.tax_amount) if invoice.tax_amount else 0,
+                    "total_amount": float(invoice.total_amount) if invoice.total_amount else 0,
+                    "amount_paid": float(invoice.amount_paid) if invoice.amount_paid else 0,
+                    "balance_due": float(invoice.balance_due) if invoice.balance_due else 0,
+                    "balance": float(invoice.balance_due) if invoice.balance_due else 0,  # Alias
+                    "status": invoice.status,
+                    "line_items": invoice.line_items or [],
+                    "notes": invoice.notes,
+                    "source": "internal_database"
+                })
+            
+            logger.info(f"[DB_SERVICE] Retrieved {len(invoices)} invoices with relations")
+            return invoices
     
     async def get_invoice_by_id(self, invoice_id: str) -> Optional[Dict[str, Any]]:
         """Get single invoice by ID."""

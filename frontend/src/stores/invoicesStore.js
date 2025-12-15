@@ -26,34 +26,18 @@ const useInvoicesStore = create((set, get) => ({
   
   setSelectedInvoice: (invoice) => set({ selectedInvoice: invoice }),
 
-  // Fetch all invoices (from cache)
+  // Fetch all invoices (from internal database)
   fetchInvoices: async () => {
     set({ loading: true, error: null });
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
-      
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://houserenovators-api.fly.dev';
-      
-      // Fetch from cache endpoint
-      const response = await fetch(`${apiUrl}/v1/quickbooks/sync/cache/invoices`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (!response.ok) throw new Error('Failed to fetch invoices from cache');
-      
-      const data = await response.json();
-      const invoicesArray = data?.invoices || [];
+      // Use api.js for centralized API calls to internal database
+      const data = await api.getInvoices();
+      const invoicesArray = Array.isArray(data) ? data : data?.invoices || [];
       
       set({ 
-        invoices: Array.isArray(invoicesArray) ? invoicesArray : [], 
+        invoices: invoicesArray, 
         loading: false 
       });
-      
-      // Fetch sync status
-      await get().fetchSyncStatus();
       
       return invoicesArray;
     } catch (error) {

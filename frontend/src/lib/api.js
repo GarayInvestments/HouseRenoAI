@@ -287,6 +287,7 @@ class ApiService {
   }
 
   async getInvoice(invoiceId) {
+    // Fetch from internal database
     return this.request(`/invoices/${invoiceId}`, {
       method: 'GET',
     });

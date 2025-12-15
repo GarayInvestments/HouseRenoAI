@@ -260,8 +260,12 @@ class QuickBooksService:
         
         # Use timezone-aware datetime for comparison
         now = datetime.now(timezone.utc)
+        # Ensure token_expires_at has timezone info
+        token_expiry = self.token_expires_at
+        if token_expiry.tzinfo is None:
+            token_expiry = token_expiry.replace(tzinfo=timezone.utc)
         # Add 5-minute buffer
-        return now >= (self.token_expires_at - timedelta(minutes=5))
+        return now >= (token_expiry - timedelta(minutes=5))
     
     def is_authenticated(self) -> bool:
         """Check if service has valid tokens"""

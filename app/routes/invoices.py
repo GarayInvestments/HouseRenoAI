@@ -50,9 +50,9 @@ class InvoiceUpdate(BaseModel):
 
 @router.get("/")
 async def get_all_invoices():
-    """Get all invoices"""
+    """Get all invoices with client and permit information"""
     try:
-        invoices = await db_service.get_invoices_data()
+        invoices = await db_service.get_invoices_with_relations()
         logger.info(f"Retrieved {len(invoices)} invoices from database")
         return invoices
     except Exception as e:

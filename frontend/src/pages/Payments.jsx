@@ -5,6 +5,7 @@ import { useAppStore } from '../stores/appStore';
 import usePaymentsStore from '../stores/paymentsStore';
 import LoadingScreen from '../components/LoadingScreen';
 import ErrorState from '../components/ErrorState';
+import { PAYMENT_STATUS_OPTIONS, formatEnumLabel } from '../constants/enums';
 
 export default function Payments() {
   const { navigateToPaymentDetails } = useAppStore();
@@ -141,29 +142,29 @@ export default function Payments() {
   const stats = useMemo(() => getPaymentStats(), [payments]);
 
   const getStatusColor = (status) => {
-    const lowerStatus = status?.toLowerCase();
-    if (lowerStatus === 'cleared') {
+    const upperStatus = status?.toUpperCase();
+    if (upperStatus === 'COMPLETED') {
       return { bg: '#ECFDF5', text: '#059669', border: '#A7F3D0' };
     }
-    if (lowerStatus === 'pending') {
+    if (upperStatus === 'PENDING') {
       return { bg: '#FEF3C7', text: '#D97706', border: '#FCD34D' };
     }
-    if (lowerStatus === 'failed') {
+    if (upperStatus === 'FAILED') {
       return { bg: '#FEE2E2', text: '#DC2626', border: '#FECACA' };
     }
-    if (lowerStatus === 'refunded') {
-      return { bg: '#F3F4F6', text: '#6B7280', border: '#D1D5DB' };
+    if (upperStatus === 'REFUNDED') {
+      return { bg: '#F3E8FF', text: '#9333EA', border: '#E9D5FF' };
     }
     return { bg: '#DBEAFE', text: '#2563EB', border: '#93C5FD' };
   };
 
   const getStatusIcon = (status) => {
-    const lowerStatus = status?.toLowerCase();
-    if (lowerStatus === 'cleared') return <CheckCircle size={16} />;
-    if (lowerStatus === 'pending') return <Clock size={16} />;
-    if (lowerStatus === 'failed') return <XCircle size={16} />;
-    if (lowerStatus === 'refunded') return <AlertCircle size={16} />;
-    return <DollarSign size={16} />;
+    const upperStatus = status?.toUpperCase();
+    if (upperStatus === 'COMPLETED') return <CheckCircle size={16} />;
+    if (upperStatus === 'PENDING') return <Clock size={16} />;
+    if (upperStatus === 'FAILED') return <XCircle size={16} />;
+    if (upperStatus === 'REFUNDED') return <RefreshCw size={16} />;
+    return <AlertCircle size={16} />;
   };
 
   const getPaymentMethodIcon = (method) => {
@@ -453,7 +454,7 @@ export default function Payments() {
 
         {/* Status Filters */}
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          {['all', 'pending', 'cleared', 'failed'].map((status) => (
+          {['all', 'PENDING', 'COMPLETED', 'FAILED', 'REFUNDED'].map((status) => (
             <button
               key={status}
               onClick={() => setFilter(status)}
@@ -470,8 +471,8 @@ export default function Payments() {
                 transition: 'all 0.2s ease'
               }}
             >
-              {status}
-              {status !== 'all' && stats[status] > 0 && (
+              {status === 'all' ? 'All' : formatEnumLabel(status)}
+              {status !== 'all' && stats[status.toLowerCase()] > 0 && (
                 <span style={{
                   marginLeft: '6px',
                   padding: '2px 6px',
@@ -480,7 +481,7 @@ export default function Payments() {
                   fontSize: '12px',
                   fontWeight: '600'
                 }}>
-                  {stats[status]}
+                  {stats[status.toLowerCase()]}
                 </span>
               )}
             </button>
@@ -536,13 +537,14 @@ export default function Payments() {
           display: 'grid',
           gap: '12px'
         }}>
-          {filteredPayments.map((payment) => {
-            const businessId = payment.business_id || payment['Payment ID'] || payment.payment_id;
+          {filteredPayments.map((payment, index) => {
+            const paymentId = payment.payment_id || payment['Payment ID'] || payment.id;
+            const businessId = payment.business_id || payment['Business ID'] || payment['Payment ID'] || paymentId;
             const amount = payment.amount || payment['Amount'] || 0;
             const paymentDate = payment.payment_date || payment['Payment Date'];
             const paymentMethod = payment.payment_method || payment['Payment Method'] || 'N/A';
-            const referenceNumber = payment.reference_number || payment['Reference Number'] || payment.check_number || '';
-            const status = payment.status || payment['Payment Status'] || 'pending';
+            const referenceNumber = payment.reference_number || payment['Reference Number'] || payment['Check Number'] || payment.check_number || '';
+            const status = payment.status || payment['Status'] || payment['Payment Status'] || 'pending';
             const invoiceId = payment.invoice_id || payment['Invoice ID'];
             const clientId = payment.client_id || payment['Client ID'];
             
@@ -551,8 +553,8 @@ export default function Payments() {
 
             return (
               <div
-                key={businessId}
-                onClick={() => {/* TODO: navigateToPaymentDetails(payment.payment_id || payment.id) */}}
+                key={`payment-${paymentId || index}`}
+                onClick={() => navigateToPaymentDetails(paymentId)}
                 onMouseEnter={() => setHoveredCard(businessId)}
                 onMouseLeave={() => setHoveredCard(null)}
                 style={{
@@ -668,11 +670,10 @@ export default function Payments() {
                       backgroundColor: statusColor.bg,
                       color: statusColor.text,
                       border: `1px solid ${statusColor.border}`,
-                      borderRadius: '6px',
-                      textTransform: 'capitalize'
+                      borderRadius: '6px'
                     }}>
                       {getStatusIcon(status)}
-                      {status}
+                      {formatEnumLabel(status)}
                     </span>
                   </div>
                 </div>

@@ -51,8 +51,13 @@ async def get_payment(payment_id: str, current_user: User = Depends(get_current_
         Payment record with details
     """
     try:
-        # Try business_id first (PAY-00001 format)
-        payment = await db_service.get_payment_by_business_id(payment_id)
+        # Try as UUID first
+        try:
+            uuid_obj = uuid.UUID(payment_id)
+            payment = await db_service.get_payment_by_payment_id(payment_id)
+        except ValueError:
+            # Not a UUID, try as business_id (PAY-00001 format)
+            payment = await db_service.get_payment_by_business_id(payment_id)
         
         if not payment:
             raise HTTPException(status_code=404, detail=f"Payment {payment_id} not found")

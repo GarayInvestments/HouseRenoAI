@@ -274,6 +274,93 @@ async def get_cached_customers(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/cache/invoices/{invoice_id}")
+async def get_cached_invoice_by_id(
+    invoice_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get a specific invoice from local cache by QB invoice ID.
+    
+    Fast response - no QuickBooks API calls.
+    """
+    try:
+        query = """
+            SELECT 
+                qb_invoice_id, customer_id, doc_number, total_amount, balance,
+                due_date, qb_last_modified, cached_at, qb_data
+            FROM quickbooks_invoices_cache
+            WHERE qb_invoice_id = :invoice_id
+        """
+        
+        result = await db.execute(text(query), {"invoice_id": invoice_id})
+        row = result.fetchone()
+        
+        if not row:
+            raise HTTPException(status_code=404, detail=f"Invoice {invoice_id} not found in cache")
+        
+        # Parse QB data
+        qb_data = row.qb_data or {}
+        
+        # Extract line items from QB data
+        line_items = []
+        if qb_data and "Line" in qb_data:
+            for line in qb_data.get("Line", []):
+                if line.get("DetailType") == "SalesItemLineDetail":
+                    detail = line.get("SalesItemLineDetail", {})
+                    line_items.append({
+                        "description": line.get("Description", ""),
+                        "quantity": detail.get("Qty", 1),
+                        "unit_price": float(detail.get("UnitPrice", 0)),
+                        "amount": float(line.get("Amount", 0)),
+                        "item_name": detail.get("ItemRef", {}).get("name", "")
+                    })
+        
+        # Get customer info from QB data
+        customer_name = qb_data.get("CustomerRef", {}).get("name", "Unknown Customer")
+        bill_addr = qb_data.get("BillAddr", {})
+        customer_email = qb_data.get("BillEmail", {}).get("Address", "")
+        
+        # Format for frontend (compatible with existing InvoiceDetails component)
+        invoice_data = {
+            "invoice_id": row.qb_invoice_id,
+            "qb_invoice_id": row.qb_invoice_id,
+            "business_id": row.qb_invoice_id,
+            "invoice_number": row.doc_number,
+            "doc_number": row.doc_number,
+            "customer_id": row.customer_id,
+            "customer_name": customer_name,
+            "customer_email": customer_email,
+            "customer_address": f"{bill_addr.get('Line1', '')} {bill_addr.get('Line2', '')} {bill_addr.get('Line3', '')}".strip(),
+            "invoice_date": qb_data.get("TxnDate"),
+            "due_date": row.due_date.isoformat() if row.due_date else None,
+            "status": qb_data.get("EmailStatus", "draft").lower(),
+            "subtotal": float(row.total_amount) if row.total_amount else 0.0,
+            "tax_amount": 0.0,  # QB data would be in TxnTaxDetail
+            "total_amount": float(row.total_amount) if row.total_amount else 0.0,
+            "amount_paid": float(row.total_amount - row.balance) if row.balance else 0.0,
+            "balance_due": float(row.balance) if row.balance else 0.0,
+            "line_items": line_items,
+            "notes": qb_data.get("CustomerMemo", {}).get("value", "") if isinstance(qb_data.get("CustomerMemo"), dict) else "",
+            "qb_last_modified": row.qb_last_modified.isoformat() if row.qb_last_modified else None,
+            "cached_at": row.cached_at.isoformat() if row.cached_at else None,
+            "source": "quickbooks_cache"
+        }
+        
+        return {
+            "success": True,
+            "invoice": invoice_data,
+            "source": "cache"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get cached invoice: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/cache/invoices")
 async def get_cached_invoices(
     limit: int = Query(100, description="Max records to return"),
@@ -288,11 +375,11 @@ async def get_cached_invoices(
     Fast response - no QuickBooks API calls.
     """
     try:
-        # Build query
+        # Build query - include qb_data to extract customer names
         query = """
             SELECT 
                 qb_invoice_id, customer_id, doc_number, total_amount, balance,
-                due_date, qb_last_modified, cached_at
+                due_date, qb_last_modified, cached_at, qb_data
             FROM quickbooks_invoices_cache
         """
         
@@ -309,14 +396,21 @@ async def get_cached_invoices(
         
         invoices = []
         for row in result.fetchall():
+            qb_data = row.qb_data or {}
+            customer_name = qb_data.get("CustomerRef", {}).get("name", "Unknown")
+            
             invoices.append({
                 "qb_invoice_id": row.qb_invoice_id,
+                "business_id": row.qb_invoice_id,  # For frontend compatibility
                 "customer_id": row.customer_id,
+                "customer_name": customer_name,
                 "doc_number": row.doc_number,
                 "total_amount": float(row.total_amount) if row.total_amount else 0.0,
                 "balance": float(row.balance) if row.balance else 0.0,
-                "due_date": row.due_date,
-                "qb_last_modified": row.qb_last_modified,
+                "due_date": row.due_date.isoformat() if row.due_date else None,
+                "invoice_date": qb_data.get("TxnDate"),
+                "status": qb_data.get("EmailStatus", "draft").lower(),
+                "qb_last_modified": row.qb_last_modified.isoformat() if row.qb_last_modified else None,
                 "cached_at": row.cached_at.isoformat() if row.cached_at else None
             })
         

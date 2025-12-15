@@ -1,233 +1,193 @@
 """
-Link existing clients in database to QuickBooks customer IDs.
+Link Internal Clients to QuickBooks Customers
 
-Maps client names to QB customer IDs and updates the database.
+Matches internal clients with QB customers by name and email,
+then updates the clients.qb_customer_id field.
 """
 import asyncio
 import sys
 from pathlib import Path
 
+# Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from sqlalchemy import select, update, text
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, text, update
 from app.db.session import AsyncSessionLocal
 from app.db.models import Client
-from app.services.quickbooks_service import get_quickbooks_service
-
-# Client name → QB Customer ID mapping (provided by user)
-CLIENT_QB_MAPPING = {
-    "Gustavo Roldan": "161",
-    "Javier Martinez": "174",
-    "Howard Nordin": "162",
-    "Ajay Nair": "164",
-    "Steve Jones": "165",
-    "Marta Alder": "167",
-    "Brandon Davis": "169"
-}
+import re
 
 
-async def verify_qb_customers(db: AsyncSession):
-    """Query QuickBooks to verify these customer IDs and check GC Compliance status"""
-    print("\n" + "="*70)
-    print("STEP 1: VERIFY QUICKBOOKS CUSTOMERS")
-    print("="*70)
-    
-    qb_service = get_quickbooks_service(db)
-    
-    verified = {}
-    errors = []
-    
-    for name, qb_id in CLIENT_QB_MAPPING.items():
-        try:
-            # Query specific customer by ID
-            query = f"SELECT * FROM Customer WHERE Id = '{qb_id}'"
-            customers = await qb_service.query(query)
-            
-            if not customers:
-                errors.append(f"❌ {name}: QB ID {qb_id} not found")
-                continue
-            
-            customer = customers[0]
-            display_name = customer.get('DisplayName', 'N/A')
-            customer_type_ref = customer.get('CustomerTypeRef', {})
-            customer_type_id = customer_type_ref.get('value') if customer_type_ref else None
-            
-            # Check if GC Compliance (698682)
-            is_gc_compliance = customer_type_id == "698682"
-            status = "✅ GC Compliance" if is_gc_compliance else f"⚠️  Type: {customer_type_id}"
-            
-            print(f"\n{name}:")
-            print(f"  QB ID: {qb_id}")
-            print(f"  QB Name: {display_name}")
-            print(f"  Status: {status}")
-            
-            verified[name] = {
-                "qb_id": qb_id,
-                "qb_name": display_name,
-                "is_gc_compliance": is_gc_compliance
-            }
-            
-        except Exception as e:
-            errors.append(f"❌ {name}: Error querying QB - {e}")
-            print(f"\n{name}: ❌ Error - {e}")
-    
-    if errors:
-        print("\n⚠️  Errors encountered:")
-        for error in errors:
-            print(f"  {error}")
-    
-    return verified
+def normalize_name(name: str) -> str:
+    """Normalize name for matching (lowercase, remove extra spaces)."""
+    if not name:
+        return ""
+    return re.sub(r'\s+', ' ', name.strip().lower())
 
 
-async def get_database_clients(db: AsyncSession):
-    """Get all clients from database"""
-    print("\n" + "="*70)
-    print("STEP 2: GET DATABASE CLIENTS")
-    print("="*70)
-    
-    result = await db.execute(
-        select(Client).order_by(Client.full_name)
-    )
-    clients = result.scalars().all()
-    
-    print(f"\nFound {len(clients)} clients in database:")
-    for client in clients:
-        qb_status = f"QB: {client.qb_customer_id}" if client.qb_customer_id else "No QB ID"
-        print(f"  {client.business_id} - {client.full_name} ({qb_status})")
-    
-    return clients
+def normalize_email(email: str) -> str:
+    """Normalize email for matching (lowercase, strip)."""
+    if not email:
+        return ""
+    return email.strip().lower()
 
 
-async def link_clients(db: AsyncSession, verified_customers: dict):
-    """Update database clients with QB customer IDs"""
-    print("\n" + "="*70)
-    print("STEP 3: LINK CLIENTS TO QUICKBOOKS")
-    print("="*70)
-    
-    # Get all clients
-    result = await db.execute(select(Client))
-    clients = result.scalars().all()
-    
-    # Create lookup by name (case-insensitive, strip whitespace)
-    clients_by_name = {
-        client.full_name.strip().lower(): client 
-        for client in clients
-    }
-    
-    updated_count = 0
-    skipped_count = 0
-    not_found_count = 0
-    
-    for client_name, qb_data in verified_customers.items():
-        name_key = client_name.strip().lower()
-        
-        if name_key not in clients_by_name:
-            print(f"\n❌ {client_name}: Not found in database")
-            not_found_count += 1
-            continue
-        
-        client = clients_by_name[name_key]
-        qb_id = qb_data['qb_id']
-        
-        # Check if already linked
-        if client.qb_customer_id == qb_id:
-            print(f"\n⏭️  {client_name}: Already linked to QB ID {qb_id}")
-            skipped_count += 1
-            continue
-        
-        # Update the client
-        client.qb_customer_id = qb_id
-        
-        print(f"\n✅ {client_name}:")
-        print(f"   DB ID: {client.business_id}")
-        print(f"   QB ID: {qb_id} ({qb_data['qb_name']})")
-        print(f"   GC Compliance: {'Yes' if qb_data['is_gc_compliance'] else 'No'}")
-        
-        updated_count += 1
-    
-    # Commit changes
-    await db.commit()
-    
-    print("\n" + "="*70)
-    print("LINK SUMMARY")
-    print("="*70)
-    print(f"✅ Updated: {updated_count}")
-    print(f"⏭️  Skipped (already linked): {skipped_count}")
-    print(f"❌ Not found in DB: {not_found_count}")
-    print("="*70)
-
-
-async def verify_links(db: AsyncSession):
-    """Verify the links were created successfully"""
-    print("\n" + "="*70)
-    print("STEP 4: VERIFY LINKS")
-    print("="*70)
-    
-    result = await db.execute(
+async def get_qb_customers(session: AsyncSession):
+    """Fetch all QB customers from cache."""
+    result = await session.execute(
         text("""
-            SELECT 
-                c.business_id,
-                c.full_name,
-                c.qb_customer_id,
-                qbc.display_name as qb_name,
-                qbc.is_active as qb_active
-            FROM clients c
-            LEFT JOIN quickbooks_customers_cache qbc ON c.qb_customer_id = qbc.qb_customer_id
-            ORDER BY c.full_name
+            SELECT qb_customer_id, display_name, company_name, email, given_name, family_name
+            FROM quickbooks_customers_cache
+            WHERE is_active = true
+            ORDER BY display_name
         """)
     )
-    
-    rows = result.fetchall()
-    
-    print(f"\nAll clients with QB status:")
-    linked = 0
-    unlinked = 0
-    
-    for row in rows:
-        if row.qb_customer_id:
-            cache_status = f" (cached: {row.qb_name})" if row.qb_name else " (not in cache)"
-            print(f"  ✅ {row.business_id} - {row.full_name} → QB {row.qb_customer_id}{cache_status}")
-            linked += 1
-        else:
-            print(f"  ⚪ {row.business_id} - {row.full_name} (no QB link)")
-            unlinked += 1
-    
-    print(f"\nTotal: {linked} linked, {unlinked} unlinked")
+    return result.fetchall()
 
 
-async def main():
-    """Run the linking process"""
-    print("\n" + "="*80)
-    print(" LINK CLIENTS TO QUICKBOOKS CUSTOMERS")
-    print("="*80)
+async def get_internal_clients(session: AsyncSession):
+    """Fetch all internal clients."""
+    result = await session.execute(
+        select(Client).order_by(Client.full_name)
+    )
+    return result.scalars().all()
+
+
+def find_qb_match(client, qb_customers):
+    """
+    Find matching QB customer for internal client.
     
-    async with AsyncSessionLocal() as db:
-        try:
-            # Step 1: Verify QB customers exist and check GC Compliance status
-            verified = await verify_qb_customers(db)
+    Tries:
+    1. Exact name match (display_name or company_name)
+    2. Email match
+    3. Given name + family name match
+    """
+    client_name_norm = normalize_name(client.full_name)
+    client_email_norm = normalize_email(client.email)
+    
+    for qb in qb_customers:
+        # Try display_name match
+        if normalize_name(qb.display_name) == client_name_norm:
+            return qb, "exact_name"
+        
+        # Try company_name match
+        if qb.company_name and normalize_name(qb.company_name) == client_name_norm:
+            return qb, "company_name"
+        
+        # Try email match
+        if client_email_norm and qb.email and normalize_email(qb.email) == client_email_norm:
+            return qb, "email"
+        
+        # Try given + family name match
+        if qb.given_name and qb.family_name:
+            qb_full_name = normalize_name(f"{qb.given_name} {qb.family_name}")
+            if qb_full_name == client_name_norm:
+                return qb, "given_family_name"
+    
+    return None, None
+
+
+async def link_clients_to_qb():
+    """Main function to link clients to QB customers."""
+    async with AsyncSessionLocal() as session:
+        print("🔍 Fetching data...")
+        
+        # Get all QB customers
+        qb_customers = await get_qb_customers(session)
+        print(f"   Found {len(qb_customers)} QB customers")
+        
+        # Get all internal clients
+        clients = await get_internal_clients(session)
+        print(f"   Found {len(clients)} internal clients")
+        
+        print("\n" + "="*80)
+        print("MATCHING CLIENTS TO QUICKBOOKS CUSTOMERS")
+        print("="*80 + "\n")
+        
+        matches = []
+        unmatched_clients = []
+        
+        for client in clients:
+            qb_match, match_type = find_qb_match(client, qb_customers)
             
-            if not verified:
-                print("\n❌ No customers verified. Aborting.")
-                return
+            if qb_match:
+                matches.append({
+                    'client': client,
+                    'qb': qb_match,
+                    'match_type': match_type
+                })
+                print(f"✅ MATCH ({match_type}):")
+                print(f"   Client: {client.full_name} ({client.email or 'no email'})")
+                print(f"   QB:     {qb_match.display_name} (ID: {qb_match.qb_customer_id})")
+                print()
+            else:
+                unmatched_clients.append(client)
+                print(f"⚠️  NO MATCH:")
+                print(f"   Client: {client.full_name} ({client.email or 'no email'})")
+                print()
+        
+        # Show unmatched QB customers
+        matched_qb_ids = {m['qb'].qb_customer_id for m in matches}
+        unmatched_qb = [qb for qb in qb_customers if qb.qb_customer_id not in matched_qb_ids]
+        
+        print("\n" + "="*80)
+        print("SUMMARY")
+        print("="*80)
+        print(f"✅ Matched: {len(matches)}")
+        print(f"⚠️  Unmatched clients: {len(unmatched_clients)}")
+        print(f"⚠️  Unmatched QB customers: {len(unmatched_qb)}")
+        
+        if unmatched_clients:
+            print("\n📋 Unmatched Internal Clients:")
+            for client in unmatched_clients:
+                print(f"   - {client.full_name} ({client.email or 'no email'})")
+        
+        if unmatched_qb:
+            print("\n📋 Unmatched QB Customers:")
+            for qb in unmatched_qb:
+                print(f"   - {qb.display_name} (ID: {qb.qb_customer_id})")
+        
+        # Ask for confirmation
+        print("\n" + "="*80)
+        print("CONFIRMATION")
+        print("="*80)
+        response = input(f"\nUpdate {len(matches)} clients with QB customer IDs? (yes/no): ")
+        
+        if response.lower() != 'yes':
+            print("❌ Aborted. No changes made.")
+            return
+        
+        # Update clients
+        print("\n🔄 Updating clients...")
+        updated_count = 0
+        
+        for match in matches:
+            client = match['client']
+            qb = match['qb']
             
-            # Step 2: Show database clients
-            await get_database_clients(db)
-            
-            # Step 3: Link clients to QB
-            await link_clients(db, verified)
-            
-            # Step 4: Verify the links
-            await verify_links(db)
-            
-            print("\n✅ Client linking complete!")
-            
-        except Exception as e:
-            print(f"\n❌ Error: {e}")
-            import traceback
-            traceback.print_exc()
-            await db.rollback()
+            await session.execute(
+                update(Client)
+                .where(Client.client_id == client.client_id)
+                .values(
+                    qb_customer_id=qb.qb_customer_id,
+                    qb_display_name=qb.display_name
+                )
+            )
+            updated_count += 1
+            print(f"   ✅ Updated: {client.full_name} → QB ID {qb.qb_customer_id}")
+        
+        await session.commit()
+        
+        print(f"\n✅ Successfully updated {updated_count} clients!")
+        print("\n📊 Next Steps:")
+        print("   1. Run: python scripts/sync_qb_invoices_to_internal.py")
+        print("   2. Restart frontend to see unified invoices")
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    print("="*80)
+    print("CLIENT TO QUICKBOOKS LINKING SCRIPT")
+    print("="*80)
+    print()
+    
+    asyncio.run(link_clients_to_qb())

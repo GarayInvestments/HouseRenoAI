@@ -21,6 +21,8 @@ import { PROJECT_STATUS_OPTIONS, PROJECT_TYPE_OPTIONS, formatEnumLabel } from '.
 export default function ProjectDetails() {
   const { currentProjectId, navigateToProjects } = useAppStore();
   const [project, setProject] = useState(null);
+  const [invoices, setInvoices] = useState([]);
+  const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -32,7 +34,30 @@ export default function ProjectDetails() {
   useEffect(() => {
     fetchProjectDetails();
     fetchComplianceData();
+    fetchFinancialData();
   }, [currentProjectId]);
+
+  const fetchFinancialData = async () => {
+    try {
+      const [invoicesData, paymentsData] = await Promise.all([
+        api.getInvoices(),
+        api.getPayments()
+      ]);
+      
+      // Filter for this project
+      const projectInvoices = Array.isArray(invoicesData)
+        ? invoicesData.filter(inv => inv.project_id === currentProjectId)
+        : [];
+      setInvoices(projectInvoices);
+      
+      const projectPayments = Array.isArray(paymentsData)
+        ? paymentsData.filter(pmt => pmt.project_id === currentProjectId)
+        : [];
+      setPayments(projectPayments);
+    } catch (error) {
+      console.error('Failed to load financial data:', error);
+    }
+  };
 
   const fetchComplianceData = async () => {
     try {
@@ -564,6 +589,234 @@ export default function ProjectDetails() {
             </div>
           </div>
         </div>
+
+        {/* Financial Summary - Invoices & Payments */}
+        {(invoices.length > 0 || payments.length > 0) && (
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: '12px',
+            padding: '32px',
+            border: '1px solid #E2E8F0',
+            marginBottom: '24px',
+            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)'
+          }}>
+            <h2 style={{
+              fontSize: '20px',
+              fontWeight: '600',
+              color: '#1E293B',
+              marginBottom: '24px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              <DollarSign size={20} style={{ color: '#2563EB' }} />
+              Financial Summary
+            </h2>
+            
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+              gap: '24px'
+            }}>
+              {/* Invoices */}
+              {invoices.length > 0 && (
+                <div>
+                  <h3 style={{
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    color: '#64748B',
+                    marginBottom: '16px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
+                  }}>Invoices</h3>
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px'
+                  }}>
+                    {invoices.map(invoice => (
+                      <div key={invoice.invoice_id} style={{
+                        padding: '16px',
+                        backgroundColor: '#F8FAFC',
+                        borderRadius: '8px',
+                        border: '1px solid #E2E8F0'
+                      }}>
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'flex-start'
+                        }}>
+                          <div>
+                            <div style={{
+                              fontSize: '15px',
+                              fontWeight: '600',
+                              color: '#1E293B',
+                              marginBottom: '4px'
+                            }}>{invoice.invoice_number}</div>
+                            <div style={{
+                              fontSize: '13px',
+                              color: '#64748B'
+                            }}>
+                              {invoice.invoice_date ? new Date(invoice.invoice_date).toLocaleDateString() : 'No date'}
+                            </div>
+                          </div>
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{
+                              fontSize: '18px',
+                              fontWeight: '700',
+                              color: '#1E293B',
+                              marginBottom: '4px'
+                            }}>
+                              ${Number(invoice.total_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </div>
+                            <div style={{
+                              fontSize: '11px',
+                              padding: '3px 10px',
+                              borderRadius: '4px',
+                              display: 'inline-block',
+                              backgroundColor: invoice.status === 'PAID' ? '#DCFCE7' : invoice.status === 'SENT' ? '#FEF3C7' : '#F1F5F9',
+                              color: invoice.status === 'PAID' ? '#166534' : invoice.status === 'SENT' ? '#92400E' : '#475569',
+                              fontWeight: '600'
+                            }}>
+                              {invoice.status || 'DRAFT'}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    <div style={{
+                      marginTop: '12px',
+                      padding: '16px',
+                      backgroundColor: '#EFF6FF',
+                      borderRadius: '8px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <span style={{ fontSize: '15px', fontWeight: '600', color: '#1E40AF' }}>Total Invoiced</span>
+                      <span style={{ fontSize: '20px', fontWeight: '700', color: '#1E40AF' }}>
+                        ${invoices.reduce((sum, inv) => sum + Number(inv.total_amount || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Payments */}
+              {payments.length > 0 && (
+                <div>
+                  <h3 style={{
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    color: '#64748B',
+                    marginBottom: '16px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
+                  }}>Payments Received</h3>
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px'
+                  }}>
+                    {payments.map(payment => (
+                      <div key={payment.payment_id} style={{
+                        padding: '16px',
+                        backgroundColor: '#F8FAFC',
+                        borderRadius: '8px',
+                        border: '1px solid #E2E8F0'
+                      }}>
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'flex-start'
+                        }}>
+                          <div>
+                            <div style={{
+                              fontSize: '15px',
+                              fontWeight: '600',
+                              color: '#1E293B',
+                              marginBottom: '4px'
+                            }}>{payment.payment_method || 'Payment'}</div>
+                            <div style={{
+                              fontSize: '13px',
+                              color: '#64748B'
+                            }}>
+                              {payment.payment_date ? new Date(payment.payment_date).toLocaleDateString() : 'No date'}
+                            </div>
+                          </div>
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{
+                              fontSize: '18px',
+                              fontWeight: '700',
+                              color: '#059669',
+                              marginBottom: '4px'
+                            }}>
+                              ${Number(payment.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </div>
+                            <div style={{
+                              fontSize: '11px',
+                              padding: '3px 10px',
+                              borderRadius: '4px',
+                              display: 'inline-block',
+                              backgroundColor: payment.status === 'POSTED' ? '#DCFCE7' : '#FEF3C7',
+                              color: payment.status === 'POSTED' ? '#166534' : '#92400E',
+                              fontWeight: '600'
+                            }}>
+                              {payment.status || 'PENDING'}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    <div style={{
+                      marginTop: '12px',
+                      padding: '16px',
+                      backgroundColor: '#DCFCE7',
+                      borderRadius: '8px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <span style={{ fontSize: '15px', fontWeight: '600', color: '#166534' }}>Total Paid</span>
+                      <span style={{ fontSize: '20px', fontWeight: '700', color: '#166534' }}>
+                        ${payments.reduce((sum, pmt) => sum + Number(pmt.amount || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Outstanding Balance */}
+            {invoices.length > 0 && payments.length > 0 && (
+              <div style={{
+                marginTop: '24px',
+                padding: '20px',
+                backgroundColor: '#FEF3C7',
+                borderRadius: '12px',
+                border: '2px solid #F59E0B'
+              }}>
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}>
+                  <span style={{ fontSize: '18px', fontWeight: '600', color: '#92400E' }}>
+                    Outstanding Balance
+                  </span>
+                  <span style={{ fontSize: '28px', fontWeight: '700', color: '#92400E' }}>
+                    ${
+                      (
+                        invoices.reduce((sum, inv) => sum + Number(inv.total_amount || 0), 0) -
+                        payments.reduce((sum, pmt) => sum + Number(pmt.amount || 0), 0)
+                      ).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                    }
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Details Grid */}
         <div style={{
