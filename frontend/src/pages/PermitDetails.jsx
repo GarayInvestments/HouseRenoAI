@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import api from '../lib/api';
 import { useAppStore } from '../stores/appStore';
+import { PERMIT_STATUS_OPTIONS, PERMIT_TYPE_OPTIONS, formatEnumLabel } from '../constants/enums';
 
 export default function PermitDetails() {
   const { currentPermitId, navigateToPermits } = useAppStore();
@@ -394,10 +395,12 @@ export default function PermitDetails() {
                   outline: 'none'
                 }}
               >
-                <option value="Pending">Pending</option>
-                <option value="Submitted">Submitted</option>
-                <option value="In Review">In Review</option>
-                <option value="Approved">Approved</option>
+                <option value="">Select status...</option>
+                {PERMIT_STATUS_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            ) : (
                 <option value="Rejected">Rejected</option>
                 <option value="Expired">Expired</option>
               </select>

@@ -1,0 +1,1110 @@
+[
+  {
+    "test_name": "HTTP_GET_v65",
+    "category": "HTTP_Variants",
+    "method": "HTTP_GET",
+    "query": "SELECT * FROM Customer STARTPOSITION 1 MAXRESULTS 5",
+    "success": true,
+    "result_count": 5,
+    "latency_ms": 873,
+    "error": null,
+    "raw_request": {
+      "url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query",
+      "method": "GET",
+      "headers": {
+        "Authorization": "Bearer [REDACTED]",
+        "Accept": "application/json"
+      },
+      "minorversion": 65,
+      "full_url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query?query=SELECT%20%2A%20FROM%20Customer%20STARTPOSITION%201%20MAXRESULTS%205&minorversion=65"
+    },
+    "raw_response": {
+      "status_code": 200,
+      "headers": {
+        "date": "Mon, 15 Dec 2025 03:05:49 GMT",
+        "content-type": "application/json",
+        "content-length": "1155",
+        "connection": "keep-alive",
+        "x-spanid": "c0ae96ca-3de6-9a78-2445-9d8f420c56bc",
+        "x-amzn-trace-id": "Root=1-693f7b0d-0d21e157343f98c37cb4bf8f",
+        "content-encoding": "gzip",
+        "x-content-type-options": "nosniff",
+        "x-envoy-upstream-service-time": "112",
+        "server": "istio-envoy",
+        "x-envoy-decorator-operation": "v3-facade-service-desired-service.dev-devx-v3facadeservice-usw2-prd-ids.svc.cluster.local:8090/*",
+        "strict-transport-security": "max-age=31536000",
+        "intuit_tid": "1-693f7b0d-0d21e157343f98c37cb4bf8f",
+        "x-request-id": "1-693f7b0d-0d21e157343f98c37cb4bf8f"
+      },
+      "body_preview": "{\"QueryResponse\":{\"Customer\":[{\"Taxable\":true,\"BillAddr\":{\"Id\":\"720\",\"Line1\":\"7156 Weddington Rd\",\"Line2\":\"Ste 150\",\"City\":\"Concord\",\"CountrySubDivisionCode\":\"NC\",\"PostalCode\":\"28027\"},\"ShipAddr\":{\"Id\":\"720\",\"Line1\":\"7156 Weddington Rd\",\"Line2\":\"Ste 150\",\"City\":\"Concord\",\"CountrySubDivisionCode\":\"NC\",\"PostalCode\":\"28027\"},\"Job\":false,\"BillWithParent\":false,\"CustomerTypeRef\":{\"value\":\"698682\"},\"Balance\":12000.00,\"BalanceWithJobs\":12000.00,\"CurrencyRef\":{\"value\":\"USD\",\"name\":\"United States Dollar\""
+    },
+    "notes": [
+      "Using URL-encoded query",
+      "Found entity array: Customer"
+    ]
+  },
+  {
+    "test_name": "HTTP_GET_v70",
+    "category": "HTTP_Variants",
+    "method": "HTTP_GET",
+    "query": "SELECT * FROM Customer STARTPOSITION 1 MAXRESULTS 5",
+    "success": true,
+    "result_count": 5,
+    "latency_ms": 827,
+    "error": null,
+    "raw_request": {
+      "url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query",
+      "method": "GET",
+      "headers": {
+        "Authorization": "Bearer [REDACTED]",
+        "Accept": "application/json"
+      },
+      "minorversion": 70,
+      "full_url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query?query=SELECT%20%2A%20FROM%20Customer%20STARTPOSITION%201%20MAXRESULTS%205&minorversion=70"
+    },
+    "raw_response": {
+      "status_code": 200,
+      "headers": {
+        "date": "Mon, 15 Dec 2025 03:05:50 GMT",
+        "content-type": "application/json",
+        "content-length": "1157",
+        "connection": "keep-alive",
+        "x-spanid": "e1f31856-a08e-e32c-bb5b-e155b5efdcf5",
+        "x-amzn-trace-id": "Root=1-693f7b0e-6963775e24b88a1e31b3fef0",
+        "content-encoding": "gzip",
+        "x-content-type-options": "nosniff",
+        "x-envoy-upstream-service-time": "123",
+        "server": "istio-envoy",
+        "x-envoy-decorator-operation": "v3-facade-service-desired-service.dev-devx-v3facadeservice-usw2-prd-ids.svc.cluster.local:8090/*",
+        "strict-transport-security": "max-age=31536000",
+        "intuit_tid": "1-693f7b0e-6963775e24b88a1e31b3fef0",
+        "x-request-id": "1-693f7b0e-6963775e24b88a1e31b3fef0"
+      },
+      "body_preview": "{\"QueryResponse\":{\"Customer\":[{\"Taxable\":true,\"BillAddr\":{\"Id\":\"720\",\"Line1\":\"7156 Weddington Rd\",\"Line2\":\"Ste 150\",\"City\":\"Concord\",\"CountrySubDivisionCode\":\"NC\",\"PostalCode\":\"28027\"},\"ShipAddr\":{\"Id\":\"720\",\"Line1\":\"7156 Weddington Rd\",\"Line2\":\"Ste 150\",\"City\":\"Concord\",\"CountrySubDivisionCode\":\"NC\",\"PostalCode\":\"28027\"},\"Job\":false,\"BillWithParent\":false,\"CustomerTypeRef\":{\"value\":\"698682\"},\"Balance\":12000.00,\"BalanceWithJobs\":12000.00,\"CurrencyRef\":{\"value\":\"USD\",\"name\":\"United States Dollar\""
+    },
+    "notes": [
+      "Using URL-encoded query",
+      "Found entity array: Customer"
+    ]
+  },
+  {
+    "test_name": "HTTP_GET_v75",
+    "category": "HTTP_Variants",
+    "method": "HTTP_GET",
+    "query": "SELECT * FROM Customer STARTPOSITION 1 MAXRESULTS 5",
+    "success": true,
+    "result_count": 5,
+    "latency_ms": 827,
+    "error": null,
+    "raw_request": {
+      "url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query",
+      "method": "GET",
+      "headers": {
+        "Authorization": "Bearer [REDACTED]",
+        "Accept": "application/json"
+      },
+      "minorversion": 75,
+      "full_url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query?query=SELECT%20%2A%20FROM%20Customer%20STARTPOSITION%201%20MAXRESULTS%205&minorversion=75"
+    },
+    "raw_response": {
+      "status_code": 200,
+      "headers": {
+        "date": "Mon, 15 Dec 2025 03:05:50 GMT",
+        "content-type": "application/json",
+        "content-length": "1156",
+        "connection": "keep-alive",
+        "x-spanid": "b6fc48bb-1f4f-9450-e9a8-dc597e93438e",
+        "x-amzn-trace-id": "Root=1-693f7b0e-10da189d0e65e250108f5f83",
+        "content-encoding": "gzip",
+        "x-content-type-options": "nosniff",
+        "x-envoy-upstream-service-time": "125",
+        "server": "istio-envoy",
+        "x-envoy-decorator-operation": "v3-facade-service-desired-service.dev-devx-v3facadeservice-usw2-prd-ids.svc.cluster.local:8090/*",
+        "strict-transport-security": "max-age=31536000",
+        "intuit_tid": "1-693f7b0e-10da189d0e65e250108f5f83",
+        "x-request-id": "1-693f7b0e-10da189d0e65e250108f5f83"
+      },
+      "body_preview": "{\"QueryResponse\":{\"Customer\":[{\"Taxable\":true,\"BillAddr\":{\"Id\":\"720\",\"Line1\":\"7156 Weddington Rd\",\"Line2\":\"Ste 150\",\"City\":\"Concord\",\"CountrySubDivisionCode\":\"NC\",\"PostalCode\":\"28027\"},\"ShipAddr\":{\"Id\":\"720\",\"Line1\":\"7156 Weddington Rd\",\"Line2\":\"Ste 150\",\"City\":\"Concord\",\"CountrySubDivisionCode\":\"NC\",\"PostalCode\":\"28027\"},\"Job\":false,\"BillWithParent\":false,\"CustomerTypeRef\":{\"value\":\"698682\"},\"Balance\":12000.00,\"BalanceWithJobs\":12000.00,\"CurrencyRef\":{\"value\":\"USD\",\"name\":\"United States Dollar\""
+    },
+    "notes": [
+      "Using URL-encoded query",
+      "Found entity array: Customer"
+    ]
+  },
+  {
+    "test_name": "HTTP_GET_v85",
+    "category": "HTTP_Variants",
+    "method": "HTTP_GET",
+    "query": "SELECT * FROM Customer STARTPOSITION 1 MAXRESULTS 5",
+    "success": true,
+    "result_count": 5,
+    "latency_ms": 769,
+    "error": null,
+    "raw_request": {
+      "url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query",
+      "method": "GET",
+      "headers": {
+        "Authorization": "Bearer [REDACTED]",
+        "Accept": "application/json"
+      },
+      "minorversion": 85,
+      "full_url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query?query=SELECT%20%2A%20FROM%20Customer%20STARTPOSITION%201%20MAXRESULTS%205&minorversion=85"
+    },
+    "raw_response": {
+      "status_code": 200,
+      "headers": {
+        "date": "Mon, 15 Dec 2025 03:05:51 GMT",
+        "content-type": "application/json",
+        "content-length": "1157",
+        "connection": "keep-alive",
+        "x-spanid": "0335565a-085c-2353-b0d1-1113e6c132d4",
+        "x-amzn-trace-id": "Root=1-693f7b0f-459aa20b416e469d7aa7d6de",
+        "content-encoding": "gzip",
+        "x-content-type-options": "nosniff",
+        "x-envoy-upstream-service-time": "113",
+        "server": "istio-envoy",
+        "x-envoy-decorator-operation": "v3-facade-service-desired-service.dev-devx-v3facadeservice-usw2-prd-ids.svc.cluster.local:8090/*",
+        "strict-transport-security": "max-age=31536000",
+        "intuit_tid": "1-693f7b0f-459aa20b416e469d7aa7d6de",
+        "x-request-id": "1-693f7b0f-459aa20b416e469d7aa7d6de"
+      },
+      "body_preview": "{\"QueryResponse\":{\"Customer\":[{\"Taxable\":true,\"BillAddr\":{\"Id\":\"720\",\"Line1\":\"7156 Weddington Rd\",\"Line2\":\"Ste 150\",\"City\":\"Concord\",\"CountrySubDivisionCode\":\"NC\",\"PostalCode\":\"28027\"},\"ShipAddr\":{\"Id\":\"720\",\"Line1\":\"7156 Weddington Rd\",\"Line2\":\"Ste 150\",\"City\":\"Concord\",\"CountrySubDivisionCode\":\"NC\",\"PostalCode\":\"28027\"},\"Job\":false,\"BillWithParent\":false,\"CustomerTypeRef\":{\"value\":\"698682\"},\"Balance\":12000.00,\"BalanceWithJobs\":12000.00,\"CurrencyRef\":{\"value\":\"USD\",\"name\":\"United States Dollar\""
+    },
+    "notes": [
+      "Using URL-encoded query",
+      "Found entity array: Customer"
+    ]
+  },
+  {
+    "test_name": "HTTP_GET_v75",
+    "category": "HTTP_Variants",
+    "method": "HTTP_GET",
+    "query": "SELECT * FROM Customer WHERE Id = '161'",
+    "success": true,
+    "result_count": 1,
+    "latency_ms": 829,
+    "error": null,
+    "raw_request": {
+      "url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query",
+      "method": "GET",
+      "headers": {
+        "Authorization": "Bearer [REDACTED]",
+        "Accept": "application/json"
+      },
+      "minorversion": 75,
+      "full_url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query?query=SELECT%20%2A%20FROM%20Customer%20WHERE%20Id%20%3D%20%27161%27&minorversion=75"
+    },
+    "raw_response": {
+      "status_code": 200,
+      "headers": {
+        "date": "Mon, 15 Dec 2025 03:05:52 GMT",
+        "content-type": "application/json",
+        "content-length": "544",
+        "connection": "keep-alive",
+        "x-spanid": "1bed574b-c986-5995-0a00-675ca815feca",
+        "x-amzn-trace-id": "Root=1-693f7b10-17d9f8de4b39163f27c38a05",
+        "content-encoding": "gzip",
+        "x-content-type-options": "nosniff",
+        "x-envoy-upstream-service-time": "129",
+        "server": "istio-envoy",
+        "x-envoy-decorator-operation": "v3-facade-service-desired-service.dev-devx-v3facadeservice-usw2-prd-ids.svc.cluster.local:8090/*",
+        "strict-transport-security": "max-age=31536000",
+        "intuit_tid": "1-693f7b10-17d9f8de4b39163f27c38a05",
+        "x-request-id": "1-693f7b10-17d9f8de4b39163f27c38a05"
+      },
+      "body_preview": "{\"QueryResponse\":{\"Customer\":[{\"Taxable\":true,\"BillAddr\":{\"Id\":\"681\"},\"ShipAddr\":{\"Id\":\"681\"},\"Job\":false,\"BillWithParent\":false,\"CustomerTypeRef\":{\"value\":\"698682\"},\"Balance\":1500.00,\"BalanceWithJobs\":1500.00,\"CurrencyRef\":{\"value\":\"USD\",\"name\":\"United States Dollar\"},\"PreferredDeliveryMethod\":\"Print\",\"IsProject\":false,\"ClientEntityId\":\"0\",\"domain\":\"QBO\",\"sparse\":false,\"Id\":\"161\",\"SyncToken\":\"1\",\"MetaData\":{\"CreateTime\":\"2025-05-21T09:59:33-07:00\",\"LastUpdatedTime\":\"2025-11-26T05:56:26-08:00\"},"
+    },
+    "notes": [
+      "Using URL-encoded query",
+      "Found entity array: Customer"
+    ]
+  },
+  {
+    "test_name": "HTTP_POST_v75",
+    "category": "HTTP_Variants",
+    "method": "HTTP_POST",
+    "query": "SELECT * FROM Customer WHERE Id = '161'",
+    "success": true,
+    "result_count": 1,
+    "latency_ms": 804,
+    "error": null,
+    "raw_request": {
+      "url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query",
+      "method": "POST",
+      "headers": {
+        "Authorization": "Bearer [REDACTED]",
+        "Accept": "application/json"
+      },
+      "minorversion": 75,
+      "body": "SELECT * FROM Customer WHERE Id = '161'"
+    },
+    "raw_response": {
+      "status_code": 200,
+      "headers": {
+        "date": "Mon, 15 Dec 2025 03:05:53 GMT",
+        "content-type": "application/json",
+        "content-length": "546",
+        "connection": "keep-alive",
+        "x-spanid": "594db811-a5bf-3ccd-8cca-5009a539fd7c",
+        "x-amzn-trace-id": "Root=1-693f7b11-3b43b0f826afdb6227d9bd9f",
+        "content-encoding": "gzip",
+        "x-content-type-options": "nosniff",
+        "x-envoy-upstream-service-time": "133",
+        "server": "istio-envoy",
+        "x-envoy-decorator-operation": "v3-facade-service-desired-service.dev-devx-v3facadeservice-usw2-prd-ids.svc.cluster.local:8090/*",
+        "strict-transport-security": "max-age=31536000",
+        "intuit_tid": "1-693f7b11-3b43b0f826afdb6227d9bd9f",
+        "x-request-id": "1-693f7b11-3b43b0f826afdb6227d9bd9f"
+      },
+      "body_preview": "{\"QueryResponse\":{\"Customer\":[{\"Taxable\":true,\"BillAddr\":{\"Id\":\"681\"},\"ShipAddr\":{\"Id\":\"681\"},\"Job\":false,\"BillWithParent\":false,\"CustomerTypeRef\":{\"value\":\"698682\"},\"Balance\":1500.00,\"BalanceWithJobs\":1500.00,\"CurrencyRef\":{\"value\":\"USD\",\"name\":\"United States Dollar\"},\"PreferredDeliveryMethod\":\"Print\",\"IsProject\":false,\"ClientEntityId\":\"0\",\"domain\":\"QBO\",\"sparse\":false,\"Id\":\"161\",\"SyncToken\":\"1\",\"MetaData\":{\"CreateTime\":\"2025-05-21T09:59:33-07:00\",\"LastUpdatedTime\":\"2025-11-26T05:56:26-08:00\"},"
+    },
+    "notes": [
+      "Using URL-encoded query",
+      "Found entity array: Customer"
+    ]
+  },
+  {
+    "test_name": "HTTP_GET_v75",
+    "category": "HTTP_Variants",
+    "method": "HTTP_GET",
+    "query": "SELECT * FROM Customer STARTPOSITION 1 MAXRESULTS 3",
+    "success": true,
+    "result_count": 3,
+    "latency_ms": 906,
+    "error": null,
+    "raw_request": {
+      "url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query",
+      "method": "GET",
+      "headers": {
+        "Authorization": "Bearer [REDACTED]",
+        "Accept": "application/json"
+      },
+      "minorversion": 75,
+      "full_url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query?query=SELECT%20%2A%20FROM%20Customer%20STARTPOSITION%201%20MAXRESULTS%203&minorversion=75"
+    },
+    "raw_response": {
+      "status_code": 200,
+      "headers": {
+        "date": "Mon, 15 Dec 2025 03:05:54 GMT",
+        "content-type": "application/json",
+        "content-length": "919",
+        "connection": "keep-alive",
+        "x-spanid": "78abee87-f3ad-fcc7-27d7-36ecf737c775",
+        "x-amzn-trace-id": "Root=1-693f7b12-3bae7a48436280356f55da6a",
+        "content-encoding": "gzip",
+        "x-content-type-options": "nosniff",
+        "x-envoy-upstream-service-time": "143",
+        "server": "istio-envoy",
+        "x-envoy-decorator-operation": "v3-facade-service-desired-service.dev-devx-v3facadeservice-usw2-prd-ids.svc.cluster.local:8090/*",
+        "strict-transport-security": "max-age=31536000",
+        "intuit_tid": "1-693f7b12-3bae7a48436280356f55da6a",
+        "x-request-id": "1-693f7b12-3bae7a48436280356f55da6a"
+      },
+      "body_preview": "{\"QueryResponse\":{\"Customer\":[{\"Taxable\":true,\"BillAddr\":{\"Id\":\"720\",\"Line1\":\"7156 Weddington Rd\",\"Line2\":\"Ste 150\",\"City\":\"Concord\",\"CountrySubDivisionCode\":\"NC\",\"PostalCode\":\"28027\"},\"ShipAddr\":{\"Id\":\"720\",\"Line1\":\"7156 Weddington Rd\",\"Line2\":\"Ste 150\",\"City\":\"Concord\",\"CountrySubDivisionCode\":\"NC\",\"PostalCode\":\"28027\"},\"Job\":false,\"BillWithParent\":false,\"CustomerTypeRef\":{\"value\":\"698682\"},\"Balance\":12000.00,\"BalanceWithJobs\":12000.00,\"CurrencyRef\":{\"value\":\"USD\",\"name\":\"United States Dollar\""
+    },
+    "notes": [
+      "Using URL-encoded query",
+      "Found entity array: Customer"
+    ]
+  },
+  {
+    "test_name": "HTTP_GET_v75",
+    "category": "HTTP_Variants",
+    "method": "HTTP_GET",
+    "query": "SELECT * FROM Customer STARTPOSITION 1 MAXRESULTS 3",
+    "success": false,
+    "result_count": 0,
+    "latency_ms": 844,
+    "error": "Expecting value: line 1 column 1 (char 0)",
+    "raw_request": {
+      "url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query",
+      "method": "GET",
+      "headers": {
+        "Authorization": "Bearer [REDACTED]",
+        "Accept": "application/xml"
+      },
+      "minorversion": 75,
+      "full_url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query?query=SELECT%20%2A%20FROM%20Customer%20STARTPOSITION%201%20MAXRESULTS%203&minorversion=75"
+    },
+    "raw_response": {
+      "status_code": 200,
+      "headers": {
+        "date": "Mon, 15 Dec 2025 03:05:55 GMT",
+        "content-type": "application/xml",
+        "content-length": "1094",
+        "connection": "keep-alive",
+        "x-spanid": "89c2191f-349f-38a4-e2ca-109c9676c99b",
+        "x-amzn-trace-id": "Root=1-693f7b13-00108a74658c0ed70dd5f0a4",
+        "content-encoding": "gzip",
+        "x-content-type-options": "nosniff",
+        "x-envoy-upstream-service-time": "142",
+        "server": "istio-envoy",
+        "x-envoy-decorator-operation": "v3-facade-service-desired-service.dev-devx-v3facadeservice-usw2-prd-ids.svc.cluster.local:8090/*",
+        "strict-transport-security": "max-age=31536000",
+        "intuit_tid": "1-693f7b13-00108a74658c0ed70dd5f0a4",
+        "x-request-id": "1-693f7b13-00108a74658c0ed70dd5f0a4"
+      },
+      "body_preview": "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><IntuitResponse xmlns=\"http://schema.intuit.com/finance/v3\" time=\"2025-12-14T19:05:55.084-08:00\"><QueryResponse startPosition=\"1\" maxResults=\"3\"><Customer domain=\"QBO\" sparse=\"false\"><Id>164</Id><SyncToken>4</SyncToken><MetaData><CreateTime>2025-05-27T10:22:48-07:00</CreateTime><LastUpdatedTime>2025-12-01T11:33:03-08:00</LastUpdatedTime></MetaData><GivenName>Ajay</GivenName><FamilyName>Nair</FamilyName><FullyQualifiedName>Ajay Nair</FullyQua"
+    },
+    "notes": [
+      "Using URL-encoded query",
+      "Custom headers: ['Accept']",
+      "Exception: JSONDecodeError"
+    ]
+  },
+  {
+    "test_name": "HTTP_GET_v75",
+    "category": "HTTP_Variants",
+    "method": "HTTP_GET",
+    "query": "SELECT * FROM Customer STARTPOSITION 1 MAXRESULTS 3",
+    "success": true,
+    "result_count": 3,
+    "latency_ms": 768,
+    "error": null,
+    "raw_request": {
+      "url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query",
+      "method": "GET",
+      "headers": {
+        "Authorization": "Bearer [REDACTED]",
+        "Accept": "application/json"
+      },
+      "minorversion": 75,
+      "full_url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query?query=SELECT%20%2A%20FROM%20Customer%20STARTPOSITION%201%20MAXRESULTS%203&minorversion=75"
+    },
+    "raw_response": {
+      "status_code": 200,
+      "headers": {
+        "date": "Mon, 15 Dec 2025 03:05:55 GMT",
+        "content-type": "application/json",
+        "content-length": "919",
+        "connection": "keep-alive",
+        "x-spanid": "624a5369-9058-5518-9098-a999bbf62a28",
+        "x-amzn-trace-id": "Root=1-693f7b13-36fa9099213695c2785f1d94",
+        "content-encoding": "gzip",
+        "x-content-type-options": "nosniff",
+        "x-envoy-upstream-service-time": "120",
+        "server": "istio-envoy",
+        "x-envoy-decorator-operation": "v3-facade-service-desired-service.dev-devx-v3facadeservice-usw2-prd-ids.svc.cluster.local:8090/*",
+        "strict-transport-security": "max-age=31536000",
+        "intuit_tid": "1-693f7b13-36fa9099213695c2785f1d94",
+        "x-request-id": "1-693f7b13-36fa9099213695c2785f1d94"
+      },
+      "body_preview": "{\"QueryResponse\":{\"Customer\":[{\"Taxable\":true,\"BillAddr\":{\"Id\":\"720\",\"Line1\":\"7156 Weddington Rd\",\"Line2\":\"Ste 150\",\"City\":\"Concord\",\"CountrySubDivisionCode\":\"NC\",\"PostalCode\":\"28027\"},\"ShipAddr\":{\"Id\":\"720\",\"Line1\":\"7156 Weddington Rd\",\"Line2\":\"Ste 150\",\"City\":\"Concord\",\"CountrySubDivisionCode\":\"NC\",\"PostalCode\":\"28027\"},\"Job\":false,\"BillWithParent\":false,\"CustomerTypeRef\":{\"value\":\"698682\"},\"Balance\":12000.00,\"BalanceWithJobs\":12000.00,\"CurrencyRef\":{\"value\":\"USD\",\"name\":\"United States Dollar\""
+    },
+    "notes": [
+      "Using URL-encoded query",
+      "Custom headers: ['Accept']",
+      "Found entity array: Customer"
+    ]
+  },
+  {
+    "test_name": "HTTP_GET_v75",
+    "category": "HTTP_Variants",
+    "method": "HTTP_GET",
+    "query": "SELECT * FROM Customer STARTPOSITION 1 MAXRESULTS 3",
+    "success": true,
+    "result_count": 3,
+    "latency_ms": 778,
+    "error": null,
+    "raw_request": {
+      "url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query",
+      "method": "GET",
+      "headers": {
+        "Authorization": "Bearer [REDACTED]",
+        "Accept": "application/json",
+        "Content-Type": "text/plain"
+      },
+      "minorversion": 75,
+      "full_url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query?query=SELECT%20%2A%20FROM%20Customer%20STARTPOSITION%201%20MAXRESULTS%203&minorversion=75"
+    },
+    "raw_response": {
+      "status_code": 200,
+      "headers": {
+        "date": "Mon, 15 Dec 2025 03:05:56 GMT",
+        "content-type": "application/json",
+        "content-length": "919",
+        "connection": "keep-alive",
+        "x-spanid": "8cfff886-6ae9-44a3-3e48-f5bc72ecc53a",
+        "x-amzn-trace-id": "Root=1-693f7b14-4112eaaa145d4ddf621d3508",
+        "content-encoding": "gzip",
+        "x-content-type-options": "nosniff",
+        "x-envoy-upstream-service-time": "112",
+        "server": "istio-envoy",
+        "x-envoy-decorator-operation": "v3-facade-service-desired-service.dev-devx-v3facadeservice-usw2-prd-ids.svc.cluster.local:8090/*",
+        "strict-transport-security": "max-age=31536000",
+        "intuit_tid": "1-693f7b14-4112eaaa145d4ddf621d3508",
+        "x-request-id": "1-693f7b14-4112eaaa145d4ddf621d3508"
+      },
+      "body_preview": "{\"QueryResponse\":{\"Customer\":[{\"Taxable\":true,\"BillAddr\":{\"Id\":\"720\",\"Line1\":\"7156 Weddington Rd\",\"Line2\":\"Ste 150\",\"City\":\"Concord\",\"CountrySubDivisionCode\":\"NC\",\"PostalCode\":\"28027\"},\"ShipAddr\":{\"Id\":\"720\",\"Line1\":\"7156 Weddington Rd\",\"Line2\":\"Ste 150\",\"City\":\"Concord\",\"CountrySubDivisionCode\":\"NC\",\"PostalCode\":\"28027\"},\"Job\":false,\"BillWithParent\":false,\"CustomerTypeRef\":{\"value\":\"698682\"},\"Balance\":12000.00,\"BalanceWithJobs\":12000.00,\"CurrencyRef\":{\"value\":\"USD\",\"name\":\"United States Dollar\""
+    },
+    "notes": [
+      "Using URL-encoded query",
+      "Custom headers: ['Content-Type']",
+      "Found entity array: Customer"
+    ]
+  },
+  {
+    "test_name": "HTTP_GET_v75",
+    "category": "HTTP_Variants",
+    "method": "HTTP_GET",
+    "query": "SELECT * FROM Customer STARTPOSITION 1 MAXRESULTS 3",
+    "success": true,
+    "result_count": 3,
+    "latency_ms": 801,
+    "error": null,
+    "raw_request": {
+      "url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query",
+      "method": "GET",
+      "headers": {
+        "Authorization": "Bearer [REDACTED]",
+        "Accept": "application/json",
+        "Content-Type": "application/json"
+      },
+      "minorversion": 75,
+      "full_url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query?query=SELECT%20%2A%20FROM%20Customer%20STARTPOSITION%201%20MAXRESULTS%203&minorversion=75"
+    },
+    "raw_response": {
+      "status_code": 200,
+      "headers": {
+        "date": "Mon, 15 Dec 2025 03:05:57 GMT",
+        "content-type": "application/json",
+        "content-length": "919",
+        "connection": "keep-alive",
+        "x-spanid": "7ee2022e-d557-f802-14b5-1ade8f114390",
+        "x-amzn-trace-id": "Root=1-693f7b15-6a9e12ff0c81292c4ccb7167",
+        "content-encoding": "gzip",
+        "x-content-type-options": "nosniff",
+        "x-envoy-upstream-service-time": "140",
+        "server": "istio-envoy",
+        "x-envoy-decorator-operation": "v3-facade-service-desired-service.dev-devx-v3facadeservice-usw2-prd-ids.svc.cluster.local:8090/*",
+        "strict-transport-security": "max-age=31536000",
+        "intuit_tid": "1-693f7b15-6a9e12ff0c81292c4ccb7167",
+        "x-request-id": "1-693f7b15-6a9e12ff0c81292c4ccb7167"
+      },
+      "body_preview": "{\"QueryResponse\":{\"Customer\":[{\"Taxable\":true,\"BillAddr\":{\"Id\":\"720\",\"Line1\":\"7156 Weddington Rd\",\"Line2\":\"Ste 150\",\"City\":\"Concord\",\"CountrySubDivisionCode\":\"NC\",\"PostalCode\":\"28027\"},\"ShipAddr\":{\"Id\":\"720\",\"Line1\":\"7156 Weddington Rd\",\"Line2\":\"Ste 150\",\"City\":\"Concord\",\"CountrySubDivisionCode\":\"NC\",\"PostalCode\":\"28027\"},\"Job\":false,\"BillWithParent\":false,\"CustomerTypeRef\":{\"value\":\"698682\"},\"Balance\":12000.00,\"BalanceWithJobs\":12000.00,\"CurrencyRef\":{\"value\":\"USD\",\"name\":\"United States Dollar\""
+    },
+    "notes": [
+      "Using URL-encoded query",
+      "Custom headers: ['Content-Type']",
+      "Found entity array: Customer"
+    ]
+  },
+  {
+    "test_name": "HTTP_GET_v75",
+    "category": "HTTP_Variants",
+    "method": "HTTP_GET",
+    "query": "SELECT * FROM Customer STARTPOSITION 0 MAXRESULTS 5",
+    "success": true,
+    "result_count": 5,
+    "latency_ms": 804,
+    "error": null,
+    "raw_request": {
+      "url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query",
+      "method": "GET",
+      "headers": {
+        "Authorization": "Bearer [REDACTED]",
+        "Accept": "application/json"
+      },
+      "minorversion": 75,
+      "full_url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query?query=SELECT%20%2A%20FROM%20Customer%20STARTPOSITION%200%20MAXRESULTS%205&minorversion=75"
+    },
+    "raw_response": {
+      "status_code": 200,
+      "headers": {
+        "date": "Mon, 15 Dec 2025 03:05:58 GMT",
+        "content-type": "application/json",
+        "content-length": "1156",
+        "connection": "keep-alive",
+        "x-spanid": "ab2c58c7-5858-977d-762c-d2eab92420ad",
+        "x-amzn-trace-id": "Root=1-693f7b16-1b9484f93a1ebcef7926a29a",
+        "content-encoding": "gzip",
+        "x-content-type-options": "nosniff",
+        "x-envoy-upstream-service-time": "138",
+        "server": "istio-envoy",
+        "x-envoy-decorator-operation": "v3-facade-service-desired-service.dev-devx-v3facadeservice-usw2-prd-ids.svc.cluster.local:8090/*",
+        "strict-transport-security": "max-age=31536000",
+        "intuit_tid": "1-693f7b16-1b9484f93a1ebcef7926a29a",
+        "x-request-id": "1-693f7b16-1b9484f93a1ebcef7926a29a"
+      },
+      "body_preview": "{\"QueryResponse\":{\"Customer\":[{\"Taxable\":true,\"BillAddr\":{\"Id\":\"720\",\"Line1\":\"7156 Weddington Rd\",\"Line2\":\"Ste 150\",\"City\":\"Concord\",\"CountrySubDivisionCode\":\"NC\",\"PostalCode\":\"28027\"},\"ShipAddr\":{\"Id\":\"720\",\"Line1\":\"7156 Weddington Rd\",\"Line2\":\"Ste 150\",\"City\":\"Concord\",\"CountrySubDivisionCode\":\"NC\",\"PostalCode\":\"28027\"},\"Job\":false,\"BillWithParent\":false,\"CustomerTypeRef\":{\"value\":\"698682\"},\"Balance\":12000.00,\"BalanceWithJobs\":12000.00,\"CurrencyRef\":{\"value\":\"USD\",\"name\":\"United States Dollar\""
+    },
+    "notes": [
+      "Using URL-encoded query",
+      "Found entity array: Customer"
+    ]
+  },
+  {
+    "test_name": "HTTP_GET_v75",
+    "category": "HTTP_Variants",
+    "method": "HTTP_GET",
+    "query": "SELECT * FROM Customer STARTPOSITION 1 MAXRESULTS 5",
+    "success": true,
+    "result_count": 5,
+    "latency_ms": 918,
+    "error": null,
+    "raw_request": {
+      "url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query",
+      "method": "GET",
+      "headers": {
+        "Authorization": "Bearer [REDACTED]",
+        "Accept": "application/json"
+      },
+      "minorversion": 75,
+      "full_url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query?query=SELECT%20%2A%20FROM%20Customer%20STARTPOSITION%201%20MAXRESULTS%205&minorversion=75"
+    },
+    "raw_response": {
+      "status_code": 200,
+      "headers": {
+        "date": "Mon, 15 Dec 2025 03:05:59 GMT",
+        "content-type": "application/json",
+        "content-length": "1156",
+        "connection": "keep-alive",
+        "x-spanid": "b6366720-b9a0-80f5-0c54-998e61a24daa",
+        "x-amzn-trace-id": "Root=1-693f7b17-0d782c5d272a71641483d776",
+        "content-encoding": "gzip",
+        "x-content-type-options": "nosniff",
+        "x-envoy-upstream-service-time": "117",
+        "server": "istio-envoy",
+        "x-envoy-decorator-operation": "v3-facade-service-desired-service.dev-devx-v3facadeservice-usw2-prd-ids.svc.cluster.local:8090/*",
+        "strict-transport-security": "max-age=31536000",
+        "intuit_tid": "1-693f7b17-0d782c5d272a71641483d776",
+        "x-request-id": "1-693f7b17-0d782c5d272a71641483d776"
+      },
+      "body_preview": "{\"QueryResponse\":{\"Customer\":[{\"Taxable\":true,\"BillAddr\":{\"Id\":\"720\",\"Line1\":\"7156 Weddington Rd\",\"Line2\":\"Ste 150\",\"City\":\"Concord\",\"CountrySubDivisionCode\":\"NC\",\"PostalCode\":\"28027\"},\"ShipAddr\":{\"Id\":\"720\",\"Line1\":\"7156 Weddington Rd\",\"Line2\":\"Ste 150\",\"City\":\"Concord\",\"CountrySubDivisionCode\":\"NC\",\"PostalCode\":\"28027\"},\"Job\":false,\"BillWithParent\":false,\"CustomerTypeRef\":{\"value\":\"698682\"},\"Balance\":12000.00,\"BalanceWithJobs\":12000.00,\"CurrencyRef\":{\"value\":\"USD\",\"name\":\"United States Dollar\""
+    },
+    "notes": [
+      "Using URL-encoded query",
+      "Found entity array: Customer"
+    ]
+  },
+  {
+    "test_name": "HTTP_GET_v75",
+    "category": "HTTP_Variants",
+    "method": "HTTP_GET",
+    "query": "SELECT * FROM Customer STARTPOSITION 1 MAXRESULTS 1",
+    "success": true,
+    "result_count": 1,
+    "latency_ms": 807,
+    "error": null,
+    "raw_request": {
+      "url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query",
+      "method": "GET",
+      "headers": {
+        "Authorization": "Bearer [REDACTED]",
+        "Accept": "application/json"
+      },
+      "minorversion": 75,
+      "full_url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query?query=SELECT%20%2A%20FROM%20Customer%20STARTPOSITION%201%20MAXRESULTS%201&minorversion=75"
+    },
+    "raw_response": {
+      "status_code": 200,
+      "headers": {
+        "date": "Mon, 15 Dec 2025 03:06:00 GMT",
+        "content-type": "application/json",
+        "content-length": "618",
+        "connection": "keep-alive",
+        "x-spanid": "d856e2b1-174e-4632-6b3c-c91025b5f395",
+        "x-amzn-trace-id": "Root=1-693f7b17-4dab6643736eacef44f857b2",
+        "content-encoding": "gzip",
+        "x-content-type-options": "nosniff",
+        "x-envoy-upstream-service-time": "145",
+        "server": "istio-envoy",
+        "x-envoy-decorator-operation": "v3-facade-service-desired-service.dev-devx-v3facadeservice-usw2-prd-ids.svc.cluster.local:8090/*",
+        "strict-transport-security": "max-age=31536000",
+        "intuit_tid": "1-693f7b17-4dab6643736eacef44f857b2",
+        "x-request-id": "1-693f7b17-4dab6643736eacef44f857b2"
+      },
+      "body_preview": "{\"QueryResponse\":{\"Customer\":[{\"Taxable\":true,\"BillAddr\":{\"Id\":\"720\",\"Line1\":\"7156 Weddington Rd\",\"Line2\":\"Ste 150\",\"City\":\"Concord\",\"CountrySubDivisionCode\":\"NC\",\"PostalCode\":\"28027\"},\"ShipAddr\":{\"Id\":\"720\",\"Line1\":\"7156 Weddington Rd\",\"Line2\":\"Ste 150\",\"City\":\"Concord\",\"CountrySubDivisionCode\":\"NC\",\"PostalCode\":\"28027\"},\"Job\":false,\"BillWithParent\":false,\"CustomerTypeRef\":{\"value\":\"698682\"},\"Balance\":12000.00,\"BalanceWithJobs\":12000.00,\"CurrencyRef\":{\"value\":\"USD\",\"name\":\"United States Dollar\""
+    },
+    "notes": [
+      "Using URL-encoded query",
+      "Found entity array: Customer"
+    ]
+  },
+  {
+    "test_name": "HTTP_GET_v75",
+    "category": "HTTP_Variants",
+    "method": "HTTP_GET",
+    "query": "SELECT * FROM Customer STARTPOSITION 1 MAXRESULTS 1000",
+    "success": true,
+    "result_count": 26,
+    "latency_ms": 831,
+    "error": null,
+    "raw_request": {
+      "url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query",
+      "method": "GET",
+      "headers": {
+        "Authorization": "Bearer [REDACTED]",
+        "Accept": "application/json"
+      },
+      "minorversion": 75,
+      "full_url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query?query=SELECT%20%2A%20FROM%20Customer%20STARTPOSITION%201%20MAXRESULTS%201000&minorversion=75"
+    },
+    "raw_response": {
+      "status_code": 200,
+      "headers": {
+        "date": "Mon, 15 Dec 2025 03:06:00 GMT",
+        "content-type": "application/json",
+        "content-length": "3363",
+        "connection": "keep-alive",
+        "x-spanid": "297235dd-faae-b398-7cc6-3e2b39b3aa4f",
+        "x-amzn-trace-id": "Root=1-693f7b18-48c3da1d609a735727c7de13",
+        "content-encoding": "gzip",
+        "x-content-type-options": "nosniff",
+        "x-envoy-upstream-service-time": "158",
+        "server": "istio-envoy",
+        "x-envoy-decorator-operation": "v3-facade-service-desired-service.dev-devx-v3facadeservice-usw2-prd-ids.svc.cluster.local:8090/*",
+        "strict-transport-security": "max-age=31536000",
+        "intuit_tid": "1-693f7b18-48c3da1d609a735727c7de13",
+        "x-request-id": "1-693f7b18-48c3da1d609a735727c7de13"
+      },
+      "body_preview": "{\"QueryResponse\":{\"Customer\":[{\"Taxable\":true,\"BillAddr\":{\"Id\":\"720\",\"Line1\":\"7156 Weddington Rd\",\"Line2\":\"Ste 150\",\"City\":\"Concord\",\"CountrySubDivisionCode\":\"NC\",\"PostalCode\":\"28027\"},\"ShipAddr\":{\"Id\":\"720\",\"Line1\":\"7156 Weddington Rd\",\"Line2\":\"Ste 150\",\"City\":\"Concord\",\"CountrySubDivisionCode\":\"NC\",\"PostalCode\":\"28027\"},\"Job\":false,\"BillWithParent\":false,\"CustomerTypeRef\":{\"value\":\"698682\"},\"Balance\":12000.00,\"BalanceWithJobs\":12000.00,\"CurrencyRef\":{\"value\":\"USD\",\"name\":\"United States Dollar\""
+    },
+    "notes": [
+      "Using URL-encoded query",
+      "Found entity array: Customer"
+    ]
+  },
+  {
+    "test_name": "HTTP_GET_v75",
+    "category": "HTTP_Variants",
+    "method": "HTTP_GET",
+    "query": "SELECT * FROM Customer STARTPOSITION 1 MAXRESULTS 2000",
+    "success": false,
+    "result_count": 0,
+    "latency_ms": 754,
+    "error": "HTTP 400: {\"Fault\":{\"Error\":[{\"Message\":\"Invalid query\",\"Detail\":\"QueryValidationError: value 2000 is too large. Max allowed value is 1000\",\"code\":\"4001\"}],\"type\":\"ValidationFault\"},\"time\":\"2025-12-14T19:06:01.",
+    "raw_request": {
+      "url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query",
+      "method": "GET",
+      "headers": {
+        "Authorization": "Bearer [REDACTED]",
+        "Accept": "application/json"
+      },
+      "minorversion": 75,
+      "full_url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query?query=SELECT%20%2A%20FROM%20Customer%20STARTPOSITION%201%20MAXRESULTS%202000&minorversion=75"
+    },
+    "raw_response": {
+      "status_code": 400,
+      "headers": {
+        "date": "Mon, 15 Dec 2025 03:06:01 GMT",
+        "content-type": "application/json",
+        "content-length": "180",
+        "connection": "keep-alive",
+        "x-spanid": "ea7c27b4-fb94-b2d9-8481-810aaa9a68fa",
+        "x-amzn-trace-id": "Root=1-693f7b19-5a3a737a4eb1b75f48b79110",
+        "content-encoding": "gzip",
+        "x-content-type-options": "nosniff",
+        "x-envoy-upstream-service-time": "86",
+        "server": "istio-envoy",
+        "x-envoy-decorator-operation": "v3-facade-service-desired-service.dev-devx-v3facadeservice-usw2-prd-ids.svc.cluster.local:8090/*",
+        "strict-transport-security": "max-age=31536000",
+        "intuit_tid": "1-693f7b19-5a3a737a4eb1b75f48b79110",
+        "x-request-id": "1-693f7b19-5a3a737a4eb1b75f48b79110"
+      },
+      "body_preview": "{\"Fault\":{\"Error\":[{\"Message\":\"Invalid query\",\"Detail\":\"QueryValidationError: value 2000 is too large. Max allowed value is 1000\",\"code\":\"4001\"}],\"type\":\"ValidationFault\"},\"time\":\"2025-12-14T19:06:01.619-08:00\"}"
+    },
+    "notes": [
+      "Using URL-encoded query",
+      "Request failed"
+    ]
+  },
+  {
+    "test_name": "HTTP_GET_v75",
+    "category": "HTTP_Variants",
+    "method": "HTTP_GET",
+    "query": "SELECT * FROM Customer STARTPOSITION 100 MAXRESULTS 10",
+    "success": true,
+    "result_count": 0,
+    "latency_ms": 794,
+    "error": null,
+    "raw_request": {
+      "url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query",
+      "method": "GET",
+      "headers": {
+        "Authorization": "Bearer [REDACTED]",
+        "Accept": "application/json"
+      },
+      "minorversion": 75,
+      "full_url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query?query=SELECT%20%2A%20FROM%20Customer%20STARTPOSITION%20100%20MAXRESULTS%2010&minorversion=75"
+    },
+    "raw_response": {
+      "status_code": 200,
+      "headers": {
+        "date": "Mon, 15 Dec 2025 03:06:02 GMT",
+        "content-type": "application/json",
+        "content-length": "77",
+        "connection": "keep-alive",
+        "x-spanid": "fc67f250-6ad7-e7f7-cc4b-5694ca27d540",
+        "x-amzn-trace-id": "Root=1-693f7b1a-2d5ed9f576f744e80b4fab06",
+        "content-encoding": "gzip",
+        "x-content-type-options": "nosniff",
+        "x-envoy-upstream-service-time": "122",
+        "server": "istio-envoy",
+        "x-envoy-decorator-operation": "v3-facade-service-desired-service.dev-devx-v3facadeservice-usw2-prd-ids.svc.cluster.local:8090/*",
+        "strict-transport-security": "max-age=31536000",
+        "intuit_tid": "1-693f7b1a-2d5ed9f576f744e80b4fab06",
+        "x-request-id": "1-693f7b1a-2d5ed9f576f744e80b4fab06"
+      },
+      "body_preview": "{\"QueryResponse\":{},\"time\":\"2025-12-14T19:06:02.375-08:00\"}"
+    },
+    "notes": [
+      "Using URL-encoded query",
+      "Empty result (valid for filter mismatch)"
+    ]
+  },
+  {
+    "test_name": "HTTP_GET_v75",
+    "category": "HTTP_Variants",
+    "method": "HTTP_GET",
+    "query": "SELECT * FROM Customer",
+    "success": true,
+    "result_count": 26,
+    "latency_ms": 820,
+    "error": null,
+    "raw_request": {
+      "url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query",
+      "method": "GET",
+      "headers": {
+        "Authorization": "Bearer [REDACTED]",
+        "Accept": "application/json"
+      },
+      "minorversion": 75,
+      "full_url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query?query=SELECT%20%2A%20FROM%20Customer&minorversion=75"
+    },
+    "raw_response": {
+      "status_code": 200,
+      "headers": {
+        "date": "Mon, 15 Dec 2025 03:06:03 GMT",
+        "content-type": "application/json",
+        "content-length": "3360",
+        "connection": "keep-alive",
+        "x-spanid": "3a533085-5cd8-73b6-e07e-5e6086fe39e5",
+        "x-amzn-trace-id": "Root=1-693f7b1b-59e902bf6b37e2444df80fb3",
+        "content-encoding": "gzip",
+        "x-content-type-options": "nosniff",
+        "x-envoy-upstream-service-time": "165",
+        "server": "istio-envoy",
+        "x-envoy-decorator-operation": "v3-facade-service-desired-service.dev-devx-v3facadeservice-usw2-prd-ids.svc.cluster.local:8090/*",
+        "strict-transport-security": "max-age=31536000",
+        "intuit_tid": "1-693f7b1b-59e902bf6b37e2444df80fb3",
+        "x-request-id": "1-693f7b1b-59e902bf6b37e2444df80fb3"
+      },
+      "body_preview": "{\"QueryResponse\":{\"Customer\":[{\"Taxable\":true,\"BillAddr\":{\"Id\":\"720\",\"Line1\":\"7156 Weddington Rd\",\"Line2\":\"Ste 150\",\"City\":\"Concord\",\"CountrySubDivisionCode\":\"NC\",\"PostalCode\":\"28027\"},\"ShipAddr\":{\"Id\":\"720\",\"Line1\":\"7156 Weddington Rd\",\"Line2\":\"Ste 150\",\"City\":\"Concord\",\"CountrySubDivisionCode\":\"NC\",\"PostalCode\":\"28027\"},\"Job\":false,\"BillWithParent\":false,\"CustomerTypeRef\":{\"value\":\"698682\"},\"Balance\":12000.00,\"BalanceWithJobs\":12000.00,\"CurrencyRef\":{\"value\":\"USD\",\"name\":\"United States Dollar\""
+    },
+    "notes": [
+      "Using URL-encoded query",
+      "Found entity array: Customer"
+    ]
+  },
+  {
+    "test_name": "HTTP_GET_v75",
+    "category": "HTTP_Variants",
+    "method": "HTTP_GET",
+    "query": "SELECT * FROM Customer WHERE DisplayName LIKE 'Gustavo%'",
+    "success": true,
+    "result_count": 1,
+    "latency_ms": 817,
+    "error": null,
+    "raw_request": {
+      "url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query",
+      "method": "GET",
+      "headers": {
+        "Authorization": "Bearer [REDACTED]",
+        "Accept": "application/json"
+      },
+      "minorversion": 75,
+      "full_url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query?query=SELECT%20%2A%20FROM%20Customer%20WHERE%20DisplayName%20LIKE%20%27Gustavo%25%27&minorversion=75"
+    },
+    "raw_response": {
+      "status_code": 200,
+      "headers": {
+        "date": "Mon, 15 Dec 2025 03:06:04 GMT",
+        "content-type": "application/json",
+        "content-length": "546",
+        "connection": "keep-alive",
+        "x-spanid": "4ea2fea5-d53f-3f17-5daa-f0fd1e4556eb",
+        "x-amzn-trace-id": "Root=1-693f7b1b-4ae535ed1df4efec18199720",
+        "content-encoding": "gzip",
+        "x-content-type-options": "nosniff",
+        "x-envoy-upstream-service-time": "142",
+        "server": "istio-envoy",
+        "x-envoy-decorator-operation": "v3-facade-service-desired-service.dev-devx-v3facadeservice-usw2-prd-ids.svc.cluster.local:8090/*",
+        "strict-transport-security": "max-age=31536000",
+        "intuit_tid": "1-693f7b1b-4ae535ed1df4efec18199720",
+        "x-request-id": "1-693f7b1b-4ae535ed1df4efec18199720"
+      },
+      "body_preview": "{\"QueryResponse\":{\"Customer\":[{\"Taxable\":true,\"BillAddr\":{\"Id\":\"681\"},\"ShipAddr\":{\"Id\":\"681\"},\"Job\":false,\"BillWithParent\":false,\"CustomerTypeRef\":{\"value\":\"698682\"},\"Balance\":1500.00,\"BalanceWithJobs\":1500.00,\"CurrencyRef\":{\"value\":\"USD\",\"name\":\"United States Dollar\"},\"PreferredDeliveryMethod\":\"Print\",\"IsProject\":false,\"ClientEntityId\":\"0\",\"domain\":\"QBO\",\"sparse\":false,\"Id\":\"161\",\"SyncToken\":\"1\",\"MetaData\":{\"CreateTime\":\"2025-05-21T09:59:33-07:00\",\"LastUpdatedTime\":\"2025-11-26T05:56:26-08:00\"},"
+    },
+    "notes": [
+      "Using URL-encoded query",
+      "Found entity array: Customer"
+    ]
+  },
+  {
+    "test_name": "HTTP_GET_v75",
+    "category": "HTTP_Variants",
+    "method": "HTTP_GET",
+    "query": "SELECT * FROM Customer WHERE DisplayName LIKE 'Gustavo%'",
+    "success": false,
+    "result_count": 0,
+    "latency_ms": 818,
+    "error": "HTTP 400: {\"warnings\":null,\"intuitObject\":null,\"fault\":{\"error\":[{\"message\":\"message=BadRequest; errorCode=003202; statusCode=400\",\"detail\":null,\"code\":\"3202\",\"element\":null}],\"type\":\"VALIDATION\"},\"report\":null",
+    "raw_request": {
+      "url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query",
+      "method": "GET",
+      "headers": {
+        "Authorization": "Bearer [REDACTED]",
+        "Accept": "application/json"
+      },
+      "minorversion": 75,
+      "full_url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query?query=SELECT * FROM Customer WHERE DisplayName LIKE 'Gustavo%'&minorversion=75"
+    },
+    "raw_response": {
+      "status_code": 400,
+      "headers": {
+        "date": "Mon, 15 Dec 2025 03:06:04 GMT",
+        "content-type": "application/json",
+        "content-length": "363",
+        "connection": "keep-alive",
+        "x-envoy-upstream-service-time": "27",
+        "strict-transport-security": "max-age=31536000",
+        "intuit_tid": "1-693f7b1c-645ef9a0415bf6475e713d11",
+        "x-request-id": "1-693f7b1c-645ef9a0415bf6475e713d11",
+        "server": "istio-envoy"
+      },
+      "body_preview": "{\"warnings\":null,\"intuitObject\":null,\"fault\":{\"error\":[{\"message\":\"message=BadRequest; errorCode=003202; statusCode=400\",\"detail\":null,\"code\":\"3202\",\"element\":null}],\"type\":\"VALIDATION\"},\"report\":null,\"queryResponse\":null,\"batchItemResponse\":[],\"attachableResponse\":[],\"syncErrorResponse\":null,\"requestId\":null,\"time\":1765767964861,\"status\":null,\"cdcresponse\":[]}"
+    },
+    "notes": [
+      "Using raw (non-URL-encoded) query",
+      "Request failed"
+    ]
+  },
+  {
+    "test_name": "SDK_query",
+    "category": "SDK_Methods",
+    "method": "SDK",
+    "query": "SELECT * FROM Customer WHERE Id = '161'",
+    "success": true,
+    "result_count": 1,
+    "latency_ms": 774,
+    "error": null,
+    "raw_request": {
+      "method": "SDK.query()",
+      "entity_class": "Customer",
+      "query": "SELECT * FROM Customer WHERE Id = '161'"
+    },
+    "raw_response": {},
+    "notes": [
+      "Returned type: list"
+    ]
+  },
+  {
+    "test_name": "SDK_get_by_id",
+    "category": "SDK_Methods",
+    "method": "SDK_GET",
+    "query": "[GET] Customer ID=161",
+    "success": true,
+    "result_count": 1,
+    "latency_ms": 373,
+    "error": null,
+    "raw_request": {
+      "method": "SDK.get()",
+      "entity_class": "Customer",
+      "entity_id": 161
+    },
+    "raw_response": {},
+    "notes": [
+      "Entity found"
+    ]
+  },
+  {
+    "test_name": "HTTP_GET_v75",
+    "category": "HTTP_Variants",
+    "method": "HTTP_GET",
+    "query": "SELECT COUNT(*) FROM Customer",
+    "success": true,
+    "result_count": 26,
+    "latency_ms": 817,
+    "error": null,
+    "raw_request": {
+      "url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query",
+      "method": "GET",
+      "headers": {
+        "Authorization": "Bearer [REDACTED]",
+        "Accept": "application/json"
+      },
+      "minorversion": 75,
+      "full_url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query?query=SELECT%20COUNT%28%2A%29%20FROM%20Customer&minorversion=75"
+    },
+    "raw_response": {
+      "status_code": 200,
+      "headers": {
+        "date": "Mon, 15 Dec 2025 03:06:06 GMT",
+        "content-type": "application/json",
+        "content-length": "91",
+        "connection": "keep-alive",
+        "x-spanid": "9948b46c-1057-e7b1-a294-5d99f66b3b1c",
+        "x-amzn-trace-id": "Root=1-693f7b1e-2b10ea4907e41585576d994e",
+        "content-encoding": "gzip",
+        "x-content-type-options": "nosniff",
+        "x-envoy-upstream-service-time": "120",
+        "server": "istio-envoy",
+        "x-envoy-decorator-operation": "v3-facade-service-desired-service.dev-devx-v3facadeservice-usw2-prd-ids.svc.cluster.local:8090/*",
+        "strict-transport-security": "max-age=31536000",
+        "intuit_tid": "1-693f7b1e-2b10ea4907e41585576d994e",
+        "x-request-id": "1-693f7b1e-2b10ea4907e41585576d994e"
+      },
+      "body_preview": "{\"QueryResponse\":{\"totalCount\":26},\"time\":\"2025-12-14T19:06:06.792-08:00\"}"
+    },
+    "notes": [
+      "Using URL-encoded query",
+      "COUNT query successful"
+    ]
+  },
+  {
+    "test_name": "SDK_query",
+    "category": "SDK_Methods",
+    "method": "SDK",
+    "query": "SELECT COUNT(*) FROM Customer",
+    "success": true,
+    "result_count": 0,
+    "latency_ms": 202,
+    "error": null,
+    "raw_request": {
+      "method": "SDK.query()",
+      "entity_class": "Customer",
+      "query": "SELECT COUNT(*) FROM Customer"
+    },
+    "raw_response": {},
+    "notes": [
+      "Returned type: list"
+    ]
+  },
+  {
+    "test_name": "HTTP_GET_v75",
+    "category": "HTTP_Variants",
+    "method": "HTTP_GET",
+    "query": "SELECT * FROM Customer STARTPOSITION 1 MAXRESULTS 5",
+    "success": true,
+    "result_count": 5,
+    "latency_ms": 867,
+    "error": null,
+    "raw_request": {
+      "url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query",
+      "method": "GET",
+      "headers": {
+        "Authorization": "Bearer [REDACTED]",
+        "Accept": "application/json"
+      },
+      "minorversion": 75,
+      "full_url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query?query=SELECT%20%2A%20FROM%20Customer%20STARTPOSITION%201%20MAXRESULTS%205&minorversion=75"
+    },
+    "raw_response": {
+      "status_code": 200,
+      "headers": {
+        "date": "Mon, 15 Dec 2025 03:06:07 GMT",
+        "content-type": "application/json",
+        "content-length": "1156",
+        "connection": "keep-alive",
+        "x-spanid": "71e2b957-201c-bbbb-fffb-ae86b9c476d3",
+        "x-amzn-trace-id": "Root=1-693f7b1f-7efb6c95318d17922827e9ca",
+        "content-encoding": "gzip",
+        "x-content-type-options": "nosniff",
+        "x-envoy-upstream-service-time": "217",
+        "server": "istio-envoy",
+        "x-envoy-decorator-operation": "v3-facade-service-desired-service.dev-devx-v3facadeservice-usw2-prd-ids.svc.cluster.local:8090/*",
+        "strict-transport-security": "max-age=31536000",
+        "intuit_tid": "1-693f7b1f-7efb6c95318d17922827e9ca",
+        "x-request-id": "1-693f7b1f-7efb6c95318d17922827e9ca"
+      },
+      "body_preview": "{\"QueryResponse\":{\"Customer\":[{\"Taxable\":true,\"BillAddr\":{\"Id\":\"720\",\"Line1\":\"7156 Weddington Rd\",\"Line2\":\"Ste 150\",\"City\":\"Concord\",\"CountrySubDivisionCode\":\"NC\",\"PostalCode\":\"28027\"},\"ShipAddr\":{\"Id\":\"720\",\"Line1\":\"7156 Weddington Rd\",\"Line2\":\"Ste 150\",\"City\":\"Concord\",\"CountrySubDivisionCode\":\"NC\",\"PostalCode\":\"28027\"},\"Job\":false,\"BillWithParent\":false,\"CustomerTypeRef\":{\"value\":\"698682\"},\"Balance\":12000.00,\"BalanceWithJobs\":12000.00,\"CurrencyRef\":{\"value\":\"USD\",\"name\":\"United States Dollar\""
+    },
+    "notes": [
+      "Using URL-encoded query",
+      "Found entity array: Customer"
+    ]
+  },
+  {
+    "test_name": "SDK_query",
+    "category": "SDK_Methods",
+    "method": "SDK",
+    "query": "SELECT * FROM Customer STARTPOSITION 1 MAXRESULTS 5",
+    "success": true,
+    "result_count": 5,
+    "latency_ms": 224,
+    "error": null,
+    "raw_request": {
+      "method": "SDK.query()",
+      "entity_class": "Customer",
+      "query": "SELECT * FROM Customer STARTPOSITION 1 MAXRESULTS 5"
+    },
+    "raw_response": {},
+    "notes": [
+      "Returned type: list"
+    ]
+  },
+  {
+    "test_name": "HTTP_GET_v75",
+    "category": "HTTP_Variants",
+    "method": "HTTP_GET",
+    "query": "SELECT * FROM Invoice STARTPOSITION 1 MAXRESULTS 5",
+    "success": true,
+    "result_count": 5,
+    "latency_ms": 941,
+    "error": null,
+    "raw_request": {
+      "url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query",
+      "method": "GET",
+      "headers": {
+        "Authorization": "Bearer [REDACTED]",
+        "Accept": "application/json"
+      },
+      "minorversion": 75,
+      "full_url": "https://quickbooks.api.intuit.com/v3/company/9130349982666256/query?query=SELECT%20%2A%20FROM%20Invoice%20STARTPOSITION%201%20MAXRESULTS%205&minorversion=75"
+    },
+    "raw_response": {
+      "status_code": 200,
+      "headers": {
+        "date": "Mon, 15 Dec 2025 03:06:09 GMT",
+        "content-type": "application/json",
+        "content-length": "1704",
+        "connection": "keep-alive",
+        "x-spanid": "14d9564e-7ffa-453b-d9ea-2c57d4352f5f",
+        "x-amzn-trace-id": "Root=1-693f7b20-17d708cf5d513f9165fd6fe4",
+        "content-encoding": "gzip",
+        "x-content-type-options": "nosniff",
+        "x-envoy-upstream-service-time": "243",
+        "server": "istio-envoy",
+        "x-envoy-decorator-operation": "v3-facade-service-desired-service.dev-devx-v3facadeservice-usw2-prd-ids.svc.cluster.local:8090/*",
+        "strict-transport-security": "max-age=31536000",
+        "intuit_tid": "1-693f7b20-17d708cf5d513f9165fd6fe4",
+        "x-request-id": "1-693f7b20-17d708cf5d513f9165fd6fe4"
+      },
+      "body_preview": "{\"QueryResponse\":{\"Invoice\":[{\"AllowIPNPayment\":false,\"AllowOnlinePayment\":false,\"AllowOnlineCreditCardPayment\":false,\"AllowOnlineACHPayment\":false,\"EInvoiceStatus\":\"Sent\",\"domain\":\"QBO\",\"sparse\":false,\"Id\":\"4171\",\"SyncToken\":\"0\",\"MetaData\":{\"CreateTime\":\"2025-12-01T11:33:03-08:00\",\"LastModifiedByRef\":{\"value\":\"9130357601225566\"},\"LastUpdatedTime\":\"2025-12-01T11:38:40-08:00\"},\"CustomField\":[],\"DocNumber\":\"16530-Ardrey\",\"TxnDate\":\"2025-12-01\",\"CurrencyRef\":{\"value\":\"USD\",\"name\":\"United States Dol"
+    },
+    "notes": [
+      "Using URL-encoded query",
+      "COUNT query successful"
+    ]
+  },
+  {
+    "test_name": "SDK_query",
+    "category": "SDK_Methods",
+    "method": "SDK",
+    "query": "SELECT * FROM Invoice STARTPOSITION 1 MAXRESULTS 5",
+    "success": true,
+    "result_count": 5,
+    "latency_ms": 379,
+    "error": null,
+    "raw_request": {
+      "method": "SDK.query()",
+      "entity_class": "Invoice",
+      "query": "SELECT * FROM Invoice STARTPOSITION 1 MAXRESULTS 5"
+    },
+    "raw_response": {},
+    "notes": [
+      "Returned type: list"
+    ]
+  }
+]

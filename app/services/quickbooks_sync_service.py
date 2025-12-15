@@ -4,6 +4,23 @@ QuickBooks Sync Service
 Handles synchronization of QuickBooks data to local cache tables.
 Implements delta sync using qb_last_modified timestamps to minimize API calls.
 Includes circuit breaker pattern for API resilience.
+
+IMPORTANT: QuickBooks Query vs GET behavior
+-------------------------------------------
+QBO has TWO read paths with different reliability:
+1. Entity GET (Customer.get(id)) → Very reliable, always use when ID known
+2. Query endpoint (QBO SQL) → Strict, limited, often returns 0 rows even when data exists
+
+Query limitations:
+- Invalid predicates fail SILENTLY (return empty results, not errors)
+- Reference fields (CustomerTypeRef) are NOT filterable despite being present on objects
+- One entity per query, no OR clauses, MAXRESULTS ≤ 1000
+- GET-by-Id can succeed even when Query returns 0 rows
+
+Strategy:
+- When IDs are known: Use GET (authoritative)
+- When discovering data: Use Query (best-effort only)
+- Empty query results ≠ data does not exist (QB limitation, not our bug)
 """
 
 import logging
@@ -85,11 +102,15 @@ class QuickBooksSyncService:
             query += " MAXRESULTS 1000"
             
             # Fetch customers from QuickBooks with circuit breaker protection
+            # NOTE: QB Query endpoint is unreliable - may return 0 rows even when data exists
+            # CustomerTypeRef is NOT filterable via Query despite being present on Customer objects
+            # This is a QB limitation. For known IDs, use Customer.get(id) instead.
             try:
                 customers = await qb_circuit_breaker.call(
                     self.qb_service.query,
                     query
                 )
+                logger.info(f"[SYNC] Query returned {len(customers)} customers (note: QB Query can return 0 even when data exists)")
             except CircuitBreakerError as e:
                 # Circuit is open - fail fast without attempting API call
                 logger.error(f"[SYNC] Circuit breaker blocked sync: {e}")

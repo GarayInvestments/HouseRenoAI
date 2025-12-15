@@ -1,0 +1,394 @@
+{
+  "entity_results": {
+    "Customer": [
+      {
+        "test": "Basic SELECT",
+        "query": "SELECT * FROM Customer MAXRESULTS 5",
+        "expected": "Success",
+        "actual": "success",
+        "count": 5,
+        "quirks": [
+          "MetaData type: dict"
+        ]
+      },
+      {
+        "test": "COUNT query",
+        "query": "SELECT COUNT(*) FROM Customer",
+        "expected": "Returns count",
+        "actual": "success",
+        "count": 0,
+        "quirks": []
+      },
+      {
+        "test": "Active filter",
+        "query": "SELECT * FROM Customer WHERE Active = true MAXRESULTS 5",
+        "expected": "Filtered results",
+        "actual": "success",
+        "count": 5,
+        "quirks": [
+          "MetaData type: dict"
+        ]
+      },
+      {
+        "test": "Id filter",
+        "query": "SELECT * FROM Customer WHERE Id = '161'",
+        "expected": "Single result",
+        "actual": "success",
+        "count": 1,
+        "quirks": [
+          "MetaData type: dict"
+        ]
+      },
+      {
+        "test": "DisplayName LIKE",
+        "query": "SELECT * FROM Customer WHERE DisplayName LIKE 'G%'",
+        "expected": "LIKE works",
+        "actual": "success",
+        "count": 2,
+        "quirks": [
+          "MetaData type: dict"
+        ]
+      },
+      {
+        "test": "Date filter",
+        "query": "SELECT * FROM Customer WHERE MetaData.CreateTime > '2020-01-01'",
+        "expected": "Date comparison",
+        "actual": "success",
+        "count": 26,
+        "quirks": [
+          "MetaData type: dict"
+        ]
+      },
+      {
+        "test": "Multiple AND",
+        "query": "SELECT * FROM Customer WHERE Active = true AND Id > '160'",
+        "expected": "Multiple conditions",
+        "actual": "success",
+        "count": 9,
+        "quirks": [
+          "MetaData type: dict"
+        ]
+      }
+    ],
+    "Invoice": [
+      {
+        "test": "Basic SELECT",
+        "query": "SELECT * FROM Invoice MAXRESULTS 5",
+        "expected": "Success",
+        "actual": "success",
+        "count": 5,
+        "quirks": [
+          "CustomerRef type: Ref",
+          "TxnDate type: str",
+          "MetaData type: MetaData",
+          "Line type: list, count: 2"
+        ]
+      },
+      {
+        "test": "COUNT query",
+        "query": "SELECT COUNT(*) FROM Invoice",
+        "expected": "Returns count",
+        "actual": "success",
+        "count": 0,
+        "quirks": []
+      },
+      {
+        "test": "CustomerRef filter",
+        "query": "SELECT * FROM Invoice WHERE CustomerRef = '161'",
+        "expected": "Reference filter",
+        "actual": "success",
+        "count": 2,
+        "quirks": [
+          "CustomerRef type: Ref",
+          "TxnDate type: str",
+          "MetaData type: MetaData",
+          "Line type: list, count: 2"
+        ]
+      },
+      {
+        "test": "TxnDate filter",
+        "query": "SELECT * FROM Invoice WHERE TxnDate > '2020-01-01'",
+        "expected": "Date filter",
+        "actual": "success",
+        "count": 54,
+        "quirks": [
+          "CustomerRef type: Ref",
+          "TxnDate type: str",
+          "MetaData type: MetaData",
+          "Line type: list, count: 2"
+        ]
+      },
+      {
+        "test": "Balance filter",
+        "query": "SELECT * FROM Invoice WHERE Balance > 0",
+        "expected": "Numeric filter",
+        "actual": "error",
+        "error_type": "ValidationException",
+        "error_message": "QB Validation Exception 4000: Error parsing query\nQueryParserError: Encountered \" \">\" \"> \"\" at line 1, column 37.\nWas expecting one of:\n    <EOF> \n    \".\" ...\n    <AND> ...\n    \"between\" ...\n    \"cont"
+      },
+      {
+        "test": "DocNumber filter",
+        "query": "SELECT * FROM Invoice WHERE DocNumber = '1001'",
+        "expected": "String filter",
+        "actual": "success",
+        "count": 0,
+        "quirks": []
+      }
+    ],
+    "Payment": [
+      {
+        "test": "Basic SELECT",
+        "query": "SELECT * FROM Payment MAXRESULTS 5",
+        "expected": "Success",
+        "actual": "success",
+        "count": 5,
+        "quirks": [
+          "CustomerRef type: Ref",
+          "TxnDate type: str",
+          "MetaData type: MetaData",
+          "Line type: list, count: 1"
+        ]
+      },
+      {
+        "test": "COUNT query",
+        "query": "SELECT COUNT(*) FROM Payment",
+        "expected": "Returns count",
+        "actual": "success",
+        "count": 0,
+        "quirks": []
+      },
+      {
+        "test": "CustomerRef filter",
+        "query": "SELECT * FROM Payment WHERE CustomerRef = '161'",
+        "expected": "Reference filter",
+        "actual": "success",
+        "count": 3,
+        "quirks": [
+          "CustomerRef type: Ref",
+          "TxnDate type: str",
+          "MetaData type: MetaData",
+          "Line type: list, count: 1"
+        ]
+      },
+      {
+        "test": "TxnDate filter",
+        "query": "SELECT * FROM Payment WHERE TxnDate > '2020-01-01'",
+        "expected": "Date filter",
+        "actual": "success",
+        "count": 88,
+        "quirks": [
+          "CustomerRef type: Ref",
+          "TxnDate type: str",
+          "MetaData type: MetaData",
+          "Line type: list, count: 1"
+        ]
+      },
+      {
+        "test": "TotalAmt filter",
+        "query": "SELECT * FROM Payment WHERE TotalAmt > 0",
+        "expected": "Numeric filter",
+        "actual": "error",
+        "error_type": "ValidationException",
+        "error_message": "QB Validation Exception 4000: Error parsing query\nQueryParserError: Encountered \" \">\" \"> \"\" at line 1, column 38.\nWas expecting one of:\n    <EOF> \n    \".\" ...\n    <AND> ...\n    \"between\" ...\n    \"cont"
+      }
+    ],
+    "Estimate": [
+      {
+        "test": "Basic SELECT",
+        "query": "SELECT * FROM Estimate MAXRESULTS 5",
+        "expected": "Success",
+        "actual": "success",
+        "count": 5,
+        "quirks": [
+          "CustomerRef type: Ref",
+          "TxnDate type: str",
+          "MetaData type: dict",
+          "Line type: list, count: 2"
+        ]
+      },
+      {
+        "test": "COUNT query",
+        "query": "SELECT COUNT(*) FROM Estimate",
+        "expected": "Returns count",
+        "actual": "success",
+        "count": 0,
+        "quirks": []
+      },
+      {
+        "test": "CustomerRef filter",
+        "query": "SELECT * FROM Estimate WHERE CustomerRef = '161'",
+        "expected": "Reference filter",
+        "actual": "success",
+        "count": 0,
+        "quirks": []
+      },
+      {
+        "test": "TxnDate filter",
+        "query": "SELECT * FROM Estimate WHERE TxnDate > '2020-01-01'",
+        "expected": "Date filter",
+        "actual": "success",
+        "count": 8,
+        "quirks": [
+          "CustomerRef type: Ref",
+          "TxnDate type: str",
+          "MetaData type: dict",
+          "Line type: list, count: 2"
+        ]
+      },
+      {
+        "test": "TxnStatus filter",
+        "query": "SELECT * FROM Estimate WHERE TxnStatus = 'Accepted'",
+        "expected": "Status filter",
+        "actual": "error",
+        "error_type": "ValidationException",
+        "error_message": "QB Validation Exception 4001: Invalid query\nQueryValidationError: property 'TxnStatus' is not queryable"
+      }
+    ],
+    "Item": [
+      {
+        "test": "Basic SELECT",
+        "query": "SELECT * FROM Item MAXRESULTS 5",
+        "expected": "Success",
+        "actual": "success",
+        "count": 5,
+        "quirks": [
+          "MetaData type: dict"
+        ]
+      },
+      {
+        "test": "COUNT query",
+        "query": "SELECT COUNT(*) FROM Item",
+        "expected": "Returns count",
+        "actual": "success",
+        "count": 0,
+        "quirks": []
+      },
+      {
+        "test": "Type filter",
+        "query": "SELECT * FROM Item WHERE Type = 'Service'",
+        "expected": "Type filter",
+        "actual": "success",
+        "count": 4,
+        "quirks": [
+          "MetaData type: dict"
+        ]
+      },
+      {
+        "test": "Name filter",
+        "query": "SELECT * FROM Item WHERE Name = 'GC Permit Oversight'",
+        "expected": "Name filter",
+        "actual": "success",
+        "count": 1,
+        "quirks": [
+          "MetaData type: dict"
+        ]
+      },
+      {
+        "test": "Active filter",
+        "query": "SELECT * FROM Item WHERE Active = true MAXRESULTS 5",
+        "expected": "Active filter",
+        "actual": "success",
+        "count": 5,
+        "quirks": [
+          "MetaData type: dict"
+        ]
+      }
+    ],
+    "Bill": [
+      {
+        "test": "Basic SELECT",
+        "query": "SELECT * FROM Bill MAXRESULTS 5",
+        "expected": "Success",
+        "actual": "success",
+        "count": 5,
+        "quirks": [
+          "TxnDate type: str",
+          "MetaData type: dict",
+          "Line type: list, count: 1"
+        ]
+      },
+      {
+        "test": "COUNT query",
+        "query": "SELECT COUNT(*) FROM Bill",
+        "expected": "Returns count",
+        "actual": "success",
+        "count": 0,
+        "quirks": []
+      },
+      {
+        "test": "VendorRef filter",
+        "query": "SELECT * FROM Bill WHERE VendorRef = '60'",
+        "expected": "Reference filter",
+        "actual": "success",
+        "count": 0,
+        "quirks": []
+      },
+      {
+        "test": "TxnDate filter",
+        "query": "SELECT * FROM Bill WHERE TxnDate > '2020-01-01'",
+        "expected": "Date filter",
+        "actual": "success",
+        "count": 100,
+        "quirks": [
+          "TxnDate type: str",
+          "MetaData type: dict",
+          "Line type: list, count: 1"
+        ]
+      },
+      {
+        "test": "Balance filter",
+        "query": "SELECT * FROM Bill WHERE Balance > 0",
+        "expected": "Numeric filter",
+        "actual": "error",
+        "error_type": "ValidationException",
+        "error_message": "QB Validation Exception 4000: Error parsing query\nQueryParserError: Encountered \" \">\" \"> \"\" at line 1, column 34.\nWas expecting one of:\n    <EOF> \n    \".\" ...\n    <AND> ...\n    \"between\" ...\n    \"cont"
+      }
+    ]
+  },
+  "entity_stats": {
+    "Customer": {
+      "total": 7,
+      "successful": 7,
+      "errors": 0,
+      "success_rate": 100.0
+    },
+    "Invoice": {
+      "total": 6,
+      "successful": 5,
+      "errors": 1,
+      "success_rate": 83.33333333333334
+    },
+    "Payment": {
+      "total": 5,
+      "successful": 4,
+      "errors": 1,
+      "success_rate": 80.0
+    },
+    "Estimate": {
+      "total": 5,
+      "successful": 4,
+      "errors": 1,
+      "success_rate": 80.0
+    },
+    "Item": {
+      "total": 5,
+      "successful": 5,
+      "errors": 0,
+      "success_rate": 100.0
+    },
+    "Bill": {
+      "total": 5,
+      "successful": 4,
+      "errors": 1,
+      "success_rate": 80.0
+    }
+  },
+  "count_results": {
+    "Customer": 0,
+    "Invoice": 0,
+    "Payment": 0,
+    "Estimate": 0,
+    "Item": 0,
+    "Bill": 0
+  }
+}

@@ -1,0 +1,329 @@
+[
+  {
+    "test": "Missing column list",
+    "query": "SELECT FROM Customer",
+    "expected_error": "Syntax error",
+    "actual_result": "success",
+    "count": 26,
+    "error_details": null
+  },
+  {
+    "test": "Missing FROM",
+    "query": "SELECT * Customer",
+    "expected_error": "Syntax error",
+    "actual_result": "error",
+    "error_type": "ValidationException",
+    "error_message": "QB Validation Exception 4000: Error parsing query\nQueryParserError: Encountered \" <IDENTIFIER> \"Customer \"\" at line 1, column 10.\nWas expecting one of:\n    <EOF> \n    \",\" ...\n    \"from\" ...\n    \"iterator\" ...\n    \"maxresults\" ...\n    \"order\" ...\n    \"orderby\" ...\n    \"startposition\" ...\n    \"where\" ...\n    ",
+    "error_code": null
+  },
+  {
+    "test": "Typo in WHERE",
+    "query": "SELECT * FROM Customer WHRE Id = '161'",
+    "expected_error": "Syntax error",
+    "actual_result": "error",
+    "error_type": "ValidationException",
+    "error_message": "QB Validation Exception 4000: Error parsing query\nQueryParserError: Encountered \" <IDENTIFIER> \"Id \"\" at line 1, column 29.\nWas expecting one of:\n    <EOF> \n    \",\" ...\n    \"iterator\" ...\n    \"maxresults\" ...\n    \"order\" ...\n    \"orderby\" ...\n    \"startposition\" ...\n    \"where\" ...\n    ",
+    "error_code": null
+  },
+  {
+    "test": "Incomplete WHERE",
+    "query": "SELECT * FROM Customer WHERE",
+    "expected_error": "Syntax error",
+    "actual_result": "error",
+    "error_type": "ValidationException",
+    "error_message": "QB Validation Exception 4000: Error parsing query\nQueryParserError: Encountered \"<EOF>\" at line 1, column 28.\nWas expecting one of:\n    \"(\" ...\n    <NOT> ...\n    <IDENTIFIER> ...\n    <ID> ...\n    <STRING> ...\n    ",
+    "error_code": null
+  },
+  {
+    "test": "Incomplete condition",
+    "query": "SELECT * FROM Customer WHERE Id =",
+    "expected_error": "Syntax error",
+    "actual_result": "error",
+    "error_type": "ValidationException",
+    "error_message": "QB Validation Exception 4000: Error parsing query\nQueryParserError: Encountered \"<EOF>\" at line 1, column 33.\nWas expecting one of:\n    \"false\" ...\n    \"true\" ...\n    ",
+    "error_code": null
+  },
+  {
+    "test": "ORDER BY (unsupported)",
+    "query": "SELECT * FROM Customer ORDER BY DisplayName",
+    "expected_error": "Unsupported clause",
+    "actual_result": "success",
+    "count": 26,
+    "error_details": null
+  },
+  {
+    "test": "GROUP BY (unsupported)",
+    "query": "SELECT * FROM Customer GROUP BY Active",
+    "expected_error": "Unsupported clause",
+    "actual_result": "error",
+    "error_type": "ValidationException",
+    "error_message": "QB Validation Exception 4000: Error parsing query\nQueryParserError: Encountered \" \"by\" \"BY \"\" at line 1, column 30.\nWas expecting one of:\n    <EOF> \n    \",\" ...\n    \"iterator\" ...\n    \"maxresults\" ...\n    \"order\" ...\n    \"orderby\" ...\n    \"startposition\" ...\n    \"where\" ...\n    ",
+    "error_code": null
+  },
+  {
+    "test": "Plural entity name",
+    "query": "SELECT * FROM Customers",
+    "expected_error": "Invalid entity",
+    "actual_result": "error",
+    "error_type": "ValidationException",
+    "error_message": "QB Validation Exception 4001: Invalid query\nQueryValidationError: invalid context declaration: Customers",
+    "error_code": null
+  },
+  {
+    "test": "Lowercase entity",
+    "query": "SELECT * FROM customer",
+    "expected_error": "Invalid entity",
+    "actual_result": "success",
+    "count": 26,
+    "error_details": null
+  },
+  {
+    "test": "Non-existent entity",
+    "query": "SELECT * FROM User",
+    "expected_error": "Invalid entity",
+    "actual_result": "error",
+    "error_type": "ValidationException",
+    "error_message": "QB Validation Exception 4001: Invalid query\nQueryValidationError: Metadata not found for Entity: User",
+    "error_code": null
+  },
+  {
+    "test": "Wrong entity name",
+    "query": "SELECT * FROM Client",
+    "expected_error": "Invalid entity",
+    "actual_result": "error",
+    "error_type": "ValidationException",
+    "error_message": "QB Validation Exception 4001: Invalid query\nQueryValidationError: invalid context declaration: Client",
+    "error_code": null
+  },
+  {
+    "test": "Incorrect field name",
+    "query": "SELECT Name FROM Customer",
+    "expected_error": "Invalid field",
+    "actual_result": "error",
+    "error_type": "ValidationException",
+    "error_message": "QB Validation Exception 4001: Invalid query\nQueryValidationError: Property Name not found for Entity Customer",
+    "error_code": null
+  },
+  {
+    "test": "WHERE on invalid field",
+    "query": "SELECT * FROM Customer WHERE Name = 'Test'",
+    "expected_error": "Invalid field",
+    "actual_result": "error",
+    "error_type": "ValidationException",
+    "error_message": "QB Validation Exception 4001: Invalid query\nQueryValidationError: Property Name not found for Entity Customer",
+    "error_code": null
+  },
+  {
+    "test": "Non-existent field",
+    "query": "SELECT * FROM Customer WHERE CustomerName = 'Test'",
+    "expected_error": "Invalid field",
+    "actual_result": "error",
+    "error_type": "ValidationException",
+    "error_message": "QB Validation Exception 4001: Invalid query\nQueryValidationError: Property CustomerName not found for Entity Customer",
+    "error_code": null
+  },
+  {
+    "test": "Snake_case field",
+    "query": "SELECT * FROM Customer WHERE customer_id = '161'",
+    "expected_error": "Invalid field",
+    "actual_result": "error",
+    "error_type": "ValidationException",
+    "error_message": "QB Validation Exception 4001: Invalid query\nQueryValidationError: Property customer_id not found for Entity Customer",
+    "error_code": null
+  },
+  {
+    "test": "!= operator",
+    "query": "SELECT * FROM Customer WHERE Id != '161'",
+    "expected_error": "Unsupported operator",
+    "actual_result": "success",
+    "count": 25,
+    "error_details": null
+  },
+  {
+    "test": "<> operator",
+    "query": "SELECT * FROM Customer WHERE Id <> '161'",
+    "expected_error": "Unsupported operator",
+    "actual_result": "error",
+    "error_type": "ValidationException",
+    "error_message": "QB Validation Exception 4000: Error parsing query\nQueryParserError: Encountered \" \"<\" \"< \"\" at line 1, column 33.\nWas expecting one of:\n    <EOF> \n    \".\" ...\n    <AND> ...\n    \"between\" ...\n    \"contains\" ...\n    \"=\" ...\n    \"in\" ...\n    \"iterator\" ...\n    \"like\" ...\n    \"maxresults\" ...\n    \"!=\" ...\n    <NOT> ...\n    <OR> ...\n    \"order\" ...\n    \"orderby\" ...\n    \"startposition\" ...\n    \"=\" ...\n    \"!=\" ...\n    \"=\" ...\n    \"!=\" ...\n    \"=\" ...\n    \"!=\" ...\n    \".\" ...\n    ",
+    "error_code": null
+  },
+  {
+    "test": "CONTAINS (not LIKE)",
+    "query": "SELECT * FROM Customer WHERE DisplayName CONTAINS 'Gust'",
+    "expected_error": "Unsupported operator",
+    "actual_result": "error",
+    "error_type": "ValidationException",
+    "error_message": "QB Validation Exception 4000: Error parsing query\nQueryParserError: Encountered \"contains\" \"CONTAINS\" at line 1, column 42",
+    "error_code": null
+  },
+  {
+    "test": "BETWEEN operator",
+    "query": "SELECT * FROM Customer WHERE Id BETWEEN '160' AND '170'",
+    "expected_error": "Unsupported operator",
+    "actual_result": "error",
+    "error_type": "ValidationException",
+    "error_message": "QB Validation Exception 4000: Error parsing query\nQueryParserError: Encountered \"between\" \"BETWEEN\" at line 1, column 33",
+    "error_code": null
+  },
+  {
+    "test": "IS operator",
+    "query": "SELECT * FROM Customer WHERE Active IS true",
+    "expected_error": "Unsupported operator",
+    "actual_result": "error",
+    "error_type": "ValidationException",
+    "error_message": "QB Validation Exception 4000: Error parsing query\nQueryParserError: Encountered \" <IDENTIFIER> \"IS \"\" at line 1, column 37.\nWas expecting one of:\n    <EOF> \n    \".\" ...\n    <AND> ...\n    \"between\" ...\n    \"contains\" ...\n    \"=\" ...\n    \"in\" ...\n    \"iterator\" ...\n    \"like\" ...\n    \"maxresults\" ...\n    \"!=\" ...\n    <NOT> ...\n    <OR> ...\n    \"order\" ...\n    \"orderby\" ...\n    \"startposition\" ...\n    \"=\" ...\n    \"!=\" ...\n    \"=\" ...\n    \"!=\" ...\n    \"=\" ...\n    \"!=\" ...\n    \".\" ...\n    ",
+    "error_code": null
+  },
+  {
+    "test": "IS NOT NULL",
+    "query": "SELECT * FROM Customer WHERE Active IS NOT NULL",
+    "expected_error": "Unsupported operator",
+    "actual_result": "error",
+    "error_type": "ValidationException",
+    "error_message": "QB Validation Exception 4000: Error parsing query\nQueryParserError: Encountered \" <IDENTIFIER> \"IS \"\" at line 1, column 37.\nWas expecting one of:\n    <EOF> \n    \".\" ...\n    <AND> ...\n    \"between\" ...\n    \"contains\" ...\n    \"=\" ...\n    \"in\" ...\n    \"iterator\" ...\n    \"like\" ...\n    \"maxresults\" ...\n    \"!=\" ...\n    <NOT> ...\n    <OR> ...\n    \"order\" ...\n    \"orderby\" ...\n    \"startposition\" ...\n    \"=\" ...\n    \"!=\" ...\n    \"=\" ...\n    \"!=\" ...\n    \"=\" ...\n    \"!=\" ...\n    \".\" ...\n    ",
+    "error_code": null
+  },
+  {
+    "test": "String without quotes",
+    "query": "SELECT * FROM Customer WHERE Id = Gustavo",
+    "expected_error": "Type mismatch",
+    "actual_result": "error",
+    "error_type": "ValidationException",
+    "error_message": "QB Validation Exception 4000: Error parsing query\nQueryParserError: Encountered \" <IDENTIFIER> \"Gustavo \"\" at line 1, column 35.\nWas expecting one of:\n    \"false\" ...\n    \"true\" ...\n    ",
+    "error_code": null
+  },
+  {
+    "test": "Boolean as int",
+    "query": "SELECT * FROM Customer WHERE Active = 1",
+    "expected_error": "Type mismatch",
+    "actual_result": "error",
+    "error_type": "ValidationException",
+    "error_message": "QB Validation Exception 4000: Error parsing query\nQueryParserError: Encountered \" <INTEGER> \"1 \"\" at line 1, column 39.\nWas expecting one of:\n    \"false\" ...\n    \"true\" ...\n    ",
+    "error_code": null
+  },
+  {
+    "test": "null keyword",
+    "query": "SELECT * FROM Customer WHERE Id = null",
+    "expected_error": "Type mismatch",
+    "actual_result": "error",
+    "error_type": "ValidationException",
+    "error_message": "QB Validation Exception 4001: Invalid query\nQueryValidationError: value is not set",
+    "error_code": null
+  },
+  {
+    "test": "Boolean for ID",
+    "query": "SELECT * FROM Customer WHERE Id = true",
+    "expected_error": "Type mismatch",
+    "actual_result": "error",
+    "error_type": "ValidationException",
+    "error_message": "QB Validation Exception 4002: Error processing query\nQueryProcessingError: class java.lang.Boolean cannot be cast to class java.lang.String (java.lang.Boolean and java.lang.String are in module java.base of loader 'bootstrap')",
+    "error_code": null
+  },
+  {
+    "test": "CustomerTypeRef direct",
+    "query": "SELECT * FROM Customer WHERE CustomerTypeRef = '698682'",
+    "expected_error": "Property not queryable",
+    "actual_result": "error",
+    "error_type": "ValidationException",
+    "error_message": "QB Validation Exception 4001: Invalid query\nQueryValidationError: property 'CustomerTypeRef' is not queryable",
+    "error_code": null
+  },
+  {
+    "test": "CustomerTypeRef.value",
+    "query": "SELECT * FROM Customer WHERE CustomerTypeRef.value = '698682'",
+    "expected_error": "Property not queryable",
+    "actual_result": "error",
+    "error_type": "ValidationException",
+    "error_message": "QB Validation Exception 4001: Invalid query\nQueryValidationError: Property CustomerTypeRef.value not found for Entity Customer",
+    "error_code": null
+  },
+  {
+    "test": "CustomerTypeRef.name",
+    "query": "SELECT * FROM Customer WHERE CustomerTypeRef.name = 'GC Compliance'",
+    "expected_error": "Property not queryable",
+    "actual_result": "error",
+    "error_type": "ValidationException",
+    "error_message": "QB Validation Exception 4001: Invalid query\nQueryValidationError: Property CustomerTypeRef.name not found for Entity Customer",
+    "error_code": null
+  },
+  {
+    "test": "CustomerRef direct",
+    "query": "SELECT * FROM Invoice WHERE CustomerRef = '161'",
+    "expected_error": "Property not queryable",
+    "actual_result": "success",
+    "count": 0,
+    "error_details": null
+  },
+  {
+    "test": "MAXRESULTS > 1000",
+    "query": "SELECT * FROM Customer MAXRESULTS 2000",
+    "expected_error": "Value too large",
+    "actual_result": "error",
+    "error_type": "ValidationException",
+    "error_message": "QB Validation Exception 4001: Invalid query\nQueryValidationError: value 2000 is too large. Max allowed value is 1000",
+    "error_code": null
+  },
+  {
+    "test": "Negative STARTPOSITION",
+    "query": "SELECT * FROM Customer STARTPOSITION -1",
+    "expected_error": "Invalid value",
+    "actual_result": "error",
+    "error_type": "ValidationException",
+    "error_message": "QB Validation Exception 4000: Error parsing query\nQueryParserError: Invalid content. Lexical error at line 1, column 40.  Encountered: <EOF> after : \"-1\"",
+    "error_code": null
+  },
+  {
+    "test": "MAXRESULTS 0",
+    "query": "SELECT * FROM Customer MAXRESULTS 0",
+    "expected_error": "Invalid value",
+    "actual_result": "error",
+    "error_type": "ValidationException",
+    "error_message": "QB Validation Exception 4001: Invalid query\nQueryValidationError: value 0 is too small. Min allowed value is 1",
+    "error_code": null
+  },
+  {
+    "test": "LIMIT instead of MAXRESULTS",
+    "query": "SELECT * FROM Customer LIMIT 10",
+    "expected_error": "Unsupported clause",
+    "actual_result": "error",
+    "error_type": "ValidationException",
+    "error_message": "QB Validation Exception 4000: Error parsing query\nQueryParserError: Encountered \" <INTEGER> \"10 \"\" at line 1, column 30.\nWas expecting one of:\n    <EOF> \n    \",\" ...\n    \"iterator\" ...\n    \"maxresults\" ...\n    \"order\" ...\n    \"orderby\" ...\n    \"startposition\" ...\n    \"where\" ...\n    ",
+    "error_code": null
+  },
+  {
+    "test": "OFFSET instead of STARTPOSITION",
+    "query": "SELECT * FROM Customer OFFSET 10",
+    "expected_error": "Unsupported clause",
+    "actual_result": "error",
+    "error_type": "ValidationException",
+    "error_message": "QB Validation Exception 4000: Error parsing query\nQueryParserError: Encountered \" <INTEGER> \"10 \"\" at line 1, column 31.\nWas expecting one of:\n    <EOF> \n    \",\" ...\n    \"iterator\" ...\n    \"maxresults\" ...\n    \"order\" ...\n    \"orderby\" ...\n    \"startposition\" ...\n    \"where\" ...\n    ",
+    "error_code": null
+  },
+  {
+    "test": "OR operator",
+    "query": "SELECT * FROM Customer WHERE Id = '161' OR Id = '162'",
+    "expected_error": "Unsupported operator",
+    "actual_result": "error",
+    "error_type": "ValidationException",
+    "error_message": "QB Validation Exception 4000: Error parsing query\nQueryParserError: Encountered <OR> \"OR\" at line 1, column 41",
+    "error_code": null
+  },
+  {
+    "test": "NOT operator",
+    "query": "SELECT * FROM Customer WHERE NOT Active = true",
+    "expected_error": "Unsupported operator",
+    "actual_result": "success",
+    "count": 26,
+    "error_details": null
+  },
+  {
+    "test": "OR in parentheses",
+    "query": "SELECT * FROM Customer WHERE (Id = '161' OR Id = '162') AND Active = true",
+    "expected_error": "Unsupported operator",
+    "actual_result": "error",
+    "error_type": "ValidationException",
+    "error_message": "QB Validation Exception 4000: Error parsing query\nQueryParserError: Encountered \"(\" \"(\" at line 1, column 30",
+    "error_code": null
+  }
+]

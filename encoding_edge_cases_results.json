@@ -1,0 +1,164 @@
+[
+  {
+    "category": "LIKE",
+    "test": "LIKE with %",
+    "success": true,
+    "count": 1
+  },
+  {
+    "category": "LIKE",
+    "test": "LIKE prefix match",
+    "success": true,
+    "count": 1
+  },
+  {
+    "category": "LIKE",
+    "test": "LIKE suffix match",
+    "success": true,
+    "count": 1
+  },
+  {
+    "category": "LIKE",
+    "test": "LIKE contains",
+    "success": true,
+    "count": 1
+  },
+  {
+    "category": "LIKE",
+    "test": "LIKE exact (no %)",
+    "success": true,
+    "count": 1
+  },
+  {
+    "category": "Special chars",
+    "test": "Period in name",
+    "success": true,
+    "count": 1
+  },
+  {
+    "category": "Special chars",
+    "test": "Period + LIKE",
+    "success": true,
+    "count": 1
+  },
+  {
+    "category": "Special chars",
+    "test": "Period in middle",
+    "success": true,
+    "count": 1
+  },
+  {
+    "category": "Date formats",
+    "test": "ISO date (YYYY-MM-DD)",
+    "success": true,
+    "count": 26
+  },
+  {
+    "category": "Date formats",
+    "test": "ISO datetime",
+    "success": true,
+    "count": 26
+  },
+  {
+    "category": "Date formats",
+    "test": "ISO datetime UTC",
+    "success": true,
+    "count": 26
+  },
+  {
+    "category": "Date formats",
+    "test": "Date range",
+    "success": true,
+    "count": 16
+  },
+  {
+    "category": "Operators",
+    "test": "AND with comparison",
+    "success": true,
+    "count": 9
+  },
+  {
+    "category": "Operators",
+    "test": "Range with AND",
+    "success": true,
+    "count": 8
+  },
+  {
+    "category": "Operators",
+    "test": "AND with LIKE",
+    "success": true,
+    "count": 2
+  },
+  {
+    "category": "Operators",
+    "test": "IN clause",
+    "success": true,
+    "count": 3
+  },
+  {
+    "category": "Operators",
+    "test": "IN no spaces",
+    "success": true,
+    "count": 3
+  },
+  {
+    "category": "Quotes",
+    "test": "Single quotes (normal)",
+    "success": true,
+    "count": 1
+  },
+  {
+    "category": "Quotes",
+    "test": "Double quotes",
+    "success": false,
+    "count": 0
+  },
+  {
+    "category": "Whitespace",
+    "test": "No spaces around =",
+    "success": true,
+    "count": 1
+  },
+  {
+    "category": "Whitespace",
+    "test": "Spaces around =",
+    "success": true,
+    "count": 1
+  },
+  {
+    "category": "Whitespace",
+    "test": "Extra spaces everywhere",
+    "success": true,
+    "count": 1
+  },
+  {
+    "category": "Whitespace",
+    "test": "Trailing space",
+    "success": true,
+    "count": 1
+  },
+  {
+    "category": "Case sensitivity",
+    "test": "Exact case",
+    "success": true,
+    "count": 1
+  },
+  {
+    "category": "Case sensitivity",
+    "test": "Lowercase",
+    "success": true,
+    "count": 1
+  },
+  {
+    "category": "Case sensitivity",
+    "test": "Uppercase",
+    "success": true,
+    "count": 1
+  },
+  {
+    "category": "Case sensitivity",
+    "test": "LIKE lowercase",
+    "success": true,
+    "count": 1
+  }
+]

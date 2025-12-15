@@ -13,9 +13,110 @@ Key design decisions:
 
 from datetime import datetime
 from typing import Any, Dict
-from sqlalchemy import String, Text, DateTime, Boolean, Numeric, Index, text, FetchedValue
+from sqlalchemy import String, Text, DateTime, Boolean, Numeric, Index, text, FetchedValue, Enum
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+import enum
+
+
+class ClientStatus(str, enum.Enum):
+    """Client lifecycle status"""
+    INTAKE = "INTAKE"
+    ACTIVE = "ACTIVE"
+    ON_HOLD = "ON_HOLD"
+    COMPLETED = "COMPLETED"
+    ARCHIVED = "ARCHIVED"
+
+
+class ProjectStatus(str, enum.Enum):
+    """Project lifecycle status"""
+    PLANNING = "PLANNING"
+    PERMIT_UNDER_REVIEW = "PERMIT_UNDER_REVIEW"
+    INSPECTIONS_IN_PROGRESS = "INSPECTIONS_IN_PROGRESS"
+    ON_HOLD = "ON_HOLD"
+    COMPLETED = "COMPLETED"
+    CANCELLED = "CANCELLED"
+
+
+class PermitStatus(str, enum.Enum):
+    """Permit regulatory status"""
+    DRAFT = "DRAFT"
+    SUBMITTED = "SUBMITTED"
+    UNDER_REVIEW = "UNDER_REVIEW"
+    APPROVED = "APPROVED"
+    ISSUED = "ISSUED"
+    INSPECTIONS_IN_PROGRESS = "INSPECTIONS_IN_PROGRESS"
+    CLOSED = "CLOSED"
+    EXPIRED = "EXPIRED"
+    REJECTED = "REJECTED"
+
+
+class InvoiceStatus(str, enum.Enum):
+    """Invoice status (QuickBooks-aligned)"""
+    DRAFT = "DRAFT"
+    SENT = "SENT"
+    PARTIALLY_PAID = "PARTIALLY_PAID"
+    PAID = "PAID"
+    VOID = "VOID"
+    OVERDUE = "OVERDUE"
+
+
+class PaymentStatus(str, enum.Enum):
+    """Payment transaction status"""
+    PENDING = "PENDING"
+    POSTED = "POSTED"
+    FAILED = "FAILED"
+    REFUNDED = "REFUNDED"
+
+
+class PermitType(str, enum.Enum):
+    """Permit type classification"""
+    BUILDING = "BUILDING"
+    ELECTRICAL = "ELECTRICAL"
+    PLUMBING = "PLUMBING"
+    MECHANICAL = "MECHANICAL"
+    ZONING = "ZONING"
+    FIRE = "FIRE"
+    ENVIRONMENTAL = "ENVIRONMENTAL"
+    OTHER = "OTHER"
+
+
+class ProjectType(str, enum.Enum):
+    """Project type classification"""
+    NEW_CONSTRUCTION = "NEW_CONSTRUCTION"
+    RENOVATION = "RENOVATION"
+    REMODEL = "REMODEL"
+    ADDITION = "ADDITION"
+    RESIDENTIAL = "RESIDENTIAL"
+    COMMERCIAL = "COMMERCIAL"
+    OTHER = "OTHER"
+
+
+class LicenseType(str, enum.Enum):
+    """License type for contractors"""
+    GENERAL_CONTRACTOR = "GENERAL_CONTRACTOR"
+    ELECTRICAL = "ELECTRICAL"
+    PLUMBING = "PLUMBING"
+    MECHANICAL = "MECHANICAL"
+    SPECIALTY = "SPECIALTY"
+
+
+class LicenseStatus(str, enum.Enum):
+    """License status for businesses and qualifiers"""
+    ACTIVE = "ACTIVE"
+    INACTIVE = "INACTIVE"
+    SUSPENDED = "SUSPENDED"
+    REVOKED = "REVOKED"
+
+
+class ActionType(str, enum.Enum):
+    """Oversight action type"""
+    SITE_VISIT = "SITE_VISIT"
+    PLAN_REVIEW = "PLAN_REVIEW"
+    PERMIT_REVIEW = "PERMIT_REVIEW"
+    CLIENT_MEETING = "CLIENT_MEETING"
+    INSPECTION_ATTENDANCE = "INSPECTION_ATTENDANCE"
+    PHONE_CONSULTATION = "PHONE_CONSULTATION"
 
 
 class Base(DeclarativeBase):
@@ -49,7 +150,10 @@ class Client(Base):
     zip_code: Mapped[str | None] = mapped_column(String(20))
     
     # Business fields
-    status: Mapped[str | None] = mapped_column(String(50), index=True)  # Active, Inactive, Lead
+    status: Mapped[ClientStatus | None] = mapped_column(
+        Enum(ClientStatus, native_enum=True, name='client_status_enum'),
+        index=True
+    )
     client_type: Mapped[str | None] = mapped_column(String(50))  # Residential, Commercial
     
     # QuickBooks integration
@@ -100,8 +204,13 @@ class Project(Base):
     # Core fields
     project_name: Mapped[str | None] = mapped_column(String(255))
     project_address: Mapped[str | None] = mapped_column(Text)
-    project_type: Mapped[str | None] = mapped_column(String(100))  # Kitchen Remodel, Addition, etc.
-    status: Mapped[str | None] = mapped_column(String(50), index=True)  # Planning, Active, Complete
+    project_type: Mapped[ProjectType | None] = mapped_column(
+        Enum(ProjectType, native_enum=True, name='project_type_enum')
+    )
+    status: Mapped[ProjectStatus | None] = mapped_column(
+        Enum(ProjectStatus, native_enum=True, name='project_status_enum'),
+        index=True
+    )
     
     # Financial
     budget: Mapped[float | None] = mapped_column(Numeric(12, 2))
@@ -166,8 +275,13 @@ class Permit(Base):
     
     # Permit details
     permit_number: Mapped[str | None] = mapped_column(String(100), unique=True, index=True)
-    permit_type: Mapped[str | None] = mapped_column(String(100))  # Building, Electrical, Plumbing
-    status: Mapped[str | None] = mapped_column(String(50), index=True)  # Pending, Approved, Expired
+    permit_type: Mapped[PermitType | None] = mapped_column(
+        Enum(PermitType, native_enum=True, name='permit_type_enum')
+    )
+    status: Mapped[PermitStatus | None] = mapped_column(
+        Enum(PermitStatus, native_enum=True, name='permit_status_enum'),
+        index=True
+    )
     
     # Dates
     application_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -305,7 +419,10 @@ class Invoice(Base):
     balance_due: Mapped[float | None] = mapped_column(Numeric(12, 2))  # Calculated: total_amount - amount_paid
     
     # Status
-    status: Mapped[str | None] = mapped_column(String(50), index=True)  # Draft, Sent, Paid, Overdue, Cancelled
+    status: Mapped[InvoiceStatus | None] = mapped_column(
+        Enum(InvoiceStatus, native_enum=True, name='invoice_status_enum'),
+        index=True
+    )
     
     # Line items and details stored as JSONB
     line_items: Mapped[Dict[str, Any] | None] = mapped_column(JSONB)  # [{description, quantity, rate, amount, item_id}]
@@ -357,7 +474,10 @@ class Payment(Base):
     amount: Mapped[float | None] = mapped_column(Numeric(12, 2))
     payment_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
     payment_method: Mapped[str | None] = mapped_column(String(50))  # Check, Credit Card, Wire, Cash, ACH
-    status: Mapped[str | None] = mapped_column(String(50), index=True)  # Pending, Cleared, Failed, Refunded
+    status: Mapped[PaymentStatus | None] = mapped_column(
+        Enum(PaymentStatus, native_enum=True, name='payment_status_enum'),
+        index=True
+    )
     
     # References
     reference_number: Mapped[str | None] = mapped_column(String(50))  # Check number or transaction ID
@@ -695,8 +815,14 @@ class LicensedBusiness(Base):
     
     # License information
     license_number: Mapped[str] = mapped_column(String(100), unique=True, index=True)  # NC license number (e.g., "85538")
-    license_type: Mapped[str] = mapped_column(String(100))  # "Unlimited", "Intermediate", "Limited"
-    license_status: Mapped[str] = mapped_column(String(50), index=True, server_default=text("'active'"))  # active, inactive, suspended, revoked
+    license_type: Mapped[LicenseType] = mapped_column(
+        Enum(LicenseType, native_enum=True, name='license_type_enum')
+    )
+    license_status: Mapped[LicenseStatus] = mapped_column(
+        Enum(LicenseStatus, native_enum=True, name='license_status_enum'),
+        index=True,
+        server_default=text("'ACTIVE'")
+    )
     license_issue_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=False))  # Date only
     license_expiration_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=False))  # Date only
     
@@ -749,8 +875,12 @@ class Qualifier(Base):
     
     # NC qualifier license information
     qualifier_id_number: Mapped[str] = mapped_column(String(100), unique=True, index=True)  # NC qualifier ID (e.g., "59510")
-    license_type: Mapped[str] = mapped_column(String(100))  # "Unlimited", "Intermediate", "Limited"
-    license_status: Mapped[str] = mapped_column(String(50), index=True, server_default=text("'active'"))  # active, inactive, suspended, revoked
+    license_type: Mapped[str] = mapped_column(String(100))  # "Unlimited", "Intermediate", "Limited" - Note: Not using ENUM as this is a description
+    license_status: Mapped[LicenseStatus] = mapped_column(
+        Enum(LicenseStatus, native_enum=True, name='license_status_enum'),
+        index=True,
+        server_default=text("'ACTIVE'")
+    )
     license_issue_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=False))  # Date only
     license_expiration_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=False))  # Date only
     
@@ -843,7 +973,10 @@ class OversightAction(Base):
     licensed_business_qualifier_id: Mapped[str | None] = mapped_column(UUID(as_uuid=False))  # FK to licensed_business_qualifiers.id (optional for historical lookup)
     
     # Action details
-    action_type: Mapped[str] = mapped_column(String(100), index=True)  # site_visit, plan_review, permit_review, client_meeting, inspection_attendance, phone_consultation
+    action_type: Mapped[ActionType] = mapped_column(
+        Enum(ActionType, native_enum=True, name='action_type_enum'),
+        index=True
+    )
     action_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)  # CRITICAL: Used by cutoff_date trigger for enforcement
     duration_minutes: Mapped[int | None] = mapped_column()  # Optional: how long the action took
     

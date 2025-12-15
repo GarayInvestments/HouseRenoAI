@@ -16,6 +16,7 @@ import api from '../lib/api';
 import { useAppStore } from '../stores/appStore';
 import LoadingScreen from '../components/LoadingScreen';
 import ErrorState from '../components/ErrorState';
+import { PROJECT_STATUS_OPTIONS, PROJECT_TYPE_OPTIONS, formatEnumLabel } from '../constants/enums';
 
 export default function ProjectDetails() {
   const { currentProjectId, navigateToProjects } = useAppStore();
@@ -364,7 +365,7 @@ export default function ProjectDetails() {
             </div>
             {isEditing ? (
               <select
-                value={editedProject?.Status || ''}
+                value={editedProject?.Status || editedProject?.status || ''}
                 onChange={(e) => handleEditChange('Status', e.target.value)}
                 style={{
                   padding: '8px 16px',
@@ -375,14 +376,10 @@ export default function ProjectDetails() {
                   outline: 'none'
                 }}
               >
-                <option value="Inquiry Received">Inquiry Received</option>
-                <option value="Planning">Planning</option>
-                <option value="Permit Submitted">Permit Submitted</option>
-                <option value="Permit Approved">Permit Approved</option>
-                <option value="Active">Active</option>
-                <option value="Final Inspection Complete">Final Inspection Complete</option>
-                <option value="Completed">Completed</option>
-                <option value="Closed / Archived">Closed / Archived</option>
+                <option value="">Select status...</option>
+                {PROJECT_STATUS_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
               </select>
             ) : (
               <span style={{

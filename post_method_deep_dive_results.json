@@ -1,0 +1,74 @@
+[
+  {
+    "description": "POST: Raw SQL + text/plain",
+    "body_format": "raw_sql",
+    "content_type": "text/plain",
+    "success": false,
+    "count": 0,
+    "elapsed_ms": 1078
+  },
+  {
+    "description": "POST: Raw SQL + application/text",
+    "body_format": "raw_sql",
+    "content_type": "application/text",
+    "success": true,
+    "count": 1,
+    "elapsed_ms": 783
+  },
+  {
+    "description": "POST: Raw SQL + form-urlencoded",
+    "body_format": "raw_sql",
+    "content_type": "application/x-www-form-urlencoded",
+    "success": false,
+    "count": 0,
+    "elapsed_ms": 758
+  },
+  {
+    "description": "POST: URL-encoded + form-urlencoded",
+    "body_format": "url_encoded",
+    "content_type": "application/x-www-form-urlencoded",
+    "success": false,
+    "count": 0,
+    "elapsed_ms": 732
+  },
+  {
+    "description": "POST: URL-encoded + text/plain",
+    "body_format": "url_encoded",
+    "content_type": "text/plain",
+    "success": false,
+    "count": 0,
+    "elapsed_ms": 861
+  },
+  {
+    "description": "POST: JSON {query: ...} + application/json",
+    "body_format": "json",
+    "content_type": "application/json",
+    "success": false,
+    "count": 0,
+    "elapsed_ms": 719
+  },
+  {
+    "description": "POST: JSON {sql: ...} + application/json",
+    "body_format": "json_sql",
+    "content_type": "application/json",
+    "success": false,
+    "count": 0,
+    "elapsed_ms": 711
+  },
+  {
+    "description": "POST: Raw SQL + application/json (mismatch)",
+    "body_format": "raw_sql",
+    "content_type": "application/json",
+    "success": false,
+    "count": 0,
+    "elapsed_ms": 762
+  },
+  {
+    "description": "POST: JSON + text/plain (mismatch)",
+    "body_format": "json",
+    "content_type": "text/plain",
+    "success": false,
+    "count": 0,
+    "elapsed_ms": 1015
+  }
+]
