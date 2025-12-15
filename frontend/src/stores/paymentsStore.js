@@ -41,14 +41,26 @@ const usePaymentsStore = create((set, get) => ({
       
       console.log('[DEBUG] Response status:', response.status);
       console.log('[DEBUG] Response content-type:', response.headers.get('content-type'));
+      console.log('[DEBUG] Response URL:', response.url);
+      
+      // Read response as text first to see what we got
+      const responseText = await response.text();
+      console.log('[DEBUG] Response body (first 500 chars):', responseText.substring(0, 500));
       
       if (!response.ok) {
-        const text = await response.text();
-        console.error('[DEBUG] Error response:', text.substring(0, 200));
+        console.error('[DEBUG] Error response:', responseText.substring(0, 200));
         throw new Error(`Failed to fetch payments from cache: ${response.status}`);
       }
       
-      const data = await response.json();
+      // Try to parse as JSON
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error('[DEBUG] Failed to parse JSON:', e);
+        throw new Error('Response is not valid JSON');
+      }
+      
       console.log('[DEBUG] Received data:', data);
       const paymentsArray = data?.payments || [];
       
