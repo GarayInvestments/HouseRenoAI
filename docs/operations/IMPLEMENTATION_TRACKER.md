@@ -1,11 +1,78 @@
 # House Renovators AI - Implementation Tracker
 
-**Version**: 5.9 (Phase W.1: Frontend Sync Enhancements Complete)  
-**Last Updated**: December 15, 2025 5:20 PM EST  
-**Current Phase**: **Phase W: QuickBooks Auto-Sync Infrastructure - ✅ COMPLETE**  
+**Version**: 6.0 (Frontend Design System Migration - Planning)  
+**Last Updated**: December 15, 2025 6:15 PM EST  
+**Current Phase**: **Frontend Design System Migration - 🟡 Phase 1: Foundation Setup**  
 **Overall Progress**: Phases 0-Q Complete, Phases 18-21 Complete, Phase W Complete (Backend + Frontend)
 
 > **Purpose**: Active execution tracker for current and upcoming work. Historical phases (0-E) archived in `docs/archive/IMPLEMENTATION_HISTORY.md` for audit/compliance. See `PROJECT_ROADMAP.md` for technical specs.
+
+---
+
+## 🔵 NEW INITIATIVE: Frontend Design System Migration
+
+**Start Date**: December 15, 2025  
+**Status**: 🟡 Planning → Foundation Setup  
+**Priority**: High (Developer Velocity & Maintainability)
+
+**Full Implementation Plan**: [`docs/operations/FRONTEND_DESIGN_SYSTEM_MIGRATION.md`](FRONTEND_DESIGN_SYSTEM_MIGRATION.md)
+
+**Goal**: Migrate from inline/page-specific styling to centralized component library (Tailwind CSS + shadcn/ui)
+
+**Current Phase**: Phase 1 - Foundation Setup ✅ **COMPLETE** (December 15, 2025 7:00 PM EST)
+- ✅ Install shadcn/ui CLI and initialize (Completed: 6:30 PM EST)
+- ✅ Add 5 base components: Button, Badge, Card, Input, Table (Completed: 6:35 PM EST)
+- ✅ Create 5 application components: (Completed: 7:00 PM EST)
+  - ✅ StatsCard (replaces grid + white bg pattern)
+  - ✅ PageHeader (icon + title + actions)
+  - ✅ StatusBadge (domain statuses)
+  - ✅ LoadingState (centralized loading UI)
+  - ✅ EmptyState (consistent empty data display)
+- ✅ Document component usage patterns (JSDoc in each component)
+
+**What Was Delivered**:
+- shadcn/ui initialized with Slate color scheme, CSS variables enabled
+- 5 base shadcn components in `components/ui/`: button, badge, card, input, table
+- 5 application components in `components/app/`: StatsCard, PageHeader, StatusBadge, LoadingState, EmptyState
+- Complete JSDoc documentation with usage examples for each component
+- Barrel export file (`components/app/index.js`) for easy imports
+- jsconfig.json with path aliases for `@/*` imports
+
+**Files Created** (12):
+- frontend/jsconfig.json (path aliases)
+- frontend/components.json (shadcn config)
+- frontend/src/lib/utils.js (cn() helper)
+- frontend/src/components/ui/button.jsx
+- frontend/src/components/ui/badge.jsx
+- frontend/src/components/ui/card.jsx
+- frontend/src/components/ui/input.jsx
+- frontend/src/components/ui/table.jsx
+- frontend/src/components/app/StatsCard.jsx (83 lines)
+- frontend/src/components/app/PageHeader.jsx (78 lines)
+- frontend/src/components/app/StatusBadge.jsx (157 lines)
+- frontend/src/components/app/LoadingState.jsx (66 lines)
+- frontend/src/components/app/EmptyState.jsx (90 lines)
+- frontend/src/components/app/index.js (barrel exports)
+
+**Technical Wins**:
+- StatusBadge includes 5 entity types with 25 total status mappings (permit, project, invoice, payment, inspection)
+- All components use CVA for variant management (already in dependencies)
+- Components are fully accessible (ARIA labels, semantic HTML)
+- Consistent API patterns across all components (className passthrough, ...props spread)
+
+**Next Phase**: Phase 2 - Pilot Migration (Dashboard + PermitDetails)
+
+**Why This Matters**:
+- 15-20 pages have 20-30 inline `style={{}}` per page
+- Duplicated patterns (stats cards, headers, badges) across pages
+- Low maintainability (styling changes touch multiple files)
+- Slow development (every new page requires styling decisions)
+
+**Success Criteria**:
+- ✅ Zero inline styles in new pages
+- ✅ Design changes made in one place
+- ✅ Developer velocity improvement
+- ✅ Consistent, cohesive UI
 
 ---
 
