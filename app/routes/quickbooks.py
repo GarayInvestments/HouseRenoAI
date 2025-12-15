@@ -11,8 +11,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
-from app.services.quickbooks_service_v2 import get_quickbooks_service
-from app.services import quickbooks_service as qb_service_module
+from app.services.quickbooks_service import get_quickbooks_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

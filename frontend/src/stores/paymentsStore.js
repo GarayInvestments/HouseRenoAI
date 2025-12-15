@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import api from '../lib/api';
+import { supabase } from '../lib/supabase';
 
 /**
  * Payments Store
@@ -29,39 +30,25 @@ const usePaymentsStore = create((set, get) => ({
   fetchPayments: async () => {
     set({ loading: true, error: null });
     try {
-      const url = '/v1/quickbooks/sync/cache/payments';
-      console.log('[DEBUG] Fetching payments from:', url);
+      // Get token from Supabase session (not localStorage)
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://houserenovators-api.fly.dev';
+      const url = `${apiUrl}/v1/quickbooks/sync/cache/payments`;
       
       // Fetch from cache endpoint
       const response = await fetch(url, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('supabase_token')}`
+          'Authorization': `Bearer ${token}`
         }
       });
       
-      console.log('[DEBUG] Response status:', response.status);
-      console.log('[DEBUG] Response content-type:', response.headers.get('content-type'));
-      console.log('[DEBUG] Response URL:', response.url);
-      
-      // Read response as text first to see what we got
-      const responseText = await response.text();
-      console.log('[DEBUG] Response body (first 500 chars):', responseText.substring(0, 500));
-      
       if (!response.ok) {
-        console.error('[DEBUG] Error response:', responseText.substring(0, 200));
         throw new Error(`Failed to fetch payments from cache: ${response.status}`);
       }
       
-      // Try to parse as JSON
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch (e) {
-        console.error('[DEBUG] Failed to parse JSON:', e);
-        throw new Error('Response is not valid JSON');
-      }
-      
-      console.log('[DEBUG] Received data:', data);
+      const data = await response.json();
       const paymentsArray = data?.payments || [];
       
       set({ 
@@ -87,9 +74,13 @@ const usePaymentsStore = create((set, get) => ({
   // Fetch sync status
   fetchSyncStatus: async () => {
     try {
-      const response = await fetch('/v1/quickbooks/sync/status', {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://houserenovators-api.fly.dev';
+      const response = await fetch(`${apiUrl}/v1/quickbooks/sync/status`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('supabase_token')}`
+          'Authorization': `Bearer ${token}`
         }
       });
       
@@ -106,9 +97,9 @@ const usePaymentsStore = create((set, get) => ({
       }
       
       // Fetch scheduler status for next sync time
-      const schedResponse = await fetch('/v1/quickbooks/sync/scheduler', {
+      const schedResponse = await fetch(`${apiUrl}/v1/quickbooks/sync/scheduler`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('supabase_token')}`
+          'Authorization': `Bearer ${token}`
         }
       });
       
@@ -146,10 +137,14 @@ const usePaymentsStore = create((set, get) => ({
   syncWithQuickBooks: async () => {
     set({ qbSyncStatus: 'syncing', qbSyncError: null });
     try {
-      const response = await fetch('/v1/quickbooks/sync/payments', {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://houserenovators-api.fly.dev';
+      const response = await fetch(`${apiUrl}/v1/quickbooks/sync/payments`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('supabase_token')}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });

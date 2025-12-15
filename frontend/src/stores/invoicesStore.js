@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import api from '../lib/api';
+import { supabase } from '../lib/supabase';
 
 /**
  * Invoices Store
@@ -29,10 +30,15 @@ const useInvoicesStore = create((set, get) => ({
   fetchInvoices: async () => {
     set({ loading: true, error: null });
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://houserenovators-api.fly.dev';
+      
       // Fetch from cache endpoint
-      const response = await fetch('/v1/quickbooks/sync/cache/invoices', {
+      const response = await fetch(`${apiUrl}/v1/quickbooks/sync/cache/invoices`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('supabase_token')}`
+          'Authorization': `Bearer ${token}`
         }
       });
       
@@ -64,9 +70,13 @@ const useInvoicesStore = create((set, get) => ({
   // Fetch sync status
   fetchSyncStatus: async () => {
     try {
-      const response = await fetch('/v1/quickbooks/sync/status', {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://houserenovators-api.fly.dev';
+      const response = await fetch(`${apiUrl}/v1/quickbooks/sync/status`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('supabase_token')}`
+          'Authorization': `Bearer ${token}`
         }
       });
       
@@ -83,9 +93,9 @@ const useInvoicesStore = create((set, get) => ({
       }
       
       // Fetch scheduler status for next sync time
-      const schedResponse = await fetch('/v1/quickbooks/sync/scheduler', {
+      const schedResponse = await fetch(`${apiUrl}/v1/quickbooks/sync/scheduler`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('supabase_token')}`
+          'Authorization': `Bearer ${token}`
         }
       });
       
@@ -209,10 +219,14 @@ const useInvoicesStore = create((set, get) => ({
   syncWithQuickBooks: async () => {
     set({ qbSyncStatus: 'syncing', qbSyncError: null });
     try {
-      const response = await fetch('/v1/quickbooks/sync/invoices', {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://houserenovators-api.fly.dev';
+      const response = await fetch(`${apiUrl}/v1/quickbooks/sync/invoices`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('supabase_token')}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });

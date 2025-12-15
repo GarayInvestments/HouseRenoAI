@@ -1,6 +1,6 @@
 # QuickBooks Integration Guide
 
-**Last Updated:** November 9, 2025  
+**Last Updated:** December 14, 2025  
 **Status:** ✅ PRODUCTION OPERATIONAL
 
 Complete guide for QuickBooks Online integration with House Renovators AI Portal.
@@ -13,10 +13,11 @@ Complete guide for QuickBooks Online integration with House Renovators AI Portal
 2. [Production Setup](#production-setup)
 3. [OAuth2 Authentication](#oauth2-authentication)
 4. [API Endpoints](#api-endpoints)
-5. [Data Access & Sync](#data-access--sync)
-6. [Testing & Validation](#testing--validation)
-7. [Troubleshooting](#troubleshooting)
-8. [Security & Compliance](#security--compliance)
+5. [Sync Rules & Filtering](#sync-rules--filtering)
+6. [Data Access & Sync](#data-access--sync)
+7. [Testing & Validation](#testing--validation)
+8. [Troubleshooting](#troubleshooting)
+9. [Security & Compliance](#security--compliance)
 
 ---
 
@@ -28,16 +29,19 @@ Complete guide for QuickBooks Online integration with House Renovators AI Portal
 - **Email**: steve@houserenovatorsllc.com  
 - **Realm ID**: 9130349982666256
 - **Environment**: Production (live data)
-- **Data**: 24 customers, 53+ invoices, estimates, bills
+- **Data**: GC Compliance customers only (filtered)
+- **Sync Scope**: Customers, Invoices, Payments
 
 ### Key Features
 
 - ✅ OAuth2 production integration (Intuit approved)
-- ✅ Real-time customer/invoice data access
+- ✅ Filtered sync (GC Compliance customers only - CustomerTypeRef=698682)
+- ✅ Bi-directional sync (QB ↔ App)
+- ✅ Authoritative QB IDs (no name/amount matching)
+- ✅ Mandatory sync order (Customers → Invoices → Payments)
 - ✅ AI chat integration for QB queries
-- ✅ Automated client sync with Google Sheets
-- ✅ Token auto-refresh (100-day refresh tokens)
-- ✅ Secure token storage in Google Sheets
+- ✅ Token auto-refresh (60-day refresh tokens)
+- ✅ Secure token storage in PostgreSQL database
 
 ---
 
@@ -284,43 +288,141 @@ Clears stored tokens. Requires re-authentication.
 
 ---
 
+## � Sync Rules & Filtering
+
+### In-Scope Customers
+
+**CRITICAL**: Only "GC Compliance" customers are synced.
+
+A QuickBooks customer is considered in-scope if:
+```
+Customer.CustomerTypeRef.value == "698682"  // "GC Compliance" type
+```
+
+All other QuickBooks customers are **ignored** during sync.
+
+### Sync Entities (GC Compliance Only)
+
+For in-scope customers only:
+- ✅ **Customers** (clients)
+- ✅ **Invoices** (belonging to GC Compliance customers)
+- ✅ **Payments** (belonging to GC Compliance invoices)
+
+### Authoritative IDs
+
+**QuickBooks IDs are the only authoritative identifiers.**
+
+We store and enforce:
+- `clients.quickbooks_customer_id` (or `qb_customer_id`)
+- `invoices.quickbooks_invoice_id` (or `qb_invoice_id`)
+- `payments.quickbooks_payment_id` (or `qb_payment_id`)
+
+**Never match by name, invoice number, or amount.**  
+All upserts are keyed on QuickBooks IDs only.
+
+### Mandatory Sync Order
+
+Sync **always** runs in this order to prevent orphan records:
+
+1. **Customers** (filtered by CustomerTypeRef=698682)
+2. **Invoices** (belonging to those customers)
+3. **Payments** (belonging to those invoices)
+
+Use `POST /v1/quickbooks/sync/all` to run full ordered sync.
+
+### Bi-Directional Sync
+
+#### QuickBooks → App (Pull)
+- Poll QuickBooks or use webhooks
+- Query only GC Compliance customers
+- Upsert entities by QB ID
+- **Financial fields always follow QuickBooks** (amounts, status, payments)
+
+#### App → QuickBooks (Push)
+- **Creating a client in the app:**
+  1. Create Customer in QuickBooks
+  2. Assign `CustomerTypeRef = "698682"` (GC Compliance)
+  3. Store returned QuickBooks ID
+  
+- **Creating an invoice in the app:**
+  1. Require linked QuickBooks customer
+  2. Create invoice in QuickBooks
+  3. Store returned QuickBooks invoice ID
+  
+- **Creating a payment in the app:**
+  1. Require linked QuickBooks invoice
+  2. Create payment in QuickBooks
+  3. Store returned QuickBooks payment ID
+
+### Conflict Resolution Rules
+
+- **Financial data** → QuickBooks wins (amounts, balances, status)
+- **Internal metadata / compliance fields** → App wins (notes, custom fields)
+- **Never auto-merge conflicting financial fields**
+
+### Design Constraints
+
+- ✅ Sync is **idempotent** (safe to run multiple times)
+- ✅ Sync is **retry-safe** (recovers from failures)
+- ✅ **No duplicates** under any condition
+- ✅ **No heuristic matching** (QB IDs only)
+
+---
+
 ## 🔄 Data Access & Sync
 
-### Syncing Clients with Google Sheets
+### Full Sync (All GC Compliance Entities)
 
-The AI can automatically sync Google Sheets clients with QuickBooks customers:
-
-**Via Chat:**
+```http
+POST /v1/quickbooks/sync/all
+Authorization: Bearer {jwt_token}
 ```
-User: "Sync all clients with QuickBooks"
-AI: [Executes sync function]
+
+Syncs in mandatory order:
+1. Customers (filtered by CustomerTypeRef=698682)
+2. Invoices (for those customers)
+3. Payments (for those invoices)
+
+**Response:**
+```json
+{
+  "customers": {"records_synced": 8, "duration_ms": 1250, "errors": 0},
+  "invoices": {"records_synced": 15, "duration_ms": 2100, "errors": 0},
+  "payments": {"records_synced": 12, "duration_ms": 1800, "errors": 0},
+  "total_records": 35,
+  "total_duration_ms": 5150,
+  "total_errors": 0
+}
+```
+
+### Manual Entity Syncs
+
+```http
+POST /v1/quickbooks/sync/customers
+POST /v1/quickbooks/sync/invoices
+POST /v1/quickbooks/sync/payments
+Authorization: Bearer {jwt_token}
+```
+
+Each endpoint syncs only that entity type with GC Compliance filtering applied.
+
+### Syncing Clients with QuickBooks
+
+**Via API:**
+```http
+POST /v1/quickbooks/sync/customers
+Authorization: Bearer {jwt_token}
 ```
 
 **What it does:**
-1. Fetches all clients from Google Sheets
-2. Fetches all customers from QuickBooks
-3. Matches by name (handles LLC variations) and email
-4. Updates `QBO Client ID` column in Sheets with QB customer IDs
+1. Queries QuickBooks: `SELECT * FROM Customer WHERE CustomerTypeRef = '698682'`
+2. Upserts to `quickbooks_customers_cache` by `qb_customer_id`
+3. Returns sync metrics
 
-**Sync Results:**
-- ✅ Matched: Clients successfully linked
-- ⏭️ Already synced: Clients with existing QB IDs
-- ❌ Not matched: Clients not found in QuickBooks
-
-**Dry Run Mode:**
-```
-User: "Sync all clients with QuickBooks in dry run mode"
-AI: Shows what would be synced without making changes
-```
-
-### Column Mapping
-
-**Google Sheets → QuickBooks:**
-- `Full Name` / `Client Name` → `DisplayName`
-- `Email` → `PrimaryEmailAddr.Address`
-- `QBO Client ID` → `Id` (QB customer ID)
-
-**Important:** Column name is `QBO Client ID` with space, not `QBO_Client_ID`.
+**Column Mapping:**
+- QB `DisplayName` → App `display_name`
+- QB `PrimaryEmailAddr.Address` → App `email`
+- QB `Id` → App `qb_customer_id` (authoritative)
 
 ---
 

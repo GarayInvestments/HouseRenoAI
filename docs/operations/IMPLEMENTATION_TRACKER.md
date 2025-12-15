@@ -1,9 +1,9 @@
 # House Renovators AI - Implementation Tracker
 
-**Version**: 5.2 (QuickBooks Webhooks Complete)  
-**Last Updated**: December 15, 2025 12:35 AM EST  
-**Current Phase**: **Phase W: QuickBooks Webhooks & Auto-Sync - ✅ COMPLETE**  
-**Overall Progress**: Phases 0-Q Complete, Phase W Complete (100%)
+**Version**: 5.3 (QuickBooks Sync Rules Complete)  
+**Last Updated**: December 14, 2025 8:30 PM EST  
+**Current Phase**: **Phase W: QuickBooks Webhooks & Auto-Sync - ✅ SYNC RULES COMPLETE**  
+**Overall Progress**: Phases 0-Q Complete, Phase W 60% Complete
 
 > **Purpose**: Active execution tracker for current and upcoming work. Historical phases (0-E) archived in `docs/archive/IMPLEMENTATION_HISTORY.md` for audit/compliance. See `PROJECT_ROADMAP.md` for technical specs.
 
@@ -30,10 +30,10 @@
 | **Phases 0-E** | 🔒 ARCHIVED | 100% | See `docs/archive/IMPLEMENTATION_HISTORY.md` |
 | **Phase F: Frontend CRUD** | ✅ COMPLETE | 100% | All pages: Permits ✅, Inspections ✅, Invoices ✅, Payments ✅, Site Visits ✅ |
 | **Phase Q: Qualifier Compliance** | ✅ COMPLETE | 100% | **ALL PHASES COMPLETE: Q.1 Schema ✅, Q.2 Models ✅, Q.3 API ✅, Q.4 Frontend ✅ (Dec 15, 12:45 PM EST)** |
-| **Phase W: QuickBooks Webhooks** | ✅ COMPLETE | 100% | **98% API reduction achieved, Scheduler running in production (Dec 15, 12:35 AM EST)** |
+| **Phase W: QuickBooks Webhooks** | 🔄 IN PROGRESS | 60% | **Sync Rules ✅, Cache Tables ✅, Circuit Breaker Next (Dec 14, 8:30 PM EST)** |
 
-**Latest Milestone**: ✅ Phase W Complete - QuickBooks sync infrastructure deployed with 98% API call reduction  
-**Current Focus**: Re-authenticate QuickBooks OAuth, register webhook URL  
+**Latest Milestone**: ✅ QuickBooks Sync Rules Implemented - GC Compliance filtering, bi-directional sync (Dec 14, 8:30 PM EST)  
+**Current Focus**: Circuit breaker pattern for API resilience  
 **Blockers**: None  
 
 **Phase Q Progress**: 40/40 hours (100% complete) ✅
@@ -44,16 +44,16 @@
 
 ---
 
-## � Phase W: QuickBooks Webhooks & Auto-Sync (IN PROGRESS - 43%)
+## 🔄 Phase W: QuickBooks Webhooks & Auto-Sync (IN PROGRESS - 60%)
 
 **Timeline**: Started Dec 15, 12:48 AM EST  
 **Complexity**: Medium-High  
 **Risk**: Low (backend-only caching layer)  
-**Status**: Database + Webhook + Sync Service Complete, Circuit Breaker Next
+**Status**: Database + Webhook + Sync Service + **Sync Rules** Complete, Circuit Breaker Next
 
 ### Progress Tracking
 
-**Completed** (3/7 tasks):
+**Completed** (4/7 tasks):
 - [x] **Task 1**: Database migration (Dec 15, 12:30 AM EST)
   - 3 new tables: quickbooks_payments_cache, webhook_events, sync_status
   - Enhanced 2 tables: customers_cache, invoices_cache (+qb_last_modified, +is_active, +sync_error)
@@ -67,6 +67,13 @@
   - Manual sync endpoints (5 routes)
   - Metrics tracking in sync_status table
   - **Fixed CI**: Replaced get_async_session with get_db (Dec 15, 12:48 AM EST)
+- [x] **Task 3.5**: Sync Rules & Filtering (Dec 14, 8:30 PM EST) **NEW**
+  - **GC Compliance filtering**: CustomerTypeRef=698682 enforced
+  - **Authoritative QB IDs**: No name/amount matching, QB IDs only
+  - **Mandatory sync order**: Customers → Invoices → Payments
+  - **Bi-directional sync**: QB→App (pull) and App→QB (push)
+  - **Conflict resolution**: Financial data follows QB, metadata follows App
+  - **Idempotent & retry-safe**: No duplicates, safe to run multiple times
 
 **In Progress** (0/7 tasks):
 - [ ] **Task 4**: Circuit breaker pattern (est. 2 hours)
@@ -78,18 +85,29 @@
 
 **Sync Schedule**: 3x daily (8 AM, 1 PM, 6 PM EST)
 **Performance Target**: 98% API reduction (100+ calls/day → 6 calls/day)
+**Sync Scope**: GC Compliance customers only (CustomerTypeRef=698682)
 **Database Tables**:
 - quickbooks_customers_cache (12 columns, 5 indexes)
 - quickbooks_invoices_cache (20 columns, 5 indexes)
-- quickbooks_payments_cache (12 columns, 4 indexes) - NEW
-- webhook_events (10 columns, 4 indexes) - NEW
-- sync_status (9 columns, 1 index) - NEW
+- quickbooks_payments_cache (12 columns, 4 indexes)
+- webhook_events (10 columns, 4 indexes)
+- sync_status (9 columns, 1 index)
+
+**Sync Rules** (Dec 14, 8:30 PM EST):
+- ✅ Filter by CustomerTypeRef=698682 ("GC Compliance")
+- ✅ QB IDs are authoritative (customers, invoices, payments)
+- ✅ Mandatory order: Customers → Invoices → Payments
+- ✅ Invoices filtered to GC Compliance customers only
+- ✅ Payments filtered to GC Compliance invoices only
+- ✅ App→QB: Assigns CustomerTypeRef=698682 on creation
+- ✅ Conflict resolution: QB wins for financial data
 
 **Recent Commits**:
 - 3b7ed11: DB migration
 - 78a2500: Webhook endpoint
 - 9805dd0: Sync service
 - bcd7ae3: CI fix (get_async_session → get_db)
+- [PENDING]: Sync rules implementation (CustomerTypeRef filtering)
 
 ---
 

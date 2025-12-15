@@ -1,90 +1,154 @@
 # House Renovators AI Portal - Copilot Instructions
 
-## 🎯 STRATEGIC SYSTEM IDENTITY (READ THIS FIRST)
-
-**CRITICAL REFRAME**: This is not a general construction management system.
-
-**System Definition (Canonical)**:
-> This platform exists to manage **qualifier-based permit compliance** across multiple Licensed Businesses while maintaining clear regulatory accountability and defensible oversight records.
-
-### What This Means for Copilot
-
-**Think in terms of:**
-- ✅ **Enforcement over validation** - Block illegal states at write-time, don't just warn
-- ✅ **Correct entity hierarchy**: Licensed Business → Qualifier → Project (not Project → Qualifier)
-- ✅ **Qualifier capacity limits** - Max 2 Licensed Businesses per Qualifier (NCLBGC rule)
-- ✅ **Qualifier cutoff dates** - Hard enforcement after exit (no actions allowed)
-- ✅ **Oversight minimums** - Block permits if not met
-- ✅ Compliance responsibility and regulatory defensibility
-- ✅ "Would this survive a North Carolina Licensing Board audit?"
-- ✅ Proof over convenience
-
-**Do NOT think primarily in terms of:**
-- ❌ Generic "projects and tasks"
-- ❌ Standard CRUD operations without compliance context
-- ❌ Validation warnings instead of blocking enforcement
-- ❌ General construction workflows
-- ❌ Direct Project → Qualifier relationships (Projects belong to Licensed Businesses)
-
-**Key Questions Before Suggesting Features:**
-1. Does this strengthen or weaken compliance clarity?
-2. Can this be explained to a regulator?
-3. Does this avoid "license rental" risk?
-4. Does this make qualifier responsibility explicit?
-
-**Two Operating Scenarios:**
-- **Scenario A**: House Renovators as GC (internal qualifier, direct permit compliance)
-- **Scenario B**: Third-party contractor qualification (HR provides compliance services, not labor)
-
-**Regulatory Context**: North Carolina Licensing Board for General Contractors (NCLBGC)
-- Licenses belong to people, not companies
-- Qualifiers must have bona fide relationships with companies
-- Qualifiers must exercise real oversight (not just lend their license)
-- Documentation and consistency are critical
-
-**See Full Context**: `docs/architecture/QUALIFIER_COMPLIANCE_SYSTEM_OVERVIEW.md`
-
----
-
 ## ⚡ CODE QUALITY STANDARD (READ THIS FIRST)
 
-**CRITICAL**: Accuracy > Speed  
-Assumptions are the #1 source of production failures. Slow down and verify.
+**CRITICAL**: Accuracy > Speed
+
+When writing scripts or creating files:
+
+### 1. Verify Before Writing
+- ✅ Check existing patterns in codebase
+- ✅ Review similar files for conventions
+- ✅ Validate logic mentally before coding
+- ✅ Search for existing implementations
+
+### 2. Common Mistake Areas (Extra Caution Required)
+- **File paths**: Use absolute paths, verify directories exist
+- **Shell syntax**: PowerShell (not bash) - use `;` not `&&`, use `-eq` not `==`
+- **Import statements**: Verify module paths resolve
+- **Database schema**: Check actual columns with `psql` before assuming
+- **Pydantic models**: Match database types exactly (JSONB = `List[dict]` not `dict`)
+- **Environment variables**: Verify exact names from `.env` or Fly secrets
+- **Route protection**: Use `Depends(get_current_user)` from `auth_supabase.py`
+
+### 3. Before Creating a File
+- ✅ Search for existing similar files
+- ✅ Check naming conventions in that directory
+- ✅ Verify imports will resolve
+- ✅ Confirm directory structure exists
+- ✅ Review error-prone patterns in similar files
+
+### 4. Take Time To
+- ✅ Read error messages completely
+- ✅ Check documentation when unsure
+- ✅ Ask clarifying questions
+- ✅ Verify assumptions with user
+- ✅ Test logic mentally before writing
+
+**Never rush. Get it right the first time.**
 
 ---
 
-## 🔒 Database Safety Rules (MANDATORY)
+## 🚨 CRITICAL: Frontend API Patterns (MANDATORY)
 
-Before writing or modifying **ANY** database-related code (migrations, models, seeds, scripts, queries):
+**ALWAYS use the centralized API service. NEVER use direct `fetch()` calls.**
 
-### 1. Live Schema Verification (Required)
-- ALWAYS inspect the **actual Postgres schema** using `psql`
-  - `\d table_name`
-  - `\d+ table_name`
-- ORM models are **NOT authoritative** unless confirmed against the live database.
-- NEVER rely on memory, inference, or naming conventions.
+### ❌ FORBIDDEN Pattern (Causes Bugs)
+```javascript
+// DON'T DO THIS - Direct fetch with manual token handling
+const response = await fetch('/v1/quickbooks/sync/cache/payments', {
+  headers: {
+    'Authorization': `Bearer ${localStorage.getItem('supabase_token')}`
+  }
+});
+```
 
-### 2. Zero Assumptions Rule
-- NEVER assume column names.
-- NEVER assume primary key names.
-- NEVER assume foreign key targets.
-- Common traps (always verify):
-  - `id` vs `project_id`
-  - `active` vs `is_active`
-  - JSONB object vs JSONB array
-  - Sync vs async driver limitations (asyncpg)
+**Problems with this approach:**
+1. **Relative URLs** resolve to Vite dev server (`localhost:5173`) not backend API (`localhost:8000`)
+2. **Token storage** - `localStorage.getItem('supabase_token')` doesn't exist (tokens in Supabase session)
+3. **Code duplication** - repeats auth logic that already exists in `api.js`
+4. **No error handling** - missing retry logic, 401 refresh, etc.
 
-### 3. Mandatory Verification Declaration
-For **all database-related work**, Copilot MUST explicitly state what was verified **before writing code**.
+### ✅ CORRECT Pattern (Use Existing API Service)
 
-**Required format**:
-```text
-Verified:
-- users.is_active exists
-- projects.project_id is the primary key
-- qualifiers table structure confirmed via psql
-Proceeding with implementation.
+**Option 1: Use existing api.js methods**
+```javascript
+import api from '../lib/api';
 
+// Use existing methods
+const clients = await api.getClients();
+const projects = await api.getProjects();
+```
+
+**Option 2: Extend api.js for new endpoints**
+```javascript
+// In api.js - Add new methods
+async getPaymentsCache() {
+  return this.request('/quickbooks/sync/cache/payments');
+}
+
+async syncPayments() {
+  return this.request('/quickbooks/sync/payments', { method: 'POST' });
+}
+
+// In store - Use new methods
+import api from '../lib/api';
+const payments = await api.getPaymentsCache();
+```
+
+**Option 3: Use api.request() directly**
+```javascript
+import api from '../lib/api';
+
+// Generic request method handles everything
+const data = await api.request('/quickbooks/sync/cache/payments');
+```
+
+### Why api.js is Mandatory
+
+**What it handles automatically:**
+1. ✅ **Absolute URLs** - Uses `VITE_API_URL` environment variable
+2. ✅ **Token retrieval** - Gets fresh token from `supabase.auth.getSession()`
+3. ✅ **Token refresh** - Auto-retries on 401 with session refresh
+4. ✅ **Error handling** - Consistent error formatting
+5. ✅ **Logging** - Request/response tracking for debugging
+
+**api.js token pattern (reference):**
+```javascript
+async getAuthToken() {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token; // ✅ Correct - from Supabase session
+}
+```
+
+### Code Review Checklist (Before Committing)
+
+When adding new API calls, verify:
+- ✅ Using `api.js` service (not direct `fetch()`)
+- ✅ No `localStorage.getItem('supabase_token')` anywhere
+- ✅ No relative URLs like `/v1/...` (api.js handles this)
+- ✅ Import exists: `import api from '../lib/api'`
+
+### ESLint Rule (Recommended)
+
+Add to `.eslintrc.js` to prevent direct fetch:
+```javascript
+rules: {
+  'no-restricted-globals': ['error', {
+    name: 'fetch',
+    message: 'Use api.js service instead of direct fetch(). See copilot-instructions.md'
+  }]
+}
+```
+
+### Common Migration Pattern
+
+If you find direct `fetch()` calls in stores:
+
+**Before:**
+```javascript
+const response = await fetch('/v1/endpoint', {
+  headers: { 'Authorization': `Bearer ${localStorage.getItem('supabase_token')}` }
+});
+const data = await response.json();
+```
+
+**After:**
+```javascript
+const data = await api.request('/endpoint');
+```
+
+**That's it.** 80% less code, 100% more reliable.
 
 ---
 

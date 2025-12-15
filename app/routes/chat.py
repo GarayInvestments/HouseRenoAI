@@ -1,15 +1,17 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from typing import Dict, Any, Optional
 import logging
 import time
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.openai_service import openai_service
-from app.services.quickbooks_service import quickbooks_service
+from app.services.quickbooks_service import get_quickbooks_service
 from app.memory.memory_manager import memory_manager
 from app.handlers.ai_functions import FUNCTION_HANDLERS
 from app.utils.context_builder import build_context
 from app.utils.logger import SessionLogger
 from app.utils.timing import RequestTimer
+from app.db.session import get_db
 
 # Session-aware logger for multi-user debugging
 session_logger = SessionLogger(__name__)
@@ -17,7 +19,7 @@ logger = logging.getLogger(__name__)  # Keep for backward compatibility
 router = APIRouter()
 
 @router.post("/")
-async def process_chat_message(chat_data: Dict[str, Any]):
+async def process_chat_message(chat_data: Dict[str, Any], db: AsyncSession = Depends(get_db)):
     """
     Process a chat message using OpenAI and perform any necessary actions
     Includes short-term memory for conversational context
@@ -25,8 +27,8 @@ async def process_chat_message(chat_data: Dict[str, Any]):
     # Start performance tracking
     request_start = time.time()
     
-    # Reference quickbooks_service at function level to avoid scope issues
-    qb_service = quickbooks_service
+    # Get DB-aware QuickBooks service
+    qb_service = get_quickbooks_service(db)
     
     try:
         message = chat_data.get("message", "")

@@ -54,8 +54,9 @@ async def startup_event():
         
         # Load QuickBooks tokens from database
         try:
-            from app.services.quickbooks_service import quickbooks_service
+            from app.services.quickbooks_service import get_quickbooks_service
             from app.db.session import get_db
+            from datetime import datetime, timedelta
             
             logger.info("Loading QuickBooks tokens from database...")
             
@@ -64,20 +65,19 @@ async def startup_event():
             try:
                 db_gen = get_db()
                 db = await anext(db_gen)
-                quickbooks_service.set_db_session(db)
+                qb_service = get_quickbooks_service(db)
                 
                 # Load tokens from database
-                await quickbooks_service._load_tokens_from_db()
+                await qb_service.load_tokens_from_db()
                 
-                if quickbooks_service.is_authenticated():
-                    from datetime import datetime, timedelta
+                if qb_service.is_authenticated():
                     # Check if token expires soon (within 10 minutes)
-                    if quickbooks_service.token_expires_at and datetime.now() >= quickbooks_service.token_expires_at - timedelta(minutes=10):
+                    if qb_service.token_expires_at and datetime.now() >= qb_service.token_expires_at - timedelta(minutes=10):
                         logger.info("QuickBooks token expiring soon, refreshing on startup...")
-                        await quickbooks_service.refresh_access_token()
+                        await qb_service.refresh_access_token()
                         logger.info("QuickBooks token refreshed successfully")
                     else:
-                        logger.info(f"QuickBooks token valid until {quickbooks_service.token_expires_at}")
+                        logger.info(f"QuickBooks token valid until {qb_service.token_expires_at}")
                 else:
                     logger.info("QuickBooks not authenticated - connect at /v1/quickbooks/auth")
             finally:
