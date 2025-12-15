@@ -5,10 +5,17 @@ Replaces Google Sheets token storage with database-backed secure storage.
 Migrates from: app/services/quickbooks_service.py (Google Sheets)
 To: Database table quickbooks_tokens with encryption support
 """
+# IMPORTANT (QuickBooks queries):
+# QuickBooks SQL is strict and non-standard.
+# When writing or modifying QB queries, ALWAYS verify syntax
+# against official Intuit QBO documentation.
+
 
 import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any, List
+import urllib.parse
+import httpx
 from intuitlib.client import AuthClient
 from intuitlib.enums import Scopes
 from quickbooks import QuickBooks
@@ -450,25 +457,131 @@ class QuickBooksService:
             return Estimate.all(qb=self.qb_client)
     
     async def query(self, query_string: str, entity_class=None):
-        """Execute a raw QuickBooks query
+        """Execute a raw QuickBooks query with hybrid SDK/HTTP routing.
+        
+        Strategy (based on stress test findings - see docs/audits/QUICKBOOKS_SDK_VS_HTTP_ANALYSIS.md):
+        - Block known-unsupported patterns (CustomerTypeRef)
+        - Use HTTP for COUNT queries (SDK bug returns 0)
+        - Use SDK for all other queries (3.6x faster)
         
         Args:
             query_string: SQL-like query string (e.g., "SELECT * FROM Payment WHERE...")
-            entity_class: Optional entity class to query (defaults to Payment for sync)
+            entity_class: Optional entity class to query with SDK
         
         Returns:
-            List of entity objects matching the query
+            List of entity dictionaries or COUNT result dict
         """
         await self._ensure_authenticated()
         
-        # Import Payment here to avoid circular imports
-        from quickbooks.objects.payment import Payment
+        # Guardrail: Block known-unsupported patterns
+        if "CustomerTypeRef" in query_string:
+            raise ValueError(
+                "CustomerTypeRef is not queryable in QuickBooks API. "
+                "Fetch all customers with 'SELECT * FROM Customer' and post-filter in Python: "
+                "[c for c in customers if c.get('CustomerTypeRef', {}).get('value') == '698682']"
+            )
         
-        # Default to Payment if not specified (for sync service)
+        # Route COUNT queries to HTTP (SDK bug - returns 0)
+        if "COUNT(*)" in query_string.upper():
+            logger.info("[QB QUERY] Routing COUNT query to HTTP (SDK bug)")
+            return await self._http_query(query_string)
+        
+        # Route all other queries to SDK (3.6x faster)
+        logger.info("[QB QUERY] Routing query to SDK (3.6x faster than HTTP)")
+        return await self._sdk_query(query_string, entity_class)
+    
+    async def _sdk_query(self, query_string: str, entity_class=None):
+        """Execute query using QuickBooks SDK (faster, but COUNT broken).
+        
+        Performance: 289ms average (3.6x faster than HTTP)
+        Limitation: COUNT(*) returns 0 (use HTTP instead)
+        """
+        # Determine entity class from query if not provided
         if entity_class is None:
-            entity_class = Payment
+            query_upper = query_string.upper()
+            if "FROM CUSTOMER" in query_upper:
+                entity_class = Customer
+            elif "FROM INVOICE" in query_upper:
+                entity_class = Invoice
+            elif "FROM ESTIMATE" in query_upper:
+                entity_class = Estimate
+            elif "FROM BILL" in query_upper:
+                entity_class = Bill
+            else:
+                # Fallback to HTTP if entity unknown
+                logger.warning(f"Unknown entity in query, falling back to HTTP: {query_string}")
+                return await self._http_query(query_string)
         
-        return entity_class.query(query_string, qb=self.qb_client)
+        try:
+            results = entity_class.query(query_string, qb=self.qb_client)
+            
+            # Convert SDK objects to dictionaries
+            if results:
+                dict_results = [r.to_dict() if hasattr(r, 'to_dict') else r for r in results]
+                logger.info(f"[METRICS] SDK query returned {len(dict_results)} entities")
+                return dict_results
+            else:
+                logger.info("[METRICS] SDK query returned 0 entities")
+                return []
+        except Exception as e:
+            logger.error(f"SDK query failed, falling back to HTTP: {e}")
+            return await self._http_query(query_string)
+    
+    async def _http_query(self, query_string: str):
+        """Execute query using direct HTTP (required for COUNT, fallback for SDK failures).
+        
+        Performance: 1034ms average (slower than SDK)
+        Use cases: COUNT queries, SDK failures, unknown entities
+        """
+        base_url = self.qb_client.api_url_v3
+        encoded_query = urllib.parse.quote(query_string)
+        url = f"{base_url}/company/{self.realm_id}/query?query={encoded_query}&minorversion=75"
+        
+        headers = {
+            "Authorization": f"Bearer {self.access_token}",
+            "Accept": "application/json",
+            "Content-Type": "text/plain"
+        }
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, headers=headers, timeout=30.0)
+            
+            if response.status_code != 200:
+                error_msg = f"Query failed: HTTP {response.status_code} - {response.text[:200]}"
+                logger.error(error_msg)
+                raise Exception(error_msg)
+            
+            data = response.json()
+            
+            # Check for Fault
+            if "Fault" in data:
+                fault = data["Fault"]
+                error_msg = f"QB Query Fault: {fault}"
+                logger.error(error_msg)
+                raise Exception(error_msg)
+            
+            # Extract QueryResponse
+            query_response = data.get("QueryResponse", {})
+            
+            # Handle COUNT queries
+            if "totalCount" in query_response:
+                logger.info(f"[METRICS] HTTP COUNT query returned: {query_response['totalCount']}")
+                return {"totalCount": query_response["totalCount"]}
+            
+            # Handle entity queries - return the entity array
+            # QB returns Customer, Invoice, Payment, etc. as the key
+            for key in query_response:
+                if key not in ["startPosition", "maxResults", "totalCount"]:
+                    entities = query_response[key]
+                    # Ensure it's always a list
+                    if not isinstance(entities, list):
+                        entities = [entities]
+                    logger.info(f"[METRICS] HTTP query returned {len(entities)} {key} entities")
+                    return entities
+            
+            # Empty result
+            logger.info("[METRICS] HTTP query returned 0 entities")
+            return []
     
     async def create_invoice(self, invoice_data: Dict[str, Any]) -> Optional[Invoice]:
         """Create invoice in QuickBooks"""

@@ -295,9 +295,13 @@ Clears stored tokens. Requires re-authentication.
 **CRITICAL**: Only "GC Compliance" customers are synced.
 
 A QuickBooks customer is considered in-scope if:
+```python
+Customer.CustomerTypeRef.value == "698682"  # "GC Compliance" type
 ```
-Customer.CustomerTypeRef.value == "698682"  // "GC Compliance" type
-```
+
+**⚠️ IMPORTANT**: `CustomerTypeRef` is **not queryable** in QuickBooks API. You must:
+1. Fetch all customers: `SELECT * FROM Customer`
+2. Post-filter in Python by `CustomerTypeRef.value`
 
 All other QuickBooks customers are **ignored** during sync.
 
@@ -558,6 +562,159 @@ render logs -r srv-d44ak76uk2gs73a3psig --limit 50 --confirm -o text | Select-St
 # Verify sync results
 python check_qbo_sync.py
 ```
+
+---
+
+## ⚡ Performance & Query Best Practices
+
+### Query Method Selection (SDK vs HTTP)
+
+**Recommendation**: Use Python SDK for queries, HTTP for COUNT only.
+
+**Performance comparison** (26-customer dataset):
+- **SDK**: 289ms average (3.6x faster)
+- **HTTP**: 1034ms average
+- **GET-by-ID**: 53ms (16x faster than query)
+
+**Hybrid implementation**:
+```python
+async def query(self, query_string: str):
+    # Guardrail: Block unsupported patterns
+    if "CustomerTypeRef" in query_string:
+        raise ValueError(
+            "CustomerTypeRef is not queryable. "
+            "Fetch all customers and post-filter in Python."
+        )
+    
+    # Use HTTP for COUNT (SDK bug returns 0)
+    if "COUNT(*)" in query_string.upper():
+        return await self._http_query(query_string)
+    
+    # Use SDK for all other queries (3x faster)
+    return await self._sdk_query(query_string)
+```
+
+### Query Limitations
+
+**Not queryable** (API limitations, not bugs):
+
+| Field Type | Examples | Workaround |
+|------------|----------|------------|
+| **Type references** | `CustomerTypeRef`, `ClassRef` | Post-filter in Python after fetch |
+| **Amount fields** | `Balance`, `TotalAmt` | Fetch all, filter locally |
+| **Nested references** | `CustomerTypeRef.value` | Not accessible in queries |
+
+**Queryable reference fields**:
+- ✅ `CustomerRef` (filter invoices/payments by customer)
+- ✅ `VendorRef` (filter bills by vendor)
+- ✅ `Id` (direct ID lookup, but GET-by-ID is 16x faster)
+
+### Optimization Patterns
+
+#### 1. Use GET-by-ID When ID is Known (16x Faster)
+
+```python
+# ❌ SLOW: Query by ID (895ms)
+result = await qb_service.query("SELECT * FROM Customer WHERE Id = '164'")
+customer = result[0] if result else None
+
+# ✅ FAST: GET by ID (53ms)
+from quickbooks.objects.customer import Customer
+customer = Customer.get(164, qb=qb_service.qb_client)
+```
+
+**Use GET-by-ID when**:
+- You have the QuickBooks ID stored
+- You need a single entity
+- Performance matters
+
+#### 2. CustomerTypeRef Filtering (Post-Filter Required)
+
+```python
+# ❌ FAILS: QB does not support CustomerTypeRef in queries
+customers = await qb_service.query(
+    "SELECT * FROM Customer WHERE CustomerTypeRef = '698682'"
+)
+
+# ✅ WORKS: Fetch all, then post-filter
+all_customers = await qb_service.query("SELECT * FROM Customer")
+gc_customers = [
+    c for c in all_customers
+    if c.get('CustomerTypeRef', {}).get('value') == '698682'
+]
+```
+
+**Why**: QuickBooks API does not index `CustomerTypeRef` for queries.
+
+#### 3. Filter by CustomerRef (Supported)
+
+```python
+# ✅ WORKS: CustomerRef IS queryable
+invoices = await qb_service.query(
+    "SELECT * FROM Invoice WHERE CustomerRef = '164'"
+)
+
+payments = await qb_service.query(
+    "SELECT * FROM Payment WHERE CustomerRef = '164'"
+)
+```
+
+**Use case**: Get all transactions for a specific customer.
+
+#### 4. Concurrent Requests (Safe)
+
+```python
+# ✅ Safe: No rate limiting detected (tested up to 20 concurrent)
+import asyncio
+
+customers_task = qb_service.query("SELECT * FROM Customer")
+invoices_task = qb_service.query("SELECT * FROM Invoice")
+payments_task = qb_service.query("SELECT * FROM Payment")
+
+customers, invoices, payments = await asyncio.gather(
+    customers_task, invoices_task, payments_task
+)
+```
+
+**Performance**: ~2 requests/second sustained rate (55/55 requests succeeded in testing).
+
+#### 5. Use ORDER BY (Supported)
+
+```python
+# ✅ WORKS: ORDER BY is supported (previously undocumented)
+customers = await qb_service.query(
+    "SELECT * FROM Customer WHERE Active = true ORDER BY DisplayName"
+)
+```
+
+**Use case**: Get sorted results without client-side sorting.
+
+### Query Best Practices
+
+**Always**:
+1. ✅ Load tokens before querying: `await qb_service.load_tokens_from_db()`
+2. ✅ Check authentication: `if not qb_service.is_authenticated(): raise Exception(...)`
+3. ✅ URL-encode query strings: `urllib.parse.quote(query_string)`
+4. ✅ Store QB IDs locally (enables GET-by-ID optimization)
+5. ✅ Use SDK for queries, HTTP for COUNT only
+
+**Never**:
+1. ❌ Query CustomerTypeRef (post-filter instead)
+2. ❌ Query amount fields like Balance or TotalAmt (not indexed)
+3. ❌ Use SDK for COUNT queries (returns 0, use HTTP)
+4. ❌ Match by name/amount (QB IDs only)
+5. ❌ Forget to check `is_authenticated()` (QB fails silently)
+
+### Performance Metrics
+
+**Expected sync performance** (using SDK + GET-by-ID):
+- Full sync (168 records): ~48 seconds (3.6x faster than HTTP-only)
+- Customer sync (26 records): ~7.5 seconds
+- Invoice sync (54 records): ~15.6 seconds
+- Payment sync (88 records): ~25.4 seconds
+- GET-by-ID lookups: <100ms per record
+
+**Reference**: See `docs/audits/QUICKBOOKS_SDK_VS_HTTP_ANALYSIS.md` for complete stress test results.
 
 ---
 

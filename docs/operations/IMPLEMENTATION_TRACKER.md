@@ -75,6 +75,15 @@
   - **Conflict resolution**: Financial data follows QB, metadata follows App
   - **Idempotent & retry-safe**: No duplicates, safe to run multiple times
 
+**Recently Completed** (Dec 14, 2025):
+- [x] **Task 3.6**: QuickBooks API Stress Testing (Dec 14, 9:00 PM EST) **NEW**
+  - **Phase 1 (Discovery) Complete**: 5 test suites, 160+ queries, 2.7 minutes runtime
+  - **8 major discoveries**: POST works (89%), ORDER BY supported, CustomerRef filterable, amount fields not filterable, case insensitive, encoding required, concurrent safe (55/55), SDK COUNT bug universal
+  - **Documentation**: `docs/audits/QUICKBOOKS_SDK_VS_HTTP_ANALYSIS.md` (gold-standard audit with empirical evidence)
+  - **Performance validated**: SDK 3.6x faster (289ms vs 1034ms), GET-by-ID 16x faster (53ms)
+  - **Hybrid strategy defined**: Use SDK for queries, HTTP for COUNT only, block CustomerTypeRef queries
+  - **Next**: Phase 2 validation (24+ hours), then implement hybrid query method
+
 **In Progress** (0/7 tasks):
 - [ ] **Task 4**: Circuit breaker pattern (est. 2 hours)
 - [ ] **Task 5**: Scheduled sync jobs (est. 2 hours)
