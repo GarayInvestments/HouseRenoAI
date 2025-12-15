@@ -56,7 +56,7 @@ async def startup_event():
         try:
             from app.services.quickbooks_service import get_quickbooks_service
             from app.db.session import get_db
-            from datetime import datetime, timedelta
+            from datetime import datetime, timedelta, timezone
             
             logger.info("Loading QuickBooks tokens from database...")
             
@@ -72,7 +72,8 @@ async def startup_event():
                 
                 if qb_service.is_authenticated():
                     # Check if token expires soon (within 10 minutes)
-                    if qb_service.token_expires_at and datetime.now() >= qb_service.token_expires_at - timedelta(minutes=10):
+                    # Use timezone-aware datetime for comparison
+                    if qb_service.token_expires_at and datetime.now(timezone.utc) >= qb_service.token_expires_at - timedelta(minutes=10):
                         logger.info("QuickBooks token expiring soon, refreshing on startup...")
                         await qb_service.refresh_access_token()
                         logger.info("QuickBooks token refreshed successfully")

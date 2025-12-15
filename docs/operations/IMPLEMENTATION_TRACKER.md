@@ -33,16 +33,28 @@
 - ✅ Integration: Replaced old sync banners in Invoices + Payments pages
   - Removed redundant gray "Sync QuickBooks" buttons (functionality now in SyncControlPanel)
   - Cleaner UI with comprehensive sync context
-- ✅ Bug fixes (4):
+- ✅ Bug fixes (5):
   1. Missing default export in PaymentDetails.jsx (broke imports)
   2. Orphaned JSX fragments in Invoices.jsx (syntax errors from incomplete old code removal)
   3. Orphaned JSX fragments in Payments.jsx (same issue)
   4. Case mismatch: Backend returns lowercase `"closed"`, frontend checked uppercase `"CLOSED"`
   5. Nested data structure: Backend returns `{ circuit_breaker: { state: ... } }`, frontend expected flat
+- ✅ Mobile responsiveness (12 pages): Reduced card minimum widths to eliminate horizontal scroll
+  - Dashboard, Invoices, Payments, Inspections, SiteVisits: Stats cards 200-250px → 140px
+  - Clients, Permits, Settings: Main cards 350-500px → 300-320px
+  - InvoiceDetails, InspectionDetails: Line items/photos 200px → 160px
+  - ClientDetails: Stats 200px → 140px
+- ✅ Backend bug fix: QuickBooks token timezone warning
+  - Warning: "can't compare offset-naive and offset-aware datetimes"
+  - Root cause: `datetime.now()` (naive) vs `token_expires_at` (aware from PostgreSQL)
+  - Fix: Changed to `datetime.now(timezone.utc)` for timezone-aware comparison
+  - Result: Clean backend startup logs
 - ✅ Production verified: Phase 21 confirmed deployed (migration applied, 12/12 payments synced)
 
-**Files Changed** (4):
-- Frontend (4): SyncControlPanel.jsx (NEW - 420 lines), Invoices.jsx (integration + cleanup), Payments.jsx (integration + cleanup), PaymentDetails.jsx (export fix)
+**Files Changed** (15):
+- Frontend (13): SyncControlPanel.jsx (NEW - 420 lines), Invoices.jsx, Payments.jsx, PaymentDetails.jsx, Dashboard.jsx, Clients.jsx, ClientDetails.jsx, Permits.jsx, Settings.jsx, Inspections.jsx, InspectionDetails.jsx, SiteVisits.jsx, InvoiceDetails.jsx
+- Backend (1): main.py (timezone fix)
+- Docs (1): IMPLEMENTATION_TRACKER.md (Version 5.9)
 
 **Technical Wins**:
 - Single component provides complete sync observability (circuit breaker + scheduler + manual controls)
