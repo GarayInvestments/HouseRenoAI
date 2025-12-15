@@ -1,5 +1,33 @@
 # House Renovators AI Portal - Copilot Instructions
 
+## 🏁 SESSION-END CHECKPOINT (CHECK BEFORE EVERY RESPONSE)
+
+**BEFORE saying "done", "complete", "that should work", or ending your turn:**
+
+### Mandatory Documentation Check
+
+```
+✅ Did I complete 3+ file edits? → Suggest IMPLEMENTATION_TRACKER.md update
+✅ Did I fix a blocking bug? → Suggest IMPLEMENTATION_TRACKER.md update  
+✅ Did I finish a migration? → Suggest IMPLEMENTATION_TRACKER.md update
+✅ Did I create new API endpoints? → Suggest API_DOCUMENTATION.md update
+✅ Did testing pass after failures? → Suggest IMPLEMENTATION_TRACKER.md update
+✅ Did user say "works", "good", "testing passes"? → Offer documentation NOW
+```
+
+### Required Response Pattern
+
+**When ANY checkbox above is ✅:**
+
+```
+✅ Completed [specific feature/fix] (Dec 15 11:45 PM EST).
+Should I update IMPLEMENTATION_TRACKER.md?
+```
+
+**NEVER say work is "complete" without offering documentation.**
+
+---
+
 ## ⚡ CODE QUALITY STANDARD (READ THIS FIRST)
 
 **CRITICAL**: Accuracy > Speed
@@ -841,6 +869,24 @@ curl http://localhost:8000/v1/quickbooks/customers -H "Authorization: Bearer $to
 **For comprehensive testing workflows, see:**
 - `docs/guides/CHAT_TESTING_SOP.md` - Standard testing procedures for chat functionality
 - `scripts/testing/chat-tests/` - Test scripts for various features
+
+## 🎯 TASK TRACKING WITH MANDATORY DOCUMENTATION
+
+When using `manage_todo_list` for multi-step work:
+
+**ALWAYS include final task:**
+```markdown
+- [ ] Update IMPLEMENTATION_TRACKER.md with completion timestamp
+```
+
+**Never mark work "complete" without documentation step in task list.**
+
+**After completing ALL tasks:**
+1. Mark last technical task as completed
+2. Suggest documentation update before marking documentation task complete
+3. Wait for user approval before updating docs
+
+---
 
 ## 📚 Documentation Reference
 

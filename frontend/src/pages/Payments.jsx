@@ -143,7 +143,7 @@ export default function Payments() {
 
   const getStatusColor = (status) => {
     const upperStatus = status?.toUpperCase();
-    if (upperStatus === 'COMPLETED') {
+    if (upperStatus === 'POSTED') {
       return { bg: '#ECFDF5', text: '#059669', border: '#A7F3D0' };
     }
     if (upperStatus === 'PENDING') {
@@ -160,7 +160,7 @@ export default function Payments() {
 
   const getStatusIcon = (status) => {
     const upperStatus = status?.toUpperCase();
-    if (upperStatus === 'COMPLETED') return <CheckCircle size={16} />;
+    if (upperStatus === 'POSTED') return <CheckCircle size={16} />;
     if (upperStatus === 'PENDING') return <Clock size={16} />;
     if (upperStatus === 'FAILED') return <XCircle size={16} />;
     if (upperStatus === 'REFUNDED') return <RefreshCw size={16} />;
@@ -454,7 +454,7 @@ export default function Payments() {
 
         {/* Status Filters */}
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          {['all', 'PENDING', 'COMPLETED', 'FAILED', 'REFUNDED'].map((status) => (
+          {['all', 'PENDING', 'POSTED', 'FAILED', 'REFUNDED'].map((status) => (
             <button
               key={status}
               onClick={() => setFilter(status)}

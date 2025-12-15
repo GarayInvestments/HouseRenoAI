@@ -250,13 +250,14 @@ class QuickBooksSyncService:
             
             raise
     
-    async def sync_invoices(self, db: AsyncSession, since: Optional[datetime] = None) -> Dict[str, Any]:
+    async def sync_invoices(self, db: AsyncSession, since: Optional[datetime] = None, auto_promote: bool = True) -> Dict[str, Any]:
         """
         Sync invoices from QuickBooks to quickbooks_invoices_cache.
         
         Args:
             db: Database session
             since: Only fetch invoices modified after this timestamp
+            auto_promote: If True, automatically promotes cached invoices to main invoices table
             
         Returns:
             Dict with sync metrics
@@ -411,13 +412,24 @@ class QuickBooksSyncService:
             
             logger.info(f"[SYNC] Invoice sync complete: {records_synced} synced, {errors} errors, {duration_ms}ms")
             
+            # Auto-promote to main table if enabled
+            promotion_result = None
+            if auto_promote and records_synced > 0:
+                logger.info(f"[SYNC] Auto-promoting {records_synced} invoices to main table")
+                try:
+                    promotion_result = await self.promote_invoices_to_database(db)
+                except Exception as e:
+                    logger.error(f"[SYNC] Auto-promotion failed (sync succeeded): {e}")
+                    # Don't fail the sync if promotion fails
+            
             return {
                 "records_synced": records_synced,
                 "duration_ms": duration_ms,
                 "errors": errors,
                 "created": 0,  # TODO: Track created vs updated
                 "updated": records_synced,
-                "skipped": 0
+                "skipped": 0,
+                "promotion": promotion_result
             }
             
         except Exception as e:
@@ -429,13 +441,14 @@ class QuickBooksSyncService:
             
             raise
     
-    async def sync_payments(self, db: AsyncSession, since: Optional[datetime] = None) -> Dict[str, Any]:
+    async def sync_payments(self, db: AsyncSession, since: Optional[datetime] = None, auto_promote: bool = True) -> Dict[str, Any]:
         """
         Sync payments from QuickBooks to quickbooks_payments_cache.
         
         Args:
             db: Database session
             since: Only fetch payments modified after this timestamp
+            auto_promote: If True, automatically promotes cached payments to main payments table
             
         Returns:
             Dict with sync metrics
@@ -613,13 +626,24 @@ class QuickBooksSyncService:
             
             logger.info(f"[SYNC] Payment sync complete: {records_synced} synced, {errors} errors, {duration_ms}ms")
             
+            # Auto-promote to main table if enabled
+            promotion_result = None
+            if auto_promote and records_synced > 0:
+                logger.info(f"[SYNC] Auto-promoting {records_synced} payments to main table")
+                try:
+                    promotion_result = await self.promote_payments_to_database(db)
+                except Exception as e:
+                    logger.error(f"[SYNC] Auto-promotion failed (sync succeeded): {e}")
+                    # Don't fail the sync if promotion fails
+            
             return {
                 "records_synced": records_synced,
                 "duration_ms": duration_ms,
                 "errors": errors,
                 "created": 0,  # TODO: Track created vs updated
                 "updated": records_synced,
-                "skipped": 0
+                "skipped": 0,
+                "promotion": promotion_result  # Include promotion metrics
             }
             
         except Exception as e:
@@ -817,6 +841,427 @@ class QuickBooksSyncService:
         await db.commit()
         
         return qb_customer_id
+    
+    async def promote_invoices_to_database(
+        self,
+        db: AsyncSession,
+        qb_invoice_ids: Optional[List[str]] = None
+    ) -> Dict[str, Any]:
+        """
+        Promote invoices from cache to main invoices table.
+        
+        Maps QB customer IDs to app client_ids using clients table.
+        Creates business_id automatically via database trigger.
+        
+        Args:
+            db: Database session
+            qb_invoice_ids: Optional list of specific QB invoice IDs to promote.
+                           If None, promotes all cached invoices.
+        
+        Returns:
+            Dict with promotion metrics (promoted, skipped, errors)
+        """
+        start_time = datetime.now(timezone.utc)
+        promoted = 0
+        skipped = 0
+        errors = 0
+        
+        try:
+            logger.info(f"[PROMOTE] Starting invoice promotion from cache to main table")
+            
+            # Build query to get cached invoices
+            if qb_invoice_ids:
+                placeholders = ','.join([f':id_{i}' for i in range(len(qb_invoice_ids))])
+                query = f"""
+                    SELECT * FROM quickbooks_invoices_cache 
+                    WHERE qb_invoice_id IN ({placeholders})
+                """
+                params = {f'id_{i}': qb_id for i, qb_id in enumerate(qb_invoice_ids)}
+            else:
+                query = "SELECT * FROM quickbooks_invoices_cache WHERE is_active = true"
+                params = {}
+            
+            result = await db.execute(text(query), params)
+            cached_invoices = result.fetchall()
+            
+            logger.info(f"[PROMOTE] Found {len(cached_invoices)} cached invoices to process")
+            
+            for cached_invoice in cached_invoices:
+                try:
+                    qb_invoice_id = cached_invoice.qb_invoice_id
+                    qb_customer_id = cached_invoice.customer_id
+                    
+                    # Map QB customer ID to app client_id
+                    client_result = await db.execute(
+                        text("SELECT client_id FROM clients WHERE qb_customer_id = :qb_customer_id"),
+                        {"qb_customer_id": qb_customer_id}
+                    )
+                    client_row = client_result.fetchone()
+                    
+                    if not client_row:
+                        logger.warning(f"[PROMOTE] Skipping invoice {qb_invoice_id}: QB customer {qb_customer_id} not found in clients table")
+                        skipped += 1
+                        continue
+                    
+                    client_id = client_row.client_id
+                    
+                    # Get project_id from client
+                    # WARNING: Using LIMIT 1 is a temporary fallback for single-project clients only.
+                    # Production-safe approach requires:
+                    # 1. QB custom field mapping (e.g., Class or Department)
+                    # 2. DocNumber pattern matching (e.g., "PROJ-123-INV001")
+                    # 3. Explicit client-project mapping table
+                    # If client has multiple projects and no clear mapping → SKIP, do not guess
+                    # TODO: Implement proper project resolution before multi-project clients
+                    project_result = await db.execute(
+                        text("SELECT project_id FROM projects WHERE client_id = :client_id LIMIT 1"),
+                        {"client_id": client_id}
+                    )
+                    project_row = project_result.fetchone()
+                    
+                    if not project_row:
+                        logger.warning(f"[PROMOTE] Skipping invoice {qb_invoice_id}: No project found for client {client_id}")
+                        skipped += 1
+                        continue
+                    
+                    project_id = project_row.project_id
+                    
+                    # Parse QB JSON data
+                    qb_data = json.loads(cached_invoice.qb_data) if isinstance(cached_invoice.qb_data, str) else cached_invoice.qb_data
+                    
+                    # Extract invoice details from cache
+                    total_amount = float(cached_invoice.total_amount or 0)
+                    balance = float(cached_invoice.balance or 0)
+                    
+                    # Derive status from QB data
+                    # If balance is 0, invoice is paid. Otherwise, it's open.
+                    status = 'PAID' if balance == 0 else 'OPEN'
+                    
+                    # Extract additional QB fields with safe null handling
+                    bill_email_obj = qb_data.get('BillEmail')
+                    bill_email = bill_email_obj.get('Address') if bill_email_obj else None
+                    
+                    currency_ref = qb_data.get('CurrencyRef')
+                    currency_code = currency_ref.get('value') if currency_ref else None
+                    
+                    sales_term_ref = qb_data.get('SalesTermRef')
+                    payment_terms = sales_term_ref.get('name') if sales_term_ref else None
+                    
+                    customer_memo_obj = qb_data.get('CustomerMemo')
+                    customer_memo = customer_memo_obj.get('value') if customer_memo_obj else None
+                    
+                    invoice_data = {
+                        'qb_invoice_id': qb_invoice_id,
+                        'project_id': project_id,
+                        'client_id': client_id,
+                        'invoice_number': qb_data.get('DocNumber'),
+                        'invoice_date': datetime.fromisoformat(qb_data['TxnDate']) if qb_data.get('TxnDate') else None,
+                        'due_date': datetime.fromisoformat(qb_data['DueDate']) if qb_data.get('DueDate') else None,
+                        'subtotal': total_amount,  # QB API doesn't separate subtotal from total consistently
+                        'total_amount': total_amount,
+                        'amount_paid': total_amount - balance,  # Calculate paid amount from balance
+                        'balance_due': balance,
+                        'status': status,  # Derived from balance
+                        'sync_status': 'synced',
+                        'notes': f"Imported from QuickBooks (QB ID: {qb_invoice_id})",
+                        # New QB-specific fields
+                        'email_status': qb_data.get('EmailStatus'),
+                        'print_status': qb_data.get('PrintStatus'),
+                        'bill_email': bill_email,
+                        'bill_address': json.dumps(qb_data.get('BillAddr')) if qb_data.get('BillAddr') else None,
+                        'ship_address': json.dumps(qb_data.get('ShipAddr')) if qb_data.get('ShipAddr') else None,
+                        'currency_code': currency_code,
+                        'payment_terms': payment_terms,
+                        'qb_metadata': json.dumps(qb_data.get('MetaData')) if qb_data.get('MetaData') else None,
+                        'private_note': qb_data.get('PrivateNote'),
+                        'customer_memo': customer_memo
+                    }
+                    
+                    # Upsert into invoices table
+                    # Note: amount_paid will be recalculated when payments are promoted
+                    await db.execute(
+                        text("""
+                            INSERT INTO invoices 
+                            (qb_invoice_id, project_id, client_id, invoice_number, invoice_date, due_date,
+                             subtotal, total_amount, amount_paid, balance_due, status, sync_status, notes,
+                             email_status, print_status, bill_email, bill_address, ship_address,
+                             currency_code, payment_terms, qb_metadata, private_note, customer_memo)
+                            VALUES 
+                            (:qb_invoice_id, :project_id, :client_id, :invoice_number, :invoice_date, :due_date,
+                             :subtotal, :total_amount, :amount_paid, :balance_due, :status, :sync_status, :notes,
+                             :email_status, :print_status, :bill_email, :bill_address, :ship_address,
+                             :currency_code, :payment_terms, :qb_metadata, :private_note, :customer_memo)
+                            ON CONFLICT (qb_invoice_id) DO UPDATE SET
+                                invoice_number = EXCLUDED.invoice_number,
+                                invoice_date = EXCLUDED.invoice_date,
+                                due_date = EXCLUDED.due_date,
+                                subtotal = EXCLUDED.subtotal,
+                                total_amount = EXCLUDED.total_amount,
+                                amount_paid = EXCLUDED.amount_paid,
+                                balance_due = EXCLUDED.balance_due,
+                                status = EXCLUDED.status,
+                                email_status = EXCLUDED.email_status,
+                                print_status = EXCLUDED.print_status,
+                                bill_email = EXCLUDED.bill_email,
+                                bill_address = EXCLUDED.bill_address,
+                                ship_address = EXCLUDED.ship_address,
+                                currency_code = EXCLUDED.currency_code,
+                                payment_terms = EXCLUDED.payment_terms,
+                                qb_metadata = EXCLUDED.qb_metadata,
+                                private_note = EXCLUDED.private_note,
+                                customer_memo = EXCLUDED.customer_memo,
+                                updated_at = CURRENT_TIMESTAMP
+                        """),
+                        invoice_data
+                    )
+                    
+                    promoted += 1
+                    logger.debug(f"[PROMOTE] Promoted invoice {qb_invoice_id}")
+                    # Commit after each successful promotion to avoid transaction cascade failures
+                    await db.commit()
+                    
+                except Exception as e:
+                    logger.error(f"[PROMOTE] Failed to promote invoice {qb_invoice_id}: {e}")
+                    errors += 1
+                    # Rollback the failed transaction to allow subsequent invoices to process
+                    await db.rollback()
+            
+            # Final commit (likely no-op since we commit after each success)
+            
+            duration_ms = int((datetime.now(timezone.utc) - start_time).total_seconds() * 1000)
+            logger.info(f"[PROMOTE] Invoice promotion complete: {promoted} promoted, {skipped} skipped, {errors} errors, {duration_ms}ms")
+            
+            return {
+                "promoted": promoted,
+                "skipped": skipped,
+                "errors": errors,
+                "duration_ms": duration_ms
+            }
+            
+        except Exception as e:
+            logger.error(f"[PROMOTE] Invoice promotion failed: {e}", exc_info=True)
+            await db.rollback()
+            raise
+    
+    async def promote_payments_to_database(
+        self,
+        db: AsyncSession,
+        qb_payment_ids: Optional[List[str]] = None
+    ) -> Dict[str, Any]:
+        """
+        Promote payments from cache to main payments table.
+        
+        Maps QB customer IDs to client_ids and QB invoice IDs to invoice_ids.
+        Updates invoice.amount_paid and invoice.balance_due automatically.
+        
+        Args:
+            db: Database session
+            qb_payment_ids: Optional list of specific QB payment IDs to promote.
+                           If None, promotes all cached payments.
+        
+        Returns:
+            Dict with promotion metrics
+        """
+        start_time = datetime.now(timezone.utc)
+        promoted = 0
+        skipped = 0
+        errors = 0
+        
+        try:
+            logger.info(f"[PROMOTE] Starting payment promotion from cache to main table")
+            
+            # Build query
+            if qb_payment_ids:
+                placeholders = ','.join([f':id_{i}' for i in range(len(qb_payment_ids))])
+                query = f"""
+                    SELECT * FROM quickbooks_payments_cache 
+                    WHERE qb_payment_id IN ({placeholders})
+                """
+                params = {f'id_{i}': qb_id for i, qb_id in enumerate(qb_payment_ids)}
+            else:
+                query = "SELECT * FROM quickbooks_payments_cache WHERE is_active = true"
+                params = {}
+            
+            result = await db.execute(text(query), params)
+            cached_payments = result.fetchall()
+            
+            logger.info(f"[PROMOTE] Found {len(cached_payments)} cached payments to process")
+            
+            for cached_payment in cached_payments:
+                try:
+                    qb_payment_id = cached_payment.qb_payment_id
+                    qb_customer_id = cached_payment.customer_id
+                    qb_invoice_id = cached_payment.invoice_id
+                    
+                    # Map QB customer ID to client_id
+                    client_result = await db.execute(
+                        text("SELECT client_id FROM clients WHERE qb_customer_id = :qb_customer_id"),
+                        {"qb_customer_id": qb_customer_id}
+                    )
+                    client_row = client_result.fetchone()
+                    
+                    if not client_row:
+                        logger.warning(f"[PROMOTE] Skipping payment {qb_payment_id}: QB customer {qb_customer_id} not found")
+                        skipped += 1
+                        continue
+                    
+                    client_id = client_row.client_id
+                    
+                    # Map QB invoice ID to invoice_id (if payment is linked to invoice)
+                    invoice_id = None
+                    project_id = None
+                    if qb_invoice_id:
+                        invoice_result = await db.execute(
+                            text("SELECT invoice_id, project_id FROM invoices WHERE qb_invoice_id = :qb_invoice_id"),
+                            {"qb_invoice_id": qb_invoice_id}
+                        )
+                        invoice_row = invoice_result.fetchone()
+                        
+                        if invoice_row:
+                            invoice_id = invoice_row.invoice_id
+                            project_id = invoice_row.project_id
+                        else:
+                            # CRITICAL: Payment references an invoice that hasn't been promoted yet or failed promotion
+                            # This is an orphan payment - SKIP to prevent breaking invoice-level accounting
+                            logger.warning(f"[PROMOTE] Skipping payment {qb_payment_id}: QB invoice {qb_invoice_id} not found in main invoices table (promote invoices first)")
+                            skipped += 1
+                            continue
+                    else:
+                        # Payment without invoice link (rare but valid in QB for prepayments/credits)
+                        # Try to get project from client for these edge cases only
+                        project_result = await db.execute(
+                            text("SELECT project_id FROM projects WHERE client_id = :client_id LIMIT 1"),
+                            {"client_id": client_id}
+                        )
+                        project_row = project_result.fetchone()
+                        
+                        if not project_row:
+                            logger.warning(f"[PROMOTE] Skipping unlinked payment {qb_payment_id}: No project found for client {client_id}")
+                            skipped += 1
+                            continue
+                        
+                        project_id = project_row.project_id
+                        logger.info(f"[PROMOTE] Payment {qb_payment_id} has no invoice link - treating as prepayment/credit")
+                    
+                    # Extract QB payment data
+                    qb_data = cached_payment.qb_data or {}
+                    
+                    # Extract deposit account
+                    deposit_ref = qb_data.get('DepositToAccountRef')
+                    deposit_account = deposit_ref.get('value') if deposit_ref else None
+                    
+                    # Extract currency
+                    currency_ref = qb_data.get('CurrencyRef')
+                    currency_code = currency_ref.get('value') if currency_ref else None
+                    
+                    # Extract QB metadata
+                    metadata = qb_data.get('MetaData')
+                    qb_metadata = json.dumps(metadata) if metadata else None
+                    
+                    # Extract Line array for linked transactions
+                    line_array = qb_data.get('Line', [])
+                    linked_transactions = json.dumps(line_array) if line_array else None
+                    
+                    payment_data = {
+                        'qb_payment_id': qb_payment_id,
+                        'invoice_id': invoice_id,
+                        'client_id': client_id,
+                        'project_id': project_id,
+                        'amount': float(cached_payment.amount) if cached_payment.amount else 0.0,
+                        'payment_date': cached_payment.payment_date,
+                        'payment_method': cached_payment.payment_method or 'Check',
+                        'status': 'POSTED',  # POSTED = successfully received payment (valid enum: FAILED, PENDING, POSTED, REFUNDED)
+                        'reference_number': cached_payment.reference_number,
+                        'check_number': cached_payment.reference_number,  # Use reference_number as check_number
+                        'sync_status': 'synced',
+                        'notes': f"Imported from QuickBooks (QB ID: {qb_payment_id})",
+                        # QuickBooks metadata fields
+                        'deposit_account': deposit_account,
+                        'currency_code': currency_code,
+                        'total_amount': float(qb_data.get('TotalAmt', 0)) if qb_data.get('TotalAmt') else None,
+                        'unapplied_amount': float(qb_data.get('UnappliedAmt', 0)) if qb_data.get('UnappliedAmt') is not None else None,
+                        'process_payment': qb_data.get('ProcessPayment'),
+                        'linked_transactions': linked_transactions,
+                        'qb_metadata': qb_metadata,
+                        'private_note': qb_data.get('PrivateNote')
+                    }
+                    
+                    # Upsert into payments table
+                    await db.execute(
+                        text("""
+                            INSERT INTO payments 
+                            (qb_payment_id, invoice_id, client_id, project_id, amount, payment_date,
+                             payment_method, status, reference_number, check_number, sync_status, notes,
+                             deposit_account, currency_code, total_amount, unapplied_amount, process_payment,
+                             linked_transactions, qb_metadata, private_note)
+                            VALUES 
+                            (:qb_payment_id, :invoice_id, :client_id, :project_id, :amount, :payment_date,
+                             :payment_method, :status, :reference_number, :check_number, :sync_status, :notes,
+                             :deposit_account, :currency_code, :total_amount, :unapplied_amount, :process_payment,
+                             :linked_transactions, :qb_metadata, :private_note)
+                            ON CONFLICT (qb_payment_id) DO UPDATE SET
+                                amount = EXCLUDED.amount,
+                                payment_date = EXCLUDED.payment_date,
+                                payment_method = EXCLUDED.payment_method,
+                                reference_number = EXCLUDED.reference_number,
+                                deposit_account = EXCLUDED.deposit_account,
+                                currency_code = EXCLUDED.currency_code,
+                                total_amount = EXCLUDED.total_amount,
+                                unapplied_amount = EXCLUDED.unapplied_amount,
+                                process_payment = EXCLUDED.process_payment,
+                                linked_transactions = EXCLUDED.linked_transactions,
+                                qb_metadata = EXCLUDED.qb_metadata,
+                                private_note = EXCLUDED.private_note,
+                                updated_at = CURRENT_TIMESTAMP
+                        """),
+                        payment_data
+                    )
+                    
+                    # Update invoice amount_paid and balance_due if payment is linked
+                    if invoice_id:
+                        await db.execute(
+                            text("""
+                                UPDATE invoices 
+                                SET 
+                                    amount_paid = COALESCE((
+                                        SELECT SUM(amount) 
+                                        FROM payments 
+                                        WHERE invoice_id = :invoice_id AND status = 'POSTED'
+                                    ), 0),
+                                    balance_due = total_amount - COALESCE((
+                                        SELECT SUM(amount) 
+                                        FROM payments 
+                                        WHERE invoice_id = :invoice_id AND status = 'POSTED'
+                                    ), 0),
+                                    updated_at = CURRENT_TIMESTAMP
+                                WHERE invoice_id = :invoice_id
+                            """),
+                            {"invoice_id": invoice_id}
+                        )
+                    
+                    promoted += 1
+                    await db.commit()  # Commit after each success
+                    logger.debug(f"[PROMOTE] Promoted payment {qb_payment_id}")
+                    
+                except Exception as e:
+                    logger.error(f"[PROMOTE] Failed to promote payment {qb_payment_id}: {e}")
+                    errors += 1
+                    await db.rollback()  # Rollback to reset transaction
+            
+            duration_ms = int((datetime.now(timezone.utc) - start_time).total_seconds() * 1000)
+            logger.info(f"[PROMOTE] Payment promotion complete: {promoted} promoted, {skipped} skipped, {errors} errors, {duration_ms}ms")
+            
+            return {
+                "promoted": promoted,
+                "skipped": skipped,
+                "errors": errors,
+                "duration_ms": duration_ms
+            }
+            
+        except Exception as e:
+            logger.error(f"[PROMOTE] Payment promotion failed: {e}", exc_info=True)
+            await db.rollback()
+            raise
 
 
 # Singleton instance

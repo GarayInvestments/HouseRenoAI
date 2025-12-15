@@ -644,6 +644,15 @@ class DBService:
                 "Reference Number": payment.reference_number or "",
                 "QB Payment ID": payment.qb_payment_id or "",
                 "Notes": payment.notes or "",
+                # QuickBooks metadata fields
+                "deposit_account": payment.deposit_account,
+                "currency_code": payment.currency_code,
+                "total_amount": float(payment.total_amount) if payment.total_amount is not None else None,
+                "unapplied_amount": float(payment.unapplied_amount) if payment.unapplied_amount is not None else None,
+                "process_payment": payment.process_payment,
+                "linked_transactions": payment.linked_transactions,
+                "qb_metadata": payment.qb_metadata,
+                "private_note": payment.private_note,
             }
             
             if payment.extra:
@@ -682,6 +691,15 @@ class DBService:
                 "Reference Number": payment.reference_number or "",
                 "QB Payment ID": payment.qb_payment_id or "",
                 "Notes": payment.notes or "",
+                # QuickBooks metadata fields
+                "deposit_account": payment.deposit_account,
+                "currency_code": payment.currency_code,
+                "total_amount": float(payment.total_amount) if payment.total_amount is not None else None,
+                "unapplied_amount": float(payment.unapplied_amount) if payment.unapplied_amount is not None else None,
+                "process_payment": payment.process_payment,
+                "linked_transactions": payment.linked_transactions,
+                "qb_metadata": payment.qb_metadata,
+                "private_note": payment.private_note,
             }
             
             if payment.extra:
@@ -1109,6 +1127,17 @@ class DBService:
                 "status": invoice.status,
                 "line_items": invoice.line_items,
                 "notes": invoice.notes,
+                # QuickBooks-specific fields
+                "email_status": invoice.email_status,
+                "print_status": invoice.print_status,
+                "bill_email": invoice.bill_email,
+                "bill_address": invoice.bill_address,
+                "ship_address": invoice.ship_address,
+                "currency_code": invoice.currency_code,
+                "payment_terms": invoice.payment_terms,
+                "qb_metadata": invoice.qb_metadata,
+                "private_note": invoice.private_note,
+                "customer_memo": invoice.customer_memo,
             }
     
     async def create_invoice(self, data: Dict[str, Any]) -> Dict[str, Any]:

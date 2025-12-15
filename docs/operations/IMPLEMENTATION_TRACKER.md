@@ -1,15 +1,110 @@
 # House Renovators AI - Implementation Tracker
 
-**Version**: 5.5 (Phase 19: Frontend ENUM Integration Complete)  
-**Last Updated**: December 14, 2025 11:58 PM EST  
-**Current Phase**: **Phase 19: Frontend ENUM Dropdowns - ✅ COMPLETE**  
-**Overall Progress**: Phases 0-Q Complete, Phases 18-19 Complete, Phase W 60% Complete
+**Version**: 5.7 (Phase 21: QuickBooks Payment Metadata Complete)  
+**Last Updated**: December 15, 2025 3:45 PM EST  
+**Current Phase**: **Phase 21: QuickBooks Payment Metadata - ✅ COMPLETE**  
+**Overall Progress**: Phases 0-Q Complete, Phases 18-21 Complete, Phase W 60% Complete
 
 > **Purpose**: Active execution tracker for current and upcoming work. Historical phases (0-E) archived in `docs/archive/IMPLEMENTATION_HISTORY.md` for audit/compliance. See `PROJECT_ROADMAP.md` for technical specs.
 
 ---
 
-## 🎉 LATEST MILESTONE: Phase 19 - Frontend ENUM Integration Complete
+## 🎉 LATEST MILESTONE: Phase 21 - QuickBooks Payment Metadata Complete
+
+**Completion Date**: December 15, 2025 3:45 PM EST  
+**Status**: ✅ **COMPLETE**
+
+**What Was Delivered**:
+- ✅ Migration 83243f5ed087: 8 QuickBooks payment columns + 2 indexes
+  - deposit_account VARCHAR(50), currency_code VARCHAR(3), total_amount NUMERIC(12,2), unapplied_amount NUMERIC(12,2)
+  - process_payment BOOLEAN, linked_transactions JSONB, qb_metadata JSONB, private_note TEXT
+  - Indexes on currency_code and deposit_account for query performance
+- ✅ Backend promotion logic: Extracts nested QB fields from payments cache
+  - Handles DepositToAccountRef.value, CurrencyRef.value, Line array with LinkedTxn
+  - Null safety for all nested JSON access (qb_data.get().get() pattern)
+  - json.dumps() for JSONB serialization of Line array and MetaData object
+- ✅ Transaction isolation: Commit per payment, rollback per error (prevents cascade)
+  - Result: 12/12 payments populated with QB metadata
+- ✅ db_service API serialization: QB fields in both get_payment methods
+  - get_payment_by_business_id (line 617)
+  - get_payment_by_payment_id (line 665)
+- ✅ Frontend QuickBooks Details section: 5 fields + private note + linked transactions
+  - Currency, Deposit Account, Total Amount, Unapplied Amount, Payment Type
+  - Private note displayed conditionally (if present)
+  - Linked transactions parsed from JSONB with error handling (try/catch)
+- ✅ Navigation integration: Arrows + swipe + keyboard (reused from invoices)
+  - useDetailsNavigation hook with payments array from paymentsStore
+  - NavigationArrows component in header
+  - Touch handlers for 50px swipe threshold
+
+**Bugs Fixed** (5):
+1. **JSX syntax error**: Duplicate header section after navigation integration
+   - Symptom: "Expected corresponding JSX closing tag for <div>"
+   - Fix: Removed duplicate back button and title (lines 189-205)
+2. **Falsy value bug**: unapplied_amount = 0.0 treated as None
+   - Symptom: "Unapplied Amount: Not synced" when value was $0.00
+   - Root cause: `if payment.unapplied_amount else None` treats 0.0 as falsy
+   - Fix: Changed to `if payment.unapplied_amount is not None else None` (both methods)
+3. **Label clarity**: "Process Payment: No" confusing
+   - Fix: Changed to "Payment Type: Manual/Received" (clearer business meaning)
+4. **Navigation not working**: payments from wrong store
+   - Root cause: Getting `payments` from appStore (doesn't exist), should be paymentsStore
+   - Fix: Changed to `const { fetchPayment, payments } = usePaymentsStore()`
+5. **Navigation ID key mismatch**: Used 'payment_id' instead of 'Payment ID'
+   - Symptom: Arrows visible (1 of 12) but clicks/swipes not working
+   - Root cause: API returns Title Case keys ('Payment ID'), not snake_case ('payment_id')
+   - Fix: Changed idField parameter to `'Payment ID'` in useDetailsNavigation
+
+**Files Changed** (5 total):
+- Backend (3): migration 83243f5ed087, Payment model (app/db/models.py), quickbooks_sync_service (extraction + SQL), db_service (both get_payment methods)
+- Frontend (2): PaymentDetails.jsx (QB section + navigation), stores updated (paymentsStore usage)
+
+**Technical Wins**:
+- Mirrored successful QB invoice integration pattern exactly
+- JSONB null handling prevents "Not synced" for valid 0.0 values
+- Label improvements increase business user clarity
+- Navigation debugging process established (store → key → hook order)
+- 100% payment metadata population (12/12 synced)
+
+---
+
+## 🎉 PREVIOUS MILESTONE: Phase 20 - QuickBooks Invoice Metadata Complete
+
+**Completion Date**: December 15, 2025 11:50 PM EST  
+**Status**: ✅ **COMPLETE**
+
+**What Was Delivered**:
+- ✅ Migration e3b3d8b8d28d: 10 QuickBooks invoice columns + 2 indexes
+  - email_status, print_status, bill_email, bill_address (JSONB), ship_address (JSONB)
+  - currency_code, payment_terms, qb_metadata (JSONB), private_note, customer_memo
+- ✅ Backend promotion logic: Extracts nested QB fields with null safety
+  - Handles BillEmail.Address, CurrencyRef.value, SalesTermRef.name, CustomerMemo.value
+- ✅ Transaction cascade bug fixed: Commit per invoice, rollback per error
+  - Result: 13/13 invoices promoted (was 1/13 before fix)
+- ✅ Frontend QuickBooks Details section: Always visible with "Not synced" for NULL
+- ✅ Line items parsing: Double-encoded JSON handling (string → parsed → array)
+- ✅ Field mapping fixed: unit_price || rate || Rate (QuickBooks vs app naming)
+- ✅ Flat-fee display: qty=0 converted to qty=1 for cleaner UI
+- ✅ Reusable navigation components:
+  - useDetailsNavigation hook (touch gestures, keyboard arrows, state management)
+  - NavigationArrows component (arrow buttons + counter)
+  - 50px swipe threshold, left/right detection
+- ✅ All 13/13 invoices synced with complete QB metadata
+
+**Files Changed** (11 total):
+- Backend (6): migration e3b3d8b8d28d, Invoice model, quickbooks_sync_service (extraction + transaction), db_service (API serialization)
+- Frontend (5): InvoiceDetails (QB section + parsing + navigation), useDetailsNavigation hook (NEW), NavigationArrows component (NEW)
+
+**Technical Wins**:
+- Fixed SQLAlchemy model sync (JSON → JSONB for JSONB columns)
+- Transaction isolation prevents cascade failures
+- Double-parse logic handles database string encoding
+- QB flat-fee convention (qty=0) handled gracefully
+- Navigation pattern ready for ClientDetails, ProjectDetails, PermitDetails
+
+---
+
+## 🎉 PREVIOUS MILESTONE: Phase 19 - Frontend ENUM Integration Complete
 
 **Completion Date**: December 14, 2025 11:58 PM EST  
 **Status**: ✅ **COMPLETE**
@@ -67,10 +162,11 @@
 | **Phase F: Frontend CRUD** | ✅ COMPLETE | 100% | All pages: Permits ✅, Inspections ✅, Invoices ✅, Payments ✅, Site Visits ✅ |
 | **Phase 18: Type ENUMs** | ✅ COMPLETE | 100% | **5 type ENUMs, 10 total ENUMs, migration complete (Dec 14, 11:45 PM EST)** |
 | **Phase 19: Frontend ENUM Integration** | ✅ COMPLETE | 100% | **All 5 detail pages updated with dropdowns (Dec 14, 11:58 PM EST)** |
+| **Phase 20: QB Invoice Metadata** | ✅ COMPLETE | 100% | **10 QB columns, navigation components, 13/13 synced (Dec 15, 11:50 PM EST)** |
 | **Phase Q: Qualifier Compliance** | ✅ COMPLETE | 100% | **ALL PHASES COMPLETE: Q.1 Schema ✅, Q.2 Models ✅, Q.3 API ✅, Q.4 Frontend ✅ (Dec 15, 12:45 PM EST)** |
 | **Phase W: QuickBooks Webhooks** | 🔄 IN PROGRESS | 60% | **Sync Rules ✅, Cache Tables ✅, Circuit Breaker Next (Dec 14, 8:30 PM EST)** |
 
-**Latest Milestone**: ✅ Phase 19 Complete - Frontend ENUM dropdowns across all detail pages (Dec 14, 11:58 PM EST)  
+**Latest Milestone**: ✅ Phase 20 Complete - QuickBooks invoice metadata with reusable navigation (Dec 15, 11:50 PM EST)  
 **Current Focus**: Phase W circuit breaker pattern for API resilience  
 **Blockers**: None  
 
@@ -87,6 +183,12 @@
 **Phase 19 Progress**: 4 hours (100% complete) ✅
 - Detail page dropdown integration (5 pages) - ✅ 3 hours (Dec 14, 11:50 PM EST)
 - Runtime fixes and production deployment - ✅ 1 hour (Dec 14, 11:58 PM EST)
+
+**Phase 20 Progress**: 8 hours (100% complete) ✅
+- Database migration (10 QB invoice columns + 2 indexes) - ✅ 1 hour (Dec 15, 8:00 PM EST)
+- Backend sync logic (QB field extraction + transaction fix) - ✅ 3 hours (Dec 15, 9:30 PM EST)
+- Frontend QB Details section + parsing fixes - ✅ 2 hours (Dec 15, 10:30 PM EST)
+- Reusable navigation components (hook + arrows + integration) - ✅ 2 hours (Dec 15, 11:50 PM EST)
 
 ---
 

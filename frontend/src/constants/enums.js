@@ -48,7 +48,7 @@ export const INVOICE_STATUS_OPTIONS = [
 
 export const PAYMENT_STATUS_OPTIONS = [
   { value: 'PENDING', label: 'Pending' },
-  { value: 'COMPLETED', label: 'Completed' },
+  { value: 'POSTED', label: 'Posted' },
   { value: 'FAILED', label: 'Failed' },
   { value: 'REFUNDED', label: 'Refunded' }
 ];

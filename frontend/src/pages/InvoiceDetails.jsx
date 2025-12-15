@@ -6,10 +6,12 @@ import useInvoicesStore from '../stores/invoicesStore';
 import LoadingScreen from '../components/LoadingScreen';
 import ErrorState from '../components/ErrorState';
 import { INVOICE_STATUS_OPTIONS, formatEnumLabel } from '../constants/enums';
+import useDetailsNavigation from '../hooks/useDetailsNavigation';
+import NavigationArrows from '../components/NavigationArrows';
 
 export default function InvoiceDetails() {
-  const { currentInvoiceId, navigateToInvoices } = useAppStore();
-  const { selectedInvoice, fetchInvoice } = useInvoicesStore();
+  const { currentInvoiceId, navigateToInvoices, navigateToInvoiceDetails } = useAppStore();
+  const { selectedInvoice, fetchInvoice, invoices } = useInvoicesStore();
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -32,14 +34,18 @@ export default function InvoiceDetails() {
     try {
       const invoiceData = await fetchInvoice(currentInvoiceId);
       
-      // Load related project and client
-      if (invoiceData.project_id) {
-        const projectData = await api.getProject(invoiceData.project_id);
+      // Load related project and client (check both snake_case and Title Case)
+      const projectId = invoiceData.project_id || invoiceData['Project ID'];
+      
+      if (projectId) {
+        const projectData = await api.getProject(projectId);
         setProject(projectData);
       }
       
-      if (invoiceData.client_id) {
-        const clientData = await api.getClient(invoiceData.client_id);
+      const clientId = invoiceData.client_id || invoiceData['Client ID'];
+      
+      if (clientId) {
+        const clientData = await api.getClient(clientId);
         setClient(clientData);
       }
       
@@ -50,6 +56,14 @@ export default function InvoiceDetails() {
       setLoading(false);
     }
   };
+
+  // Navigation hook for swipe and arrow navigation
+  const navigation = useDetailsNavigation(
+    invoices,
+    currentInvoiceId,
+    navigateToInvoiceDetails,
+    'invoice_id'
+  );
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Not set';
@@ -136,11 +150,24 @@ export default function InvoiceDetails() {
   const amountPaid = selectedInvoice.amount_paid || selectedInvoice['Amount Paid'] || 0;
   const balanceDue = selectedInvoice.balance_due || selectedInvoice['Balance Due'] || (totalAmount - amountPaid);
   const notes = selectedInvoice.notes || selectedInvoice['Notes'] || '';
-  const lineItems = selectedInvoice.line_items || selectedInvoice['Line Items'] || [];
+  
+  // Parse line_items - handle double-encoded JSON strings from database
+  let lineItems = selectedInvoice.line_items || selectedInvoice['Line Items'] || [];
+  if (typeof lineItems === 'string') {
+    try {
+      // First parse removes outer quotes and unescapes
+      const parsed = JSON.parse(lineItems);
+      // If still a string, parse again (double-encoded case)
+      lineItems = typeof parsed === 'string' ? JSON.parse(parsed) : parsed;
+    } catch (e) {
+      console.error('Failed to parse line_items:', e);
+      lineItems = [];
+    }
+  }
 
   // Extract project fields
-  const projectName = project?.project_name || project?.['Project Name'] || 'Unknown Project';
-  const projectAddress = project?.address || project?.['Address'] || '';
+  const projectName = project?.project_name || project?.['Project Name'] || project?.data?.project_name || project?.data?.['Project Name'] || 'Unknown Project';
+  const projectAddress = project?.address || project?.['Address'] || project?.data?.address || project?.data?.['Address'] || '';
 
   // Extract client fields
   const clientName = client?.full_name || client?.['Full Name'] || 'Unknown Client';
@@ -167,13 +194,16 @@ export default function InvoiceDetails() {
   const statusColor = getStatusColor(status);
 
   return (
-    <div style={{ 
-      padding: '24px',
-      maxWidth: '1200px',
-      margin: '0 auto',
-      minHeight: '100vh',
-      backgroundColor: '#F9FAFB'
-    }}>
+    <div 
+      style={{ 
+        padding: '24px',
+        maxWidth: '1200px',
+        margin: '0 auto',
+        minHeight: '100vh',
+        backgroundColor: '#F9FAFB'
+      }}
+      {...navigation.touchHandlers}
+    >
       {/* Header */}
       <div style={{
         display: 'flex',
@@ -256,7 +286,18 @@ export default function InvoiceDetails() {
           </span>
         </div>
         
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+          {/* Navigation Arrows */}
+          <NavigationArrows
+            currentIndex={navigation.currentIndex}
+            totalItems={navigation.totalItems}
+            hasPrevious={navigation.hasPrevious}
+            hasNext={navigation.hasNext}
+            onPrevious={navigation.goToPrevious}
+            onNext={navigation.goToNext}
+            itemLabel="invoice"
+          />
+          
           <button
             onClick={() => {/* TODO: Download PDF */}}
             style={{
@@ -489,6 +530,86 @@ export default function InvoiceDetails() {
           </div>
         </div>
 
+        {/* QuickBooks Info */}
+        <div style={{
+          backgroundColor: 'white',
+          padding: '24px',
+          borderRadius: '12px',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+          border: '1px solid #E5E7EB'
+        }}>
+          <h2 style={{
+            fontSize: '18px',
+            fontWeight: '600',
+            color: '#111827',
+            marginBottom: '16px'
+          }}>
+            QuickBooks Details
+          </h2>
+          
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '16px'
+          }}>
+            <div>
+              <span style={{ fontSize: '12px', color: '#6B7280', display: 'block', marginBottom: '4px' }}>
+                Email Status
+              </span>
+              <span style={{ fontSize: '14px', color: selectedInvoice.email_status ? '#111827' : '#9CA3AF', fontWeight: '500' }}>
+                {selectedInvoice.email_status ? formatEnumLabel(selectedInvoice.email_status) : 'Not synced'}
+              </span>
+            </div>
+            
+            <div>
+              <span style={{ fontSize: '12px', color: '#6B7280', display: 'block', marginBottom: '4px' }}>
+                Print Status
+              </span>
+              <span style={{ fontSize: '14px', color: selectedInvoice.print_status ? '#111827' : '#9CA3AF', fontWeight: '500' }}>
+                {selectedInvoice.print_status ? formatEnumLabel(selectedInvoice.print_status) : 'Not synced'}
+              </span>
+            </div>
+            
+            <div>
+              <span style={{ fontSize: '12px', color: '#6B7280', display: 'block', marginBottom: '4px' }}>
+                Billing Email
+              </span>
+              <span style={{ fontSize: '14px', color: selectedInvoice.bill_email ? '#111827' : '#9CA3AF', fontWeight: '500' }}>
+                {selectedInvoice.bill_email || 'Not synced'}
+              </span>
+            </div>
+            
+            <div>
+              <span style={{ fontSize: '12px', color: '#6B7280', display: 'block', marginBottom: '4px' }}>
+                Payment Terms
+              </span>
+              <span style={{ fontSize: '14px', color: selectedInvoice.payment_terms ? '#111827' : '#9CA3AF', fontWeight: '500' }}>
+                {selectedInvoice.payment_terms || 'Not synced'}
+              </span>
+            </div>
+            
+            <div>
+              <span style={{ fontSize: '12px', color: '#6B7280', display: 'block', marginBottom: '4px' }}>
+                Currency
+              </span>
+              <span style={{ fontSize: '14px', color: selectedInvoice.currency_code ? '#111827' : '#9CA3AF', fontWeight: '500' }}>
+                {selectedInvoice.currency_code || 'Not synced'}
+              </span>
+            </div>
+          </div>
+          
+          {selectedInvoice.customer_memo && (
+            <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #E5E7EB' }}>
+              <span style={{ fontSize: '12px', color: '#6B7280', display: 'block', marginBottom: '4px' }}>
+                Customer Memo
+              </span>
+              <p style={{ fontSize: '14px', color: '#111827', margin: 0 }}>
+                {selectedInvoice.customer_memo}
+              </p>
+            </div>
+          )}
+        </div>
+
         {/* Line Items */}
         <div style={{
           backgroundColor: 'white',
@@ -518,22 +639,29 @@ export default function InvoiceDetails() {
                   </tr>
                 </thead>
                 <tbody>
-                  {lineItems.map((item, index) => (
-                    <tr key={index} style={{ borderBottom: '1px solid #F3F4F6' }}>
-                      <td style={{ padding: '12px', fontSize: '14px', color: '#111827' }}>
-                        {item.description || item.Description || 'N/A'}
-                      </td>
-                      <td style={{ textAlign: 'right', padding: '12px', fontSize: '14px', color: '#6B7280' }}>
-                        {item.quantity || item.Quantity || 0}
-                      </td>
-                      <td style={{ textAlign: 'right', padding: '12px', fontSize: '14px', color: '#6B7280' }}>
-                        {formatCurrency(item.rate || item.Rate || 0)}
-                      </td>
-                      <td style={{ textAlign: 'right', padding: '12px', fontSize: '14px', fontWeight: '500', color: '#111827' }}>
-                        {formatCurrency(item.amount || item.Amount || 0)}
-                      </td>
-                    </tr>
-                  ))}
+                  {lineItems.map((item, index) => {
+                    // Handle flat-fee items (qty=0 means show as qty=1 for display)
+                    const qty = item.quantity !== undefined && item.quantity !== null ? item.quantity : (item.Quantity || 0);
+                    const displayQty = qty === 0 ? 1 : qty;
+                    const unitPrice = item.unit_price || item.rate || item.Rate || item['Unit Price'] || 0;
+                    
+                    return (
+                      <tr key={index} style={{ borderBottom: '1px solid #F3F4F6' }}>
+                        <td style={{ padding: '12px', fontSize: '14px', color: '#111827' }}>
+                          {item.description || item.Description || item.item_name || 'N/A'}
+                        </td>
+                        <td style={{ textAlign: 'right', padding: '12px', fontSize: '14px', color: '#6B7280' }}>
+                          {displayQty}
+                        </td>
+                        <td style={{ textAlign: 'right', padding: '12px', fontSize: '14px', color: '#6B7280' }}>
+                          {formatCurrency(unitPrice)}
+                        </td>
+                        <td style={{ textAlign: 'right', padding: '12px', fontSize: '14px', fontWeight: '500', color: '#111827' }}>
+                          {formatCurrency(item.amount || item.Amount || 0)}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

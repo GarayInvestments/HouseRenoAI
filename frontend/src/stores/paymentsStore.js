@@ -178,8 +178,8 @@ const usePaymentsStore = create((set, get) => ({
     }
     
     return payments.filter(payment => {
-      const status = (payment.status || payment['Payment Status'] || '').toLowerCase();
-      return status === filter;
+      const status = (payment.Status || payment.status || payment['Payment Status'] || '').toUpperCase();
+      return status === filter.toUpperCase();
     });
   },
 
@@ -190,23 +190,25 @@ const usePaymentsStore = create((set, get) => ({
     const stats = {
       total: payments.length,
       pending: 0,
-      cleared: 0,
+      posted: 0,
       failed: 0,
+      refunded: 0,
       totalAmount: 0,
-      clearedAmount: 0
+      postedAmount: 0
     };
     
     payments.forEach(payment => {
-      const status = (payment.status || payment['Payment Status'] || '').toLowerCase();
-      const amount = parseFloat(payment.amount || payment['Amount'] || 0);
+      const status = (payment.Status || payment.status || payment['Payment Status'] || '').toLowerCase();
+      const amount = parseFloat(payment.Amount || payment.amount || 0);
       
       stats.totalAmount += amount;
       
       if (status === 'pending') stats.pending++;
-      else if (status === 'cleared') {
-        stats.cleared++;
-        stats.clearedAmount += amount;
+      else if (status === 'posted') {
+        stats.posted++;
+        stats.postedAmount += amount;
       } else if (status === 'failed') stats.failed++;
+      else if (status === 'refunded') stats.refunded++;
     });
     
     return stats;

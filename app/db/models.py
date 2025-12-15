@@ -432,6 +432,18 @@ class Invoice(Base):
     sync_error: Mapped[str | None] = mapped_column(Text)
     last_sync_attempt: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     
+    # QuickBooks-specific fields (added in migration e3b3d8b8d28d)
+    email_status: Mapped[str | None] = mapped_column(String(50), index=True)  # NotSet, NeedToSend, EmailSent
+    print_status: Mapped[str | None] = mapped_column(String(50), index=True)  # NotSet, NeedToPrint, PrintComplete
+    bill_email: Mapped[str | None] = mapped_column(String(255))  # Customer billing email
+    bill_address: Mapped[Dict[str, Any] | None] = mapped_column(JSONB)  # Billing address
+    ship_address: Mapped[Dict[str, Any] | None] = mapped_column(JSONB)  # Shipping address
+    currency_code: Mapped[str | None] = mapped_column(String(3))  # USD, etc.
+    payment_terms: Mapped[str | None] = mapped_column(String(50))  # Net 10, Net 30, etc.
+    qb_metadata: Mapped[Dict[str, Any] | None] = mapped_column(JSONB)  # QB CreateTime, LastUpdatedTime
+    private_note: Mapped[str | None] = mapped_column(Text)  # Internal notes from QB
+    customer_memo: Mapped[str | None] = mapped_column(Text)  # Message to customer
+    
     # Notes
     notes: Mapped[str | None] = mapped_column(Text)
     
@@ -488,6 +500,16 @@ class Payment(Base):
     sync_status: Mapped[str | None] = mapped_column(String(50), index=True)  # pending, synced, failed, conflict
     sync_error: Mapped[str | None] = mapped_column(Text)
     last_sync_attempt: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    
+    # QuickBooks metadata fields
+    deposit_account: Mapped[str | None] = mapped_column(String(50), index=True)
+    currency_code: Mapped[str | None] = mapped_column(String(3), index=True)
+    total_amount: Mapped[float | None] = mapped_column(Numeric(12, 2))
+    unapplied_amount: Mapped[float | None] = mapped_column(Numeric(12, 2))
+    process_payment: Mapped[bool | None] = mapped_column(Boolean)
+    linked_transactions: Mapped[Dict[str, Any] | None] = mapped_column(JSONB)
+    qb_metadata: Mapped[Dict[str, Any] | None] = mapped_column(JSONB)
+    private_note: Mapped[str | None] = mapped_column(Text)
     
     # Notes
     notes: Mapped[str | None] = mapped_column(Text)

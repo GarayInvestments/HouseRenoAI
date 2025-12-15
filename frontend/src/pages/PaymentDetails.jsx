@@ -1,4 +1,4 @@
-import { DollarSign, ArrowLeft, Calendar, CreditCard, User, FileText, Building2, Mail, Phone } from 'lucide-react';
+import { DollarSign, ArrowLeft, Calendar, CreditCard, User, FileText, Building2, Mail, Phone, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import api from '../lib/api';
 import { useAppStore } from '../stores/appStore';
@@ -6,10 +6,12 @@ import usePaymentsStore from '../stores/paymentsStore';
 import LoadingScreen from '../components/LoadingScreen';
 import ErrorState from '../components/ErrorState';
 import { formatEnumLabel } from '../constants/enums';
+import useDetailsNavigation from '../hooks/useDetailsNavigation';
+import NavigationArrows from '../components/NavigationArrows';
 
 export default function PaymentDetails() {
-  const { currentPaymentId, navigateToPayments } = useAppStore();
-  const { fetchPayment } = usePaymentsStore();
+  const { currentPaymentId, navigateToPayments, navigateToPaymentDetails } = useAppStore();
+  const { fetchPayment, payments } = usePaymentsStore();
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -87,6 +89,14 @@ export default function PaymentDetails() {
     return statusMap[status?.toLowerCase()] || { bg: '#F3F4F6', text: '#374151', border: '#E5E7EB' };
   };
 
+  // Navigation hook for swipe and arrow navigation
+  const navigation = useDetailsNavigation(
+    payments,
+    currentPaymentId,
+    navigateToPaymentDetails,
+    'Payment ID'
+  );
+
   const getPaymentMethodIcon = (method) => {
     const iconMap = {
       'Credit Card': <CreditCard size={16} />,
@@ -125,42 +135,54 @@ export default function PaymentDetails() {
   const statusColor = getStatusColor(payment.status || payment['Status'] || payment['Payment Status']);
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
+    <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }} {...navigation.touchHandlers}>
       {/* Header */}
       <div style={{ 
         display: 'flex', 
         alignItems: 'center', 
         gap: '16px', 
-        marginBottom: '24px' 
+        marginBottom: '24px',
+        justifyContent: 'space-between'
       }}>
-        <button
-          onClick={navigateToPayments}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '8px 16px',
-            backgroundColor: 'white',
-            border: '1px solid #E5E7EB',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontSize: '14px',
-            fontWeight: '500',
-            color: '#374151'
-          }}
-        >
-          <ArrowLeft size={16} />
-          Back to Payments
-        </button>
-        
-        <h1 style={{ 
-          fontSize: '28px', 
-          fontWeight: '700', 
-          color: '#111827',
-          margin: 0 
-        }}>
-          Payment Details
-        </h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <button
+            onClick={navigateToPayments}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '8px 16px',
+              backgroundColor: 'white',
+              border: '1px solid #E5E7EB',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500',
+              color: '#374151'
+            }}
+          >
+            <ArrowLeft size={16} />
+            Back to Payments
+          </button>
+          
+          <h1 style={{ 
+            fontSize: '28px', 
+            fontWeight: '700', 
+            color: '#111827',
+            margin: 0 
+          }}>
+            Payment Details
+          </h1>
+        </div>
+
+        <NavigationArrows
+          currentIndex={navigation.currentIndex}
+          totalItems={navigation.totalItems}
+          hasPrevious={navigation.hasPrevious}
+          hasNext={navigation.hasNext}
+          onPrevious={navigation.goToPrevious}
+          onNext={navigation.goToNext}
+        />
       </div>
 
       {/* Payment Info Card */}
@@ -386,6 +408,121 @@ export default function PaymentDetails() {
           </p>
         </div>
       )}
+
+      {/* QuickBooks Details */}
+      <div style={{
+        backgroundColor: 'white',
+        padding: '24px',
+        borderRadius: '12px',
+        border: '1px solid #E5E7EB',
+        marginTop: '24px'
+      }}>
+        <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#111827', marginBottom: '16px' }}>
+          QuickBooks Details
+        </h2>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+          gap: '16px'
+        }}>
+          <div>
+            <div style={{ fontSize: '13px', color: '#6B7280', marginBottom: '4px' }}>
+              Currency
+            </div>
+            <div style={{ fontSize: '15px', color: '#111827' }}>
+              {payment.currency_code || 'Not synced'}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: '13px', color: '#6B7280', marginBottom: '4px' }}>
+              Deposit Account
+            </div>
+            <div style={{ fontSize: '15px', color: '#111827' }}>
+              {payment.deposit_account || 'Not synced'}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: '13px', color: '#6B7280', marginBottom: '4px' }}>
+              Total Amount
+            </div>
+            <div style={{ fontSize: '15px', color: '#111827' }}>
+              {payment.total_amount ? formatCurrency(payment.total_amount) : 'Not synced'}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: '13px', color: '#6B7280', marginBottom: '4px' }}>
+              Unapplied Amount
+            </div>
+            <div style={{ fontSize: '15px', color: '#111827' }}>
+              {payment.unapplied_amount !== null && payment.unapplied_amount !== undefined 
+                ? formatCurrency(payment.unapplied_amount) 
+                : 'Not synced'}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: '13px', color: '#6B7280', marginBottom: '4px' }}>
+              Payment Type
+            </div>
+            <div style={{ fontSize: '15px', color: '#111827' }}>
+              {payment.process_payment !== null && payment.process_payment !== undefined
+                ? (payment.process_payment ? 'Electronic Processing' : 'Manual/Received')
+                : 'Not synced'}
+            </div>
+          </div>
+        </div>
+
+        {/* Private Note */}
+        {payment.private_note && (
+          <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #E5E7EB' }}>
+            <div style={{ fontSize: '13px', color: '#6B7280', marginBottom: '4px' }}>
+              Private Note
+            </div>
+            <div style={{ fontSize: '15px', color: '#111827' }}>
+              {payment.private_note}
+            </div>
+          </div>
+        )}
+
+        {/* Linked Transactions */}
+        {payment.linked_transactions && (() => {
+          try {
+            const transactions = typeof payment.linked_transactions === 'string' 
+              ? JSON.parse(payment.linked_transactions) 
+              : payment.linked_transactions;
+            
+            if (Array.isArray(transactions) && transactions.length > 0) {
+              return (
+                <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #E5E7EB' }}>
+                  <div style={{ fontSize: '13px', color: '#6B7280', marginBottom: '8px', fontWeight: '600' }}>
+                    Linked Transactions
+                  </div>
+                  {transactions.map((txn, idx) => {
+                    const linkedTxns = txn.LinkedTxn || [];
+                    return linkedTxns.map((linked, linkIdx) => (
+                      <div key={`${idx}-${linkIdx}`} style={{ 
+                        fontSize: '14px', 
+                        color: '#374151',
+                        padding: '8px 12px',
+                        backgroundColor: '#F9FAFB',
+                        borderRadius: '6px',
+                        marginBottom: '8px'
+                      }}>
+                        <span style={{ fontWeight: '600' }}>{linked.TxnType}</span>: {linked.TxnId}
+                        {txn.Amount && <span style={{ marginLeft: '12px', color: '#6B7280' }}>
+                          ({formatCurrency(txn.Amount)})
+                        </span>}
+                      </div>
+                    ));
+                  })}
+                </div>
+              );
+            }
+          } catch (e) {
+            console.error('Error parsing linked_transactions:', e);
+          }
+          return null;
+        })()}
+      </div>
     </div>
   );
 }

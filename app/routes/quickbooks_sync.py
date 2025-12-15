@@ -134,6 +134,72 @@ async def sync_all(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/invoices/promote")
+async def promote_invoices(
+    qb_invoice_ids: Optional[List[str]] = Query(None, description="Specific QB invoice IDs to promote (if empty, promotes all cached)"),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Manually promote invoices from cache to main database table.
+    
+    Use this endpoint for:
+    - Debugging promotion logic
+    - Selective promotion of specific invoices
+    - Re-promoting invoices after fixing data issues
+    
+    If no qb_invoice_ids provided, promotes ALL cached invoices.
+    """
+    try:
+        logger.info(f"[API] Manual invoice promotion triggered by {current_user.email} (selective={bool(qb_invoice_ids)})")
+        
+        result = await qb_sync_service.promote_invoices_to_database(db, qb_invoice_ids=qb_invoice_ids)
+        
+        return {
+            "success": True,
+            "entity_type": "invoices",
+            **result
+        }
+        
+    except Exception as e:
+        logger.error(f"Invoice promotion failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/payments/promote")
+async def promote_payments(
+    qb_payment_ids: Optional[List[str]] = Query(None, description="Specific QB payment IDs to promote (if empty, promotes all cached)"),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Manually promote payments from cache to main database table.
+    
+    Also updates related invoice.amount_paid and balance_due automatically.
+    
+    Use this endpoint for:
+    - Debugging promotion logic
+    - Selective promotion of specific payments
+    - Re-promoting payments after fixing data issues
+    
+    If no qb_payment_ids provided, promotes ALL cached payments.
+    """
+    try:
+        logger.info(f"[API] Manual payment promotion triggered by {current_user.email} (selective={bool(qb_payment_ids)})")
+        
+        result = await qb_sync_service.promote_payments_to_database(db, qb_payment_ids=qb_payment_ids)
+        
+        return {
+            "success": True,
+            "entity_type": "payments",
+            **result
+        }
+        
+    except Exception as e:
+        logger.error(f"Payment promotion failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/status")
 async def get_sync_status(
     current_user: User = Depends(get_current_user),
