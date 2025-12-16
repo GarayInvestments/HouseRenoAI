@@ -261,39 +261,21 @@ export default function Clients() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-11 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all"
+            className="w-full pl-11 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all"
           />
         </div>
       </div>
 
       {/* Content */}
-      <div style={{
-        flex: 1,
-        overflowY: 'auto',
-        padding: '32px'
-      }}>
+      <div className="flex-1 overflow-y-auto p-8">
         {filteredClients.length === 0 ? (
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: '400px',
-            gap: '16px'
-          }}>
-            <User size={64} style={{ color: '#CBD5E1' }} />
-            <p style={{ color: '#64748B', fontSize: '16px' }}>
-              {searchQuery ? 'No clients match your search.' : 'No clients found.'}
-            </p>
-          </div>
+          <EmptyState
+            icon={User}
+            title={searchQuery ? 'No clients match your search' : 'No clients found'}
+            description={searchQuery ? 'Try adjusting your search terms' : 'Create your first client to get started'}
+          />
         ) : (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-            gap: '24px',
-            maxWidth: '1400px',
-            margin: '0 auto',
-            paddingBottom: '80px'
-          }}>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-6 max-w-[1400px] mx-auto pb-20">
             {filteredClients.map((client, index) => {
               const clientId = client['Client ID'] || client['ID'] || index;
               const clientName = client['Full Name'] || client['Client Name'] || 'Unnamed Client';
@@ -306,231 +288,107 @@ export default function Clients() {
               const statusCounts = getProjectStatusCounts(clientId);
 
               return (
-                <div
+                <Card
                   key={clientId}
                   onClick={() => navigateToClient(clientId)}
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: '12px',
-                    padding: '24px',
-                    border: '1px solid #E2E8F0',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)'
-                  }}
-                  // CSS-only hover - no state updates, prevents re-renders
-                  onMouseOver={(e) => {
-                    e.currentTarget.style.boxShadow = '0 10px 20px -5px rgba(0, 0, 0, 0.1)';
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                  }}
-                  onMouseOut={(e) => {
-                    e.currentTarget.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.05)';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                  }}
+                  className="cursor-pointer transition-all hover:shadow-lg hover:-translate-y-0.5"
                 >
-                  {/* Client Header */}
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    justifyContent: 'space-between',
-                    marginBottom: '16px'
-                  }}>
-                    <div style={{
-                      width: '48px',
-                      height: '48px',
-                      borderRadius: '10px',
-                      background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                      boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.3)'
-                    }}>
-                      <User size={24} style={{ color: '#FFFFFF' }} />
-                    </div>
-                    
-                    {/* Edit/Delete Buttons */}
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <button
-                        onClick={(e) => handleOpenEdit(client, e)}
-                        style={{
-                          padding: '8px',
-                          backgroundColor: '#F1F5F9',
-                          border: 'none',
-                          borderRadius: '6px',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          transition: 'all 0.2s'
-                        }}
-                        // CSS-only hover
-                        onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#E2E8F0'; }}
-                        onMouseOut={(e) => { e.currentTarget.style.backgroundColor = '#F1F5F9'; }}
-                      >
-                        <Edit2 size={16} style={{ color: '#475569' }} />
-                      </button>
-                      <button
-                        onClick={(e) => handleOpenDelete(client, e)}
-                        style={{
-                          padding: '8px',
-                          backgroundColor: '#FEE2E2',
-                          border: 'none',
-                          borderRadius: '6px',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          transition: 'all 0.2s'
-                        }}
-                        // CSS-only hover
-                        onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#FECACA'; }}
-                        onMouseOut={(e) => { e.currentTarget.style.backgroundColor = '#FEE2E2'; }}
-                      >
-                        <Trash2 size={16} style={{ color: '#DC2626' }} />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Client Name */}
-                  <h3 style={{
-                    fontSize: '17px',
-                    fontWeight: '600',
-                    color: '#1E293B',
-                    marginBottom: '4px',
-                    lineHeight: '1.4'
-                  }}>{clientName}</h3>
-                  <p style={{
-                    fontSize: '12px',
-                    color: '#94A3B8',
-                    marginBottom: '16px'
-                  }}>ID: {clientId}</p>
-
-                  {/* Contact Info */}
-                  <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '8px',
-                    marginBottom: '16px'
-                  }}>
-                    {email && (
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        gap: '8px'
-                      }}>
-                        <Mail size={16} style={{ color: '#94A3B8', flexShrink: 0, marginTop: '2px' }} />
-                        <span style={{
-                          fontSize: '13px',
-                          color: '#475569',
-                          wordBreak: 'break-all'
-                        }}>{email}</span>
+                  <CardContent className="p-6">
+                    {/* Client Header */}
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="w-12 h-12 rounded-lg bg-linear-to-br from-blue-600 to-blue-700 flex items-center justify-center shrink-0 shadow-md shadow-blue-600/30">
+                        <User size={24} className="text-white" />
                       </div>
-                    )}
-                    {phone && (
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px'
-                      }}>
-                        <Phone size={16} style={{ color: '#94A3B8', flexShrink: 0 }} />
-                        <span style={{
-                          fontSize: '13px',
-                          color: '#475569'
-                        }}>{phone}</span>
+                      
+                      {/* Edit/Delete Buttons */}
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => handleOpenEdit(client, e)}
+                          className="p-2"
+                        >
+                          <Edit2 size={16} />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => handleOpenDelete(client, e)}
+                          className="p-2 hover:bg-red-50 hover:text-red-600"
+                        >
+                          <Trash2 size={16} />
+                        </Button>
                       </div>
-                    )}
-                    {(address || city || state) && (
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        gap: '8px'
-                      }}>
-                        <MapPin size={16} style={{ color: '#94A3B8', flexShrink: 0, marginTop: '2px' }} />
-                        <div style={{ fontSize: '13px', color: '#475569' }}>
-                          {address && <div>{address}</div>}
-                          {(city || state) && (
-                            <div style={{ fontSize: '12px', color: '#94A3B8' }}>
-                              {city}{city && state && ', '}{state}
-                            </div>
+                    </div>
+
+                    {/* Client Name */}
+                    <h3 className="text-[17px] font-semibold text-gray-900 mb-1 leading-snug">
+                      {clientName}
+                    </h3>
+                    <p className="text-xs text-gray-500 mb-4">ID: {clientId}</p>
+
+                    {/* Contact Info */}
+                    <div className="flex flex-col gap-2 mb-4">
+                      {email && (
+                        <div className="flex items-start gap-2">
+                          <Mail size={16} className="text-gray-500 shrink-0 mt-0.5" />
+                          <span className="text-[13px] text-gray-700 break-all">{email}</span>
+                        </div>
+                      )}
+                      {phone && (
+                        <div className="flex items-center gap-2">
+                          <Phone size={16} className="text-gray-500 shrink-0" />
+                          <span className="text-[13px] text-gray-700">{phone}</span>
+                        </div>
+                      )}
+                      {(address || city || state) && (
+                        <div className="flex items-start gap-2">
+                          <MapPin size={16} className="text-gray-500 shrink-0 mt-0.5" />
+                          <div className="text-[13px] text-gray-700">
+                            {address && <div>{address}</div>}
+                            {(city || state) && (
+                              <div className="text-xs text-gray-500">
+                                {city}{city && state && ', '}{state}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Projects Status Breakdown */}
+                    <div className="pt-4 border-t border-gray-100">
+                      {projectCount === 0 ? (
+                        <span className="text-[13px] font-medium text-gray-500">
+                          No Projects
+                        </span>
+                      ) : (
+                        <div className="flex flex-wrap gap-2 items-center">
+                          {statusCounts.active > 0 && (
+                            <Badge variant="info" className="text-xs">
+                              {statusCounts.active} Active
+                            </Badge>
+                          )}
+                          {statusCounts.completed > 0 && (
+                            <Badge variant="success" className="text-xs">
+                              {statusCounts.completed} Completed
+                            </Badge>
+                          )}
+                          {statusCounts.planning > 0 && (
+                            <Badge variant="warning" className="text-xs">
+                              {statusCounts.planning} Planning
+                            </Badge>
+                          )}
+                          {statusCounts.other > 0 && (
+                            <Badge variant="default" className="text-xs">
+                              {statusCounts.other} Other
+                            </Badge>
                           )}
                         </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Projects Status Breakdown */}
-                  <div style={{
-                    paddingTop: '16px',
-                    borderTop: '1px solid #F1F5F9'
-                  }}>
-                    {projectCount === 0 ? (
-                      <span style={{
-                        fontSize: '13px',
-                        fontWeight: '500',
-                        color: '#94A3B8'
-                      }}>
-                        No Projects
-                      </span>
-                    ) : (
-                      <div style={{
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        gap: '8px',
-                        alignItems: 'center'
-                      }}>
-                        {statusCounts.active > 0 && (
-                          <span style={{
-                            fontSize: '12px',
-                            fontWeight: '500',
-                            color: '#2563EB',
-                            backgroundColor: '#DBEAFE',
-                            padding: '4px 10px',
-                            borderRadius: '6px'
-                          }}>
-                            {statusCounts.active} Active
-                          </span>
-                        )}
-                        {statusCounts.completed > 0 && (
-                          <span style={{
-                            fontSize: '12px',
-                            fontWeight: '500',
-                            color: '#059669',
-                            backgroundColor: '#ECFDF5',
-                            padding: '4px 10px',
-                            borderRadius: '6px'
-                          }}>
-                            {statusCounts.completed} Completed
-                          </span>
-                        )}
-                        {statusCounts.planning > 0 && (
-                          <span style={{
-                            fontSize: '12px',
-                            fontWeight: '500',
-                            color: '#D97706',
-                            backgroundColor: '#FEF3C7',
-                            padding: '4px 10px',
-                            borderRadius: '6px'
-                          }}>
-                            {statusCounts.planning} Planning
-                          </span>
-                        )}
-                        {statusCounts.other > 0 && (
-                          <span style={{
-                            fontSize: '12px',
-                            fontWeight: '500',
-                            color: '#6B7280',
-                            backgroundColor: '#F3F4F6',
-                            padding: '4px 10px',
-                            borderRadius: '6px'
-                          }}>
-                            {statusCounts.other} Other
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
               );
             })}
           </div>
