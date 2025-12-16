@@ -5,9 +5,9 @@ import useAppStore from '../stores/appStore';
 import Modal from '../components/Modal';
 import FormField from '../components/FormField';
 import ConfirmDialog from '../components/ConfirmDialog';
-import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
-import { Card, CardContent } from '@/components/ui/Card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import LoadingState from '@/components/app/LoadingState';
 import EmptyState from '@/components/app/EmptyState';
 
