@@ -478,7 +478,8 @@ export default function ProjectDetails() {
               </div>
             </div>
           </div>
-        </div>
+        </CardContent>
+      </Card>
 
         {/* Financial Summary - Invoices & Payments */}
         {(invoices.length > 0 || payments.length > 0) && (
