@@ -33,7 +33,6 @@ export default function Invoices() {
   } = useInvoicesStore();
   
   const [searchTerm, setSearchTerm] = useState('');
-  const [hoveredCard, setHoveredCard] = useState(null);
   const [projects, setProjects] = useState([]);
   const [clients, setClients] = useState([]);
 
@@ -145,42 +144,18 @@ export default function Invoices() {
 
   const stats = useMemo(() => getInvoiceStats(), [invoices]);
 
-  const getStatusColor = (status) => {
-    const lowerStatus = status?.toLowerCase();
-    if (lowerStatus === 'paid') {
-      return { bg: '#ECFDF5', text: '#059669', border: '#A7F3D0' };
-    }
-    if (lowerStatus === 'sent') {
-      return { bg: '#DBEAFE', text: '#2563EB', border: '#93C5FD' };
-    }
-    if (lowerStatus === 'draft') {
-      return { bg: '#F3F4F6', text: '#6B7280', border: '#D1D5DB' };
-    }
-    if (lowerStatus === 'overdue') {
-      return { bg: '#FEE2E2', text: '#DC2626', border: '#FECACA' };
-    }
-    if (lowerStatus === 'void' || lowerStatus === 'cancelled') {
-      return { bg: '#FEF3C7', text: '#D97706', border: '#FCD34D' };
-    }
-    return { bg: '#F3F4F6', text: '#6B7280', border: '#D1D5DB' };
-  };
-
-  const getStatusIcon = (status) => {
-    const lowerStatus = status?.toLowerCase();
-    if (lowerStatus === 'paid') return <CheckCircle size={16} />;
-    if (lowerStatus === 'sent') return <Clock size={16} />;
-    if (lowerStatus === 'draft') return <FileText size={16} />;
-    if (lowerStatus === 'overdue') return <AlertCircle size={16} />;
-    if (lowerStatus === 'void' || lowerStatus === 'cancelled') return <XCircle size={16} />;
-    return <FileText size={16} />;
-  };
-
   if (loading && invoices.length === 0) {
-    return <LoadingScreen message="Loading invoices..." />;
+    return <LoadingState message="Loading invoices..." />;
   }
 
   if (error && invoices.length === 0) {
-    return <ErrorState message={error} onRetry={fetchInvoices} />;
+    return (
+      <EmptyState
+        title="Failed to load invoices"
+        description={error}
+        action={<Button onClick={fetchInvoices}>Retry</Button>}
+      />
+    );
   }
 
   return (

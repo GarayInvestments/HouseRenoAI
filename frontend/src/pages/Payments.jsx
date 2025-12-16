@@ -34,7 +34,6 @@ export default function Payments() {
   } = usePaymentsStore();
   
   const [searchTerm, setSearchTerm] = useState('');
-  const [hoveredCard, setHoveredCard] = useState(null);
   const [clients, setClients] = useState([]);
   const [invoices, setInvoices] = useState([]);
 
@@ -147,32 +146,6 @@ export default function Payments() {
 
   const stats = useMemo(() => getPaymentStats(), [payments]);
 
-  const getStatusColor = (status) => {
-    const upperStatus = status?.toUpperCase();
-    if (upperStatus === 'POSTED') {
-      return { bg: '#ECFDF5', text: '#059669', border: '#A7F3D0' };
-    }
-    if (upperStatus === 'PENDING') {
-      return { bg: '#FEF3C7', text: '#D97706', border: '#FCD34D' };
-    }
-    if (upperStatus === 'FAILED') {
-      return { bg: '#FEE2E2', text: '#DC2626', border: '#FECACA' };
-    }
-    if (upperStatus === 'REFUNDED') {
-      return { bg: '#F3E8FF', text: '#9333EA', border: '#E9D5FF' };
-    }
-    return { bg: '#DBEAFE', text: '#2563EB', border: '#93C5FD' };
-  };
-
-  const getStatusIcon = (status) => {
-    const upperStatus = status?.toUpperCase();
-    if (upperStatus === 'POSTED') return <CheckCircle size={16} />;
-    if (upperStatus === 'PENDING') return <Clock size={16} />;
-    if (upperStatus === 'FAILED') return <XCircle size={16} />;
-    if (upperStatus === 'REFUNDED') return <RefreshCw size={16} />;
-    return <AlertCircle size={16} />;
-  };
-
   const getPaymentMethodIcon = (method) => {
     const lowerMethod = method?.toLowerCase() || '';
     if (lowerMethod.includes('check')) return '📄';
@@ -183,11 +156,17 @@ export default function Payments() {
   };
 
   if (loading && payments.length === 0) {
-    return <LoadingScreen message="Loading payments..." />;
+    return <LoadingState message="Loading payments..." />;
   }
 
   if (error && payments.length === 0) {
-    return <ErrorState message={error} onRetry={fetchPayments} />;
+    return (
+      <EmptyState
+        title="Failed to load payments"
+        description={error}
+        action={<Button onClick={fetchPayments}>Retry</Button>}
+      />
+    );
   }
 
   return (
@@ -461,26 +440,12 @@ export default function Payments() {
             const status = payment.status || payment['Status'] || payment['Payment Status'] || 'pending';
             const invoiceId = payment.invoice_id || payment['Invoice ID'];
             const clientId = payment.client_id || payment['Client ID'];
-            
-            const statusColor = getStatusColor(status);
-            const isHovered = hoveredCard === businessId;
 
             return (
               <div
                 key={`payment-${paymentId || index}`}
                 onClick={() => navigateToPaymentDetails(paymentId)}
-                onMouseEnter={() => setHoveredCard(businessId)}
-                onMouseLeave={() => setHoveredCard(null)}
-                style={{
-                  backgroundColor: 'white',
-                  padding: '20px',
-                  borderRadius: '12px',
-                  border: '1px solid #E5E7EB',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  transform: isHovered ? 'translateY(-2px)' : 'none',
-                  boxShadow: isHovered ? '0 4px 12px rgba(0,0,0,0.1)' : '0 1px 3px rgba(0,0,0,0.05)'
-                }}
+                className="bg-white p-5 rounded-xl border border-gray-200 cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-lg"
               >
                 <div style={{
                   display: 'grid',
@@ -574,21 +539,7 @@ export default function Payments() {
 
                   {/* Status */}
                   <div style={{ textAlign: 'right' }}>
-                    <span style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      padding: '6px 12px',
-                      fontSize: '13px',
-                      fontWeight: '600',
-                      backgroundColor: statusColor.bg,
-                      color: statusColor.text,
-                      border: `1px solid ${statusColor.border}`,
-                      borderRadius: '6px'
-                    }}>
-                      {getStatusIcon(status)}
-                      {formatEnumLabel(status)}
-                    </span>
+                    <StatusBadge type="payment" status={status} />
                   </div>
                 </div>
               </div>
