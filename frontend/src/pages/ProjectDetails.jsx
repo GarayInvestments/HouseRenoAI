@@ -16,7 +16,10 @@ import api from '../lib/api';
 import { useAppStore } from '../stores/appStore';
 import LoadingScreen from '../components/LoadingScreen';
 import ErrorState from '../components/ErrorState';
-import { PROJECT_STATUS_OPTIONS, PROJECT_TYPE_OPTIONS, formatEnumLabel } from '../constants/enums';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import StatusBadge from '@/components/app/StatusBadge';
 
 export default function ProjectDetails() {
   const { currentProjectId, navigateToProjects } = useAppStore();
@@ -231,198 +234,85 @@ export default function ProjectDetails() {
   const statusStyle = getStatusColor(project.Status);
 
   return (
-    <div style={{
-      backgroundColor: '#F8FAFC',
-      minHeight: '100vh',
-      padding: '32px'
-    }}>
-      <div style={{
-        maxWidth: '1200px',
-        margin: '0 auto'
-      }}>
+    <div className="bg-gray-50 min-h-screen p-8">
+      <div className="max-w-6xl mx-auto">
         {/* Back Button & Edit Controls */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-          <button
+        <div className="flex justify-between items-center mb-6">
+          <Button
+            variant="outline"
             onClick={navigateToProjects}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '8px 16px',
-              backgroundColor: '#FFFFFF',
-              border: '1px solid #E2E8F0',
-              borderRadius: '8px',
-              fontSize: '14px',
-              color: '#64748B',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#F8FAFC';
-              e.currentTarget.style.color = '#2563EB';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#FFFFFF';
-              e.currentTarget.style.color = '#64748B';
-            }}
           >
             <ArrowLeft size={16} />
             Back to Projects
-          </button>
+          </Button>
 
           {!isEditing ? (
-            <button
+            <Button
               onClick={() => {
                 setIsEditing(true);
                 setEditedProject(project);
               }}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: '#2563EB',
-                color: '#FFFFFF',
-                border: 'none',
-                borderRadius: '8px',
-                fontSize: '14px',
-                fontWeight: '500',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1D4ED8'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2563EB'}
             >
               Edit Project
-            </button>
+            </Button>
           ) : (
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
                 onClick={handleCancel}
                 disabled={isSaving}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: '#FFFFFF',
-                  color: '#64748B',
-                  border: '1px solid #E2E8F0',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  cursor: isSaving ? 'not-allowed' : 'pointer',
-                  opacity: isSaving ? 0.5 : 1
-                }}
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleSave}
                 disabled={isSaving}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: '#059669',
-                  color: '#FFFFFF',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  cursor: isSaving ? 'not-allowed' : 'pointer',
-                  opacity: isSaving ? 0.5 : 1
-                }}
+                className="bg-green-600 hover:bg-green-700"
               >
                 {isSaving ? 'Saving...' : 'Save Changes'}
-              </button>
+              </Button>
             </div>
           )}
         </div>
 
         {/* Header Card */}
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: '12px',
-          padding: '32px',
-          border: '1px solid #E2E8F0',
-          marginBottom: '24px',
-          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)'
-        }}>
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            marginBottom: '16px'
-          }}>
-            <div style={{ flex: 1, marginRight: '16px' }}>
-              {isEditing ? (
-                <input
-                  type="text"
-                  value={editedProject?.['Project Name'] || ''}
-                  onChange={(e) => handleEditChange('Project Name', e.target.value)}
-                  style={{
-                    fontSize: '32px',
-                    fontWeight: '600',
-                    color: '#1E293B',
-                    marginBottom: '8px',
-                    width: '100%',
-                    padding: '8px',
-                    border: '2px solid #2563EB',
-                    borderRadius: '8px',
-                    outline: 'none'
-                  }}
-                  placeholder="Project Name"
-                />
-              ) : (
-                <h1 style={{
-                  fontSize: '32px',
-                  fontWeight: '600',
-                  color: '#1E293B',
-                  marginBottom: '8px'
-                }}>
-                  {project['Project Name'] || 'Unnamed Project'}
-                </h1>
-              )}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                color: '#64748B',
-                fontSize: '14px',
-                marginBottom: '12px'
-              }}>
-                <Hash size={14} />
-                Project ID: {project['Project ID']}
+        <Card className="mb-6">
+          <CardContent className="p-8">
+            <div className="flex justify-between items-start mb-4">
+              <div className="flex-1 mr-4">
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={editedProject?.['Project Name'] || ''}
+                    onChange={(e) => handleEditChange('Project Name', e.target.value)}
+                    className="text-3xl font-semibold text-gray-800 mb-2 w-full p-2 border-2 border-blue-600 rounded-lg outline-none"
+                    placeholder="Project Name"
+                  />
+                ) : (
+                  <h1 className="text-3xl font-semibold text-gray-800 mb-2">
+                    {project['Project Name'] || 'Unnamed Project'}
+                  </h1>
+                )}
+                <div className="flex items-center gap-2 text-gray-500 text-sm mb-3">
+                  <Hash size={14} />
+                  Project ID: {project['Project ID']}
+                </div>
               </div>
+              {isEditing ? (
+                <select
+                  value={editedProject?.Status || editedProject?.status || ''}
+                  onChange={(e) => handleEditChange('Status', e.target.value)}
+                  className="p-2 rounded-lg text-sm font-medium border-2 border-blue-600 outline-none"
+                >
+                  <option value="">Select status...</option>
+                  {PROJECT_STATUS_OPTIONS.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              ) : (
+                <StatusBadge type="project" status={project.Status || 'N/A'} />
+              )}
             </div>
-            {isEditing ? (
-              <select
-                value={editedProject?.Status || editedProject?.status || ''}
-                onChange={(e) => handleEditChange('Status', e.target.value)}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  border: '2px solid #2563EB',
-                  outline: 'none'
-                }}
-              >
-                <option value="">Select status...</option>
-                {PROJECT_STATUS_OPTIONS.map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
-            ) : (
-              <span style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                padding: '8px 16px',
-                borderRadius: '8px',
-                backgroundColor: statusStyle.bg,
-                color: statusStyle.text,
-                fontSize: '14px',
-                fontWeight: '500',
-                border: `1px solid ${statusStyle.border}`,
-                textTransform: 'capitalize'
-              }}>
-                {project.Status || 'N/A'}
-              </span>
-            )}
-          </div>
 
           <div style={{
             display: 'grid',
