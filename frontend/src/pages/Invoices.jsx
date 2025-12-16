@@ -1,11 +1,16 @@
-import { FileText, Plus, Search, Filter, Calendar, DollarSign, Building2, User, Loader2, CheckCircle, Clock, XCircle, AlertCircle, RefreshCw, Database } from 'lucide-react';
+import { FileText, Plus, Search, Filter, Calendar, DollarSign, Building2, User, CheckCircle, Clock, XCircle, RefreshCw, Database } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import api from '../lib/api';
 import { useAppStore } from '../stores/appStore';
 import useInvoicesStore from '../stores/invoicesStore';
-import LoadingScreen from '../components/LoadingScreen';
-import ErrorState from '../components/ErrorState';
 import SyncControlPanel from '../components/SyncControlPanel';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import { Card, CardContent } from '@/components/ui/Card';
+import StatusBadge from '@/components/app/StatusBadge';
+import LoadingState from '@/components/app/LoadingState';
+import EmptyState from '@/components/app/EmptyState';
+import StatsCard from '@/components/app/StatsCard';
 
 export default function Invoices() {
   const { navigateToInvoiceDetails } = useAppStore();

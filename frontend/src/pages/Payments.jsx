@@ -1,12 +1,17 @@
-import { DollarSign, Plus, Search, Calendar, CreditCard, CheckCircle, Clock, XCircle, AlertCircle, RefreshCw, User, FileText, Database } from 'lucide-react';
+import { DollarSign, Plus, Search, Calendar, CreditCard, CheckCircle, Clock, XCircle, RefreshCw, User, FileText, Database } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import api from '../lib/api';
 import { useAppStore } from '../stores/appStore';
 import usePaymentsStore from '../stores/paymentsStore';
-import LoadingScreen from '../components/LoadingScreen';
-import ErrorState from '../components/ErrorState';
 import { PAYMENT_STATUS_OPTIONS, formatEnumLabel } from '../constants/enums';
 import SyncControlPanel from '../components/SyncControlPanel';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import { Card, CardContent } from '@/components/ui/Card';
+import StatusBadge from '@/components/app/StatusBadge';
+import LoadingState from '@/components/app/LoadingState';
+import EmptyState from '@/components/app/EmptyState';
+import StatsCard from '@/components/app/StatsCard';
 
 export default function Payments() {
   const { navigateToPaymentDetails } = useAppStore();

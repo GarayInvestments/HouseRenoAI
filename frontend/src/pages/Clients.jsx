@@ -5,11 +5,11 @@ import useAppStore from '../stores/appStore';
 import Modal from '../components/Modal';
 import FormField from '../components/FormField';
 import ConfirmDialog from '../components/ConfirmDialog';
-import { Button } from '../components/ui/Button';
-import { Badge } from '../components/ui/Badge';
-import { Card, CardContent } from '../components/ui/Card';
-import LoadingState from '../components/app/LoadingState';
-import EmptyState from '../components/app/EmptyState';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import { Card, CardContent } from '@/components/ui/Card';
+import LoadingState from '@/components/app/LoadingState';
+import EmptyState from '@/components/app/EmptyState';
 
 export default function Clients() {
   // Clients page with card layout
@@ -260,7 +260,6 @@ export default function Clients() {
             placeholder="Search by name, email, phone, or address..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-11 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all"
             className="w-full pl-11 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all"
           />
         </div>

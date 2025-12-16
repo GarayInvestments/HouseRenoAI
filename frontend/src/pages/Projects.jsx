@@ -3,12 +3,12 @@ import { useState, useEffect, useMemo } from 'react';
 import api from '../lib/api';
 import { useAppStore } from '../stores/appStore';
 import { useProjectsStore } from '../stores/projectsStore';
-import { Button } from '../components/ui/Button';
-import { Badge } from '../components/ui/Badge';
-import { Card, CardContent } from '../components/ui/Card';
-import StatusBadge from '../components/app/StatusBadge';
-import LoadingState from '../components/app/LoadingState';
-import EmptyState from '../components/app/EmptyState';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import { Card, CardContent } from '@/components/ui/Card';
+import StatusBadge from '@/components/app/StatusBadge';
+import LoadingState from '@/components/app/LoadingState';
+import EmptyState from '@/components/app/EmptyState';
 
 export default function Projects() {
   const { navigateToProject } = useAppStore();
