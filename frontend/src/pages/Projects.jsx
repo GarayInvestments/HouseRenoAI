@@ -143,10 +143,6 @@ export default function Projects() {
       />
     );
   }
-  }
-
-  if (error) {
-    return (
 
   return (
     <div className="flex flex-col h-full bg-gray-50">
