@@ -9,112 +9,27 @@
 
 ---
 
-## 🔵 NEW INITIATIVE: Frontend Design System Migration
+## 🔵 ACTIVE INITIATIVE: Frontend Design System Migration
 
 **Start Date**: December 15, 2025  
-**Status**: ✅ Phase 1.5 Complete - CSS Foundation Fixed  
+**Status**: ✅ Phase 1 & 1.5 Complete (Archived to `docs/history/PHASE_COMPLETIONS/`)  
 **Priority**: High (Developer Velocity & Maintainability)
 
 **Full Implementation Plan**: [`docs/operations/FRONTEND_DESIGN_SYSTEM_MIGRATION.md`](FRONTEND_DESIGN_SYSTEM_MIGRATION.md)
 
 **Goal**: Migrate from inline/page-specific styling to centralized component library (Tailwind CSS + shadcn/ui)
 
-### Phase 1.5 - CSS Foundation Fix ✅ **COMPLETE** (December 15, 2025 7:55 PM EST)
+### Completed Phases
+- ✅ **Phase 1**: Component Foundation Setup (5 base + 5 app components) - Dec 15, 7:00 PM EST
+- ✅ **Phase 1.5**: CSS Foundation Fix (cleaned conflicting style systems) - Dec 15, 7:55 PM EST
 
-**🚨 CRITICAL BUG FIXED**: shadcn theme tokens were not applying due to conflicting CSS
+**Details**: See [`docs/history/PHASE_COMPLETIONS/PHASE_DESIGN_SYSTEM_FOUNDATION_2025_12_15.md`](../history/PHASE_COMPLETIONS/PHASE_DESIGN_SYSTEM_FOUNDATION_2025_12_15.md)
 
-**Root Cause Analysis**:
-The original `index.css` had **THREE conflicting style systems** fighting each other:
-1. **Lines 4-25**: Custom `@theme` block with hardcoded hex colors (`--color-primary: #2563EB`)
-2. **Lines 172-220**: shadcn's `@theme inline` block with `oklch()` colors  
-3. **Lines 222-248**: `:root` block with oklch CSS variables
-4. **Lines 33-40**: Hardcoded `body { background-color: #F8FAFC; color: #334155; }` overriding theme
-
-**Result**: Theme tokens like `bg-background`, `text-foreground`, `bg-card`, `border-border` resolved to wrong colors or didn't apply at all. UI looked "primitive" despite using shadcn components.
-
-**Solution**: Complete CSS rewrite with clean shadcn-only structure:
-- Single `:root` block with all shadcn CSS variables (oklch color space)
-- Single `.dark` block for dark mode support
-- `@layer base` for body styling using theme tokens
-- Removed ALL hardcoded hex colors from CSS
-- Removed conflicting `@theme` blocks
-- Kept only markdown styling as custom CSS (non-conflicting)
-
-**Files Changed**:
-- `frontend/src/index.css` - Complete rewrite (was 295 lines of conflicts → now ~180 lines clean)
-- `frontend/tailwind.config.js` - Removed conflicting color definitions (kept minimal extend)
-- `frontend/src/layouts/AppLayout.jsx` - Updated to use `bg-background text-foreground`
-- `frontend/src/pages/LicensedBusinesses_NEW.jsx` - Pilot page now renders correctly with shadcn styling
-
-**Verification**: LicensedBusinesses page now displays with proper shadcn aesthetics:
-- Cards have correct `bg-card` background with subtle shadows
-- Text uses proper `text-foreground` / `text-muted-foreground` hierarchy
-- Borders use `border-border` token
-- Buttons render with proper primary colors
-- Hover states and transitions work correctly
-
-**Lesson Learned**: When integrating shadcn/ui with Tailwind v4:
-1. **DO NOT** mix custom `@theme` blocks with shadcn's CSS variables
-2. **DO NOT** hardcode colors in `body {}` - use `@layer base` with tokens
-3. **ALWAYS** use a single `:root` block for all CSS variables
-4. shadcn expects `oklch()` color space - don't mix with hex values
-
----
-
-### Phase 1 - Foundation Setup ✅ **COMPLETE** (December 15, 2025 7:00 PM EST)
-- ✅ Install shadcn/ui CLI and initialize (Completed: 6:30 PM EST)
-- ✅ Add 5 base components: Button, Badge, Card, Input, Table (Completed: 6:35 PM EST)
-- ✅ Create 5 application components: (Completed: 7:00 PM EST)
-  - ✅ StatsCard (replaces grid + white bg pattern)
-  - ✅ PageHeader (icon + title + actions)
-  - ✅ StatusBadge (domain statuses)
-  - ✅ LoadingState (centralized loading UI)
-  - ✅ EmptyState (consistent empty data display)
-- ✅ Document component usage patterns (JSDoc in each component)
-
-**What Was Delivered**:
-- shadcn/ui initialized with Slate color scheme, CSS variables enabled
-- 5 base shadcn components in `components/ui/`: button, badge, card, input, table
-- 5 application components in `components/app/`: StatsCard, PageHeader, StatusBadge, LoadingState, EmptyState
-- Complete JSDoc documentation with usage examples for each component
-- Barrel export file (`components/app/index.js`) for easy imports
-- jsconfig.json with path aliases for `@/*` imports
-
-**Files Created** (12):
-- frontend/jsconfig.json (path aliases)
-- frontend/components.json (shadcn config)
-- frontend/src/lib/utils.js (cn() helper)
-- frontend/src/components/ui/button.jsx
-- frontend/src/components/ui/badge.jsx
-- frontend/src/components/ui/card.jsx
-- frontend/src/components/ui/input.jsx
-- frontend/src/components/ui/table.jsx
-- frontend/src/components/app/StatsCard.jsx (83 lines)
-- frontend/src/components/app/PageHeader.jsx (78 lines)
-- frontend/src/components/app/StatusBadge.jsx (157 lines)
-- frontend/src/components/app/LoadingState.jsx (66 lines)
-- frontend/src/components/app/EmptyState.jsx (90 lines)
-- frontend/src/components/app/index.js (barrel exports)
-
-**Technical Wins**:
-- StatusBadge includes 5 entity types with 25 total status mappings (permit, project, invoice, payment, inspection)
-- All components use CVA for variant management (already in dependencies)
-- Components are fully accessible (ARIA labels, semantic HTML)
-- Consistent API patterns across all components (className passthrough, ...props spread)
-
-**Next Phase**: Phase 2 - Pilot Migration (Dashboard + PermitDetails)
-
-**Why This Matters**:
-- 15-20 pages have 20-30 inline `style={{}}` per page
-- Duplicated patterns (stats cards, headers, badges) across pages
-- Low maintainability (styling changes touch multiple files)
-- Slow development (every new page requires styling decisions)
-
-**Success Criteria**:
-- ✅ Zero inline styles in new pages
-- ✅ Design changes made in one place
-- ✅ Developer velocity improvement
-- ✅ Consistent, cohesive UI
+### Up Next
+- [ ] **Phase 2**: Pilot Migration (Dashboard + PermitDetails)
+  - Migrate 2 high-visibility pages to prove migration pattern
+  - Document migration workflow for team
+  - Create before/after validation
 
 ---
 
