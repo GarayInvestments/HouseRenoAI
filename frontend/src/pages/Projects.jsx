@@ -1,10 +1,14 @@
-import { FolderKanban, Plus, Search, MapPin, Users, Calendar, AlertCircle, Loader2 } from 'lucide-react';
+import { FolderKanban, Plus, Search, MapPin, Users, Calendar } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import api from '../lib/api';
 import { useAppStore } from '../stores/appStore';
 import { useProjectsStore } from '../stores/projectsStore';
-import LoadingScreen from '../components/LoadingScreen';
-import ErrorState from '../components/ErrorState';
+import { Button } from '../components/ui/Button';
+import { Badge } from '../components/ui/Badge';
+import { Card, CardContent } from '../components/ui/Card';
+import StatusBadge from '../components/app/StatusBadge';
+import LoadingState from '../components/app/LoadingState';
+import EmptyState from '../components/app/EmptyState';
 
 export default function Projects() {
   const { navigateToProject } = useAppStore();
@@ -18,14 +22,11 @@ export default function Projects() {
     setProjects,
     setLoading,
     setError,
-    setFilter,
     getFilteredProjects,
     isCacheValid
   } = useProjectsStore();
   
   const [searchTerm, setSearchTerm] = useState('');
-  const [hoveredCard, setHoveredCard] = useState(null);
-  const [hoveredButton, setHoveredButton] = useState(false);
   const [clients, setClients] = useState([]);
   const [clientFilter, setClientFilter] = useState(null); // Local client filter
 
@@ -95,26 +96,6 @@ export default function Projects() {
     return client?.['Full Name'] || client?.['Client Name'] || clientId;
   };
 
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'completed':
-      case 'final inspection complete':
-        return { bg: '#ECFDF5', text: '#059669', border: '#A7F3D0' };
-      case 'permit approved':
-      case 'active':
-        return { bg: '#DBEAFE', text: '#2563EB', border: '#93C5FD' };
-      case 'permit submitted':
-      case 'planning':
-        return { bg: '#FEF3C7', text: '#D97706', border: '#FCD34D' };
-      case 'closed / archived':
-        return { bg: '#F3F4F6', text: '#6B7280', border: '#D1D5DB' };
-      case 'inquiry received':
-        return { bg: '#FEF2F2', text: '#DC2626', border: '#FECACA' };
-      default:
-        return { bg: '#F3F4F6', text: '#6B7280', border: '#D1D5DB' };
-    }
-  };
-
   const getProgressColor = (progress) => {
     if (progress >= 75) return '#059669';
     if (progress >= 50) return '#2563EB';
@@ -146,352 +127,142 @@ export default function Projects() {
   };
 
   if (loading) {
-    return <LoadingScreen />;
+    return <LoadingState message="Loading projects..." />;
   }
 
   if (error) {
     return (
-      <div style={{ padding: '20px', backgroundColor: '#F8FAFC', minHeight: '100vh' }}>
-        <ErrorState message={error} onRetry={fetchProjects} fullScreen />
-      </div>
+      <EmptyState
+        title="Failed to load projects"
+        description={error}
+        action={
+          <Button onClick={fetchProjects}>
+            Retry
+          </Button>
+        }
+      />
     );
   }
+  }
+
+  if (error) {
+    return (
 
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100%',
-      backgroundColor: '#F8FAFC'
-    }}>
+    <div className="flex flex-col h-full bg-gray-50">
       {/* Header */}
-      <div style={{
-        backgroundColor: '#FFFFFF',
-        borderBottom: '1px solid #E2E8F0',
-        padding: '24px 32px',
-        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)'
-      }}>
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '16px'
-        }}>
+      <div className="bg-white border-b border-gray-200 px-8 py-6">
+        <div className="flex items-center justify-between mb-4">
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
-              <h1 style={{
-                fontSize: '24px',
-                fontWeight: '600',
-                color: '#1E293B'
-              }}>Projects</h1>
+            <div className="flex items-center gap-3 mb-1">
+              <h1 className="text-2xl font-semibold text-gray-900">Projects</h1>
               {clientFilter && (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '4px 12px',
-                  backgroundColor: '#DBEAFE',
-                  borderRadius: '6px',
-                  fontSize: '13px',
-                  color: '#1E40AF'
-                }}>
+                <Badge variant="info" className="flex items-center gap-2">
                   <span>Client: {getFilteredClientName()}</span>
                   <button
                     onClick={clearClientFilter}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#1E40AF',
-                      cursor: 'pointer',
-                      fontSize: '16px',
-                      lineHeight: '1',
-                      padding: '0 2px'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.color = '#1E3A8A'}
-                    onMouseLeave={(e) => e.currentTarget.style.color = '#1E40AF'}
+                    className="text-blue-900 hover:text-blue-950 text-lg leading-none px-0.5"
                   >
                     ×
                   </button>
-                </div>
+                </Badge>
               )}
             </div>
-            <p style={{
-              color: '#64748B',
-              fontSize: '14px'
-            }}>
+            <p className="text-gray-600 text-sm">
               {clientFilter 
                 ? `Showing projects for ${getFilteredClientName()}`
                 : 'Track and manage all your construction projects'}
             </p>
           </div>
-          <button
-            onMouseEnter={() => setHoveredButton(true)}
-            onMouseLeave={() => setHoveredButton(false)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              background: hoveredButton 
-                ? 'linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%)'
-                : 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
-              color: '#FFFFFF',
-              border: 'none',
-              padding: '10px 20px',
-              borderRadius: '10px',
-              fontSize: '14px',
-              fontWeight: '500',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              boxShadow: hoveredButton 
-                ? '0 6px 12px -2px rgba(37, 99, 235, 0.4)'
-                : '0 4px 6px -1px rgba(37, 99, 235, 0.3)',
-              transform: hoveredButton ? 'translateY(-1px)' : 'translateY(0)'
-            }}
-          >
+          <Button onClick={() => { /* TODO: Add new project modal */ }}>
             <Plus size={18} />
             New Project
-          </button>
+          </Button>
         </div>
 
         {/* Search Bar */}
-        <div style={{
-          position: 'relative',
-          marginTop: '16px'
-        }}>
-          <Search size={18} style={{
-            position: 'absolute',
-            left: '14px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            color: '#64748B'
-          }} />
+        <div className="relative mt-4">
+          <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search projects..."
-            style={{
-              width: '100%',
-              padding: '10px 14px 10px 44px',
-              border: '1px solid #E2E8F0',
-              borderRadius: '10px',
-              fontSize: '14px',
-              color: '#1E293B',
-              outline: 'none',
-              transition: 'all 0.2s ease',
-              backgroundColor: '#FFFFFF'
-            }}
-            onFocus={(e) => {
-              e.target.style.borderColor = '#2563EB';
-              e.target.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.1)';
-            }}
-            onBlur={(e) => {
-              e.target.style.borderColor = '#E2E8F0';
-              e.target.style.boxShadow = 'none';
-            }}
+            className="w-full pl-11 pr-3.5 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all"
           />
         </div>
       </div>
 
       {/* Projects Grid */}
-      <div style={{
-        flex: 1,
-        overflowY: 'auto',
-        padding: '32px'
-      }}>
-        {loading ? (
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: '400px',
-            gap: '16px'
-          }}>
-            <Loader2 className="animate-spin" size={40} style={{ color: '#2563EB' }} />
-            <p style={{ color: '#64748B', fontSize: '14px' }}>Loading projects...</p>
-          </div>
-        ) : error ? (
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: '400px',
-            gap: '16px'
-          }}>
-            <AlertCircle size={40} style={{ color: '#DC2626' }} />
-            <p style={{ color: '#DC2626', fontSize: '14px' }}>{error}</p>
-            <button
-              onClick={fetchProjects}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: '#2563EB',
-                color: '#FFFFFF',
-                border: 'none',
-                borderRadius: '8px',
-                fontSize: '14px',
-                cursor: 'pointer'
-              }}
-            >
-              Retry
-            </button>
-          </div>
+      <div className="flex-1 overflow-y-auto p-8">
+        {filteredProjects.length === 0 ? (
+          <EmptyState
+            icon={FolderKanban}
+            title="No projects found"
+            description={searchTerm ? "Try adjusting your search" : "Create your first project to get started"}
+          />
         ) : (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))',
-            gap: '24px',
-            maxWidth: '1400px',
-            margin: '0 auto'
-          }}>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(380px,1fr))] gap-6 max-w-[1400px] mx-auto">
             {filteredProjects.map((project) => {
-              const statusStyle = getStatusColor(project.Status || 'planning');
-              const isHovered = hoveredCard === project['Project ID'];
-              // Calculate progress based on available data (you can adjust this logic)
               const progress = calculateProgress(project);
               const progressColor = getProgressColor(progress);
 
               return (
-                <div
+                <Card
                   key={project['Project ID']}
-                  onClick={() => {
-                    navigateToProject(project['Project ID']);
-                  }}
-                  onMouseEnter={() => setHoveredCard(project['Project ID'])}
-                  onMouseLeave={() => setHoveredCard(null)}
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: '12px',
-                    padding: '24px',
-                    border: '1px solid #E2E8F0',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    boxShadow: isHovered 
-                      ? '0 10px 20px -5px rgba(0, 0, 0, 0.1)'
-                      : '0 1px 3px 0 rgba(0, 0, 0, 0.05)',
-                    transform: isHovered ? 'translateY(-2px)' : 'translateY(0)'
-                  }}
+                  onClick={() => navigateToProject(project['Project ID'])}
+                  className="cursor-pointer transition-all hover:shadow-lg hover:-translate-y-0.5"
                 >
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    justifyContent: 'space-between',
-                    marginBottom: '16px'
-                  }}>
-                    <div style={{
-                      width: '48px',
-                      height: '48px',
-                      borderRadius: '10px',
-                      background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                      boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.3)'
-                    }}>
-                      <FolderKanban size={24} style={{ color: '#FFFFFF' }} />
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="w-12 h-12 rounded-lg bg-linear-to-br from-blue-600 to-blue-700 flex items-center justify-center shrink-0 shadow-md shadow-blue-600/30">
+                        <FolderKanban size={24} className="text-white" />
+                      </div>
+                      <StatusBadge status={project.Status || 'planning'} />
                     </div>
-                    <span style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      padding: '6px 12px',
-                      borderRadius: '8px',
-                      backgroundColor: statusStyle.bg,
-                      color: statusStyle.text,
-                      fontSize: '12px',
-                      fontWeight: '500',
-                      border: `1px solid ${statusStyle.border}`,
-                      textTransform: 'capitalize'
-                    }}>
-                      {project.Status || 'N/A'}
-                    </span>
-                  </div>
 
-                  <h3 style={{
-                    fontSize: '17px',
-                    fontWeight: '600',
-                    color: '#1E293B',
-                    marginBottom: '12px'
-                  }}>{project['Project Name'] || 'Unnamed Project'}</h3>
+                    <h3 className="text-[17px] font-semibold text-gray-900 mb-3">
+                      {project['Project Name'] || 'Unnamed Project'}
+                    </h3>
 
-                  <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '10px',
-                    marginBottom: '16px'
-                  }}>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      fontSize: '13px',
-                      color: '#64748B'
-                    }}>
-                      <MapPin size={16} style={{ color: '#2563EB' }} />
-                      {project['Project Address'] || 'No address'}
+                    <div className="flex flex-col gap-2.5 mb-4">
+                      <div className="flex items-center gap-2 text-[13px] text-gray-600">
+                        <MapPin size={16} className="text-blue-600" />
+                        {project['Project Address'] || 'No address'}
+                      </div>
+                      <div className="flex items-center gap-2 text-[13px] text-gray-600">
+                        <Users size={16} className="text-blue-600" />
+                        Client: {getClientName(project['Client ID'])}
+                      </div>
+                      <div className="flex items-center gap-2 text-[13px] text-gray-600">
+                        <Calendar size={16} className="text-blue-600" />
+                        {project['Start Date'] ? `Started: ${formatDate(project['Start Date'])}` : 'No start date'}
+                      </div>
                     </div>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      fontSize: '13px',
-                      color: '#64748B'
-                    }}>
-                      <Users size={16} style={{ color: '#2563EB' }} />
-                      Client: {getClientName(project['Client ID'])}
-                    </div>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      fontSize: '13px',
-                      color: '#64748B'
-                    }}>
-                      <Calendar size={16} style={{ color: '#2563EB' }} />
-                      {project['Start Date'] ? `Started: ${formatDate(project['Start Date'])}` : 'No start date'}
-                    </div>
-                  </div>
 
-                  {/* Progress Bar */}
-                  <div style={{
-                    paddingTop: '16px',
-                    borderTop: '1px solid #F1F5F9'
-                  }}>
-                    <div style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      marginBottom: '8px'
-                    }}>
-                      <span style={{
-                        fontSize: '13px',
-                        fontWeight: '500',
-                        color: '#64748B'
-                      }}>Progress</span>
-                      <span style={{
-                        fontSize: '13px',
-                        fontWeight: '600',
-                        color: progressColor
-                      }}>{progress}%</span>
+                    {/* Progress Bar */}
+                    <div className="pt-4 border-t border-gray-100">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-[13px] font-medium text-gray-600">Progress</span>
+                        <span 
+                          className="text-[13px] font-semibold" 
+                          style={{ color: progressColor }}
+                        >
+                          {progress}%
+                        </span>
+                      </div>
+                      <div className="w-full h-2 bg-gray-100 rounded overflow-hidden">
+                        <div 
+                          className="h-full rounded transition-all duration-300"
+                          style={{ 
+                            width: `${progress}%`,
+                            backgroundColor: progressColor
+                          }}
+                        />
+                      </div>
                     </div>
-                    <div style={{
-                      width: '100%',
-                      height: '8px',
-                      backgroundColor: '#F1F5F9',
-                      borderRadius: '4px',
-                      overflow: 'hidden'
-                    }}>
-                      <div style={{
-                        width: `${progress}%`,
-                        height: '100%',
-                        backgroundColor: progressColor,
-                        borderRadius: '4px',
-                        transition: 'width 0.3s ease'
-                      }} />
-                    </div>
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               );
             })}
           </div>
