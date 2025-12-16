@@ -1,36 +1,45 @@
-import { TrendingUp, FileCheck, AlertCircle, Clock } from 'lucide-react';
+import { TrendingUp, FileCheck, AlertCircle, Clock, LayoutDashboard } from 'lucide-react';
 import { useAppStore } from '../stores/appStore';
+import { StatsCard, PageHeader } from '@/components/app';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
 const stats = [
   {
     label: 'Active Projects',
     value: '12',
-    change: '+2 this month',
+    trend: '+2 this month',
+    trendUp: true,
     icon: TrendingUp,
-    changeColor: 'text-green-600',
     action: 'projects',
   },
   {
     label: 'Permits Approved',
     value: '34',
-    change: '+5 this week',
+    trend: '+5 this week',
+    trendUp: true,
     icon: FileCheck,
-    changeColor: 'text-green-600',
   },
   {
     label: 'Pending Reviews',
     value: '8',
-    change: '3 urgent',
+    trend: '3 urgent',
+    trendUp: false,
     icon: AlertCircle,
-    changeColor: 'text-orange-600',
   },
   {
     label: 'Avg. Processing Time',
     value: '4.2 days',
-    change: '-0.5 days',
+    trend: '-0.5 days',
+    trendUp: true,
     icon: Clock,
-    changeColor: 'text-green-600',
   },
+];
+
+const recentActivities = [
+  { text: 'Permit #1234 approved', time: '2 hours ago', type: 'success' },
+  { text: 'New project "Main St Renovation" created', time: '5 hours ago', type: 'info' },
+  { text: 'Document uploaded to Project #456', time: '1 day ago', type: 'info' },
+  { text: 'Permit #1230 requires attention', time: '2 days ago', type: 'warning' },
 ];
 
 export default function Dashboard() {
@@ -43,152 +52,54 @@ export default function Dashboard() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#F8FAFC', padding: '32px' }}>
-      <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-        {/* Page Header */}
-        <div style={{ marginBottom: '32px' }}>
-          <h1 style={{ fontSize: '28px', fontWeight: '600', color: '#1E293B', marginBottom: '8px' }}>
-            Dashboard
-          </h1>
-          <p style={{ fontSize: '15px', color: '#64748B' }}>
-            Welcome back! Here's an overview of your projects and permits.
-          </p>
+    <div className="min-h-screen bg-slate-50 p-8">
+      <div className="max-w-7xl mx-auto">
+        <PageHeader
+          icon={<LayoutDashboard size={32} />}
+          title="Dashboard"
+          subtitle="Welcome back! Here's an overview of your projects and permits."
+        />
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+          {stats.map((stat, index) => (
+            <StatsCard
+              key={index}
+              icon={<stat.icon size={24} />}
+              label={stat.label}
+              value={stat.value}
+              trend={stat.trend}
+              trendUp={stat.trendUp}
+              onClick={stat.action ? () => handleStatClick(stat.action) : undefined}
+            />
+          ))}
         </div>
 
-        {/* Stats Grid */}
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-          gap: '20px',
-          marginBottom: '32px'
-        }}>
-          {stats.map((stat, index) => {
-            const Icon = stat.icon;
-            return (
-              <div
-                key={index}
-                onClick={() => handleStatClick(stat.action)}
-                style={{
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: '16px',
-                  padding: '24px',
-                  border: '1px solid #E2E8F0',
-                  boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
-                  transition: 'all 0.2s ease',
-                  cursor: stat.action ? 'pointer' : 'default'
-                }}
-                onMouseEnter={(e) => {
-                  if (stat.action) {
-                    e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                }}
-              >
-                <div style={{ 
-                  width: '48px', 
-                  height: '48px', 
-                  borderRadius: '12px',
-                  backgroundColor: '#EFF6FF',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: '16px'
-                }}>
-                  <Icon size={24} style={{ color: '#2563EB' }} />
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Activity</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {recentActivities.map((item, index) => (
+                <div
+                  key={index}
+                  className={`border-l-3 pl-4 py-2 transition-all cursor-pointer hover:bg-slate-50 hover:pl-5 ${
+                    item.type === 'success' ? 'border-l-blue-600' :
+                    item.type === 'warning' ? 'border-l-orange-600' :
+                    'border-l-blue-600'
+                  }`}
+                >
+                  <div className="text-[15px] font-medium text-slate-800 mb-1">
+                    {item.text}
+                  </div>
+                  <div className="text-[13px] text-slate-400">
+                    {item.time}
+                  </div>
                 </div>
-                <h3 style={{ 
-                  fontSize: '32px', 
-                  fontWeight: '700', 
-                  color: '#1E293B',
-                  marginBottom: '4px',
-                  lineHeight: '1'
-                }}>
-                  {stat.value}
-                </h3>
-                <p style={{ 
-                  fontSize: '14px', 
-                  color: '#64748B',
-                  marginBottom: '12px',
-                  fontWeight: '500'
-                }}>
-                  {stat.label}
-                </p>
-                <p style={{ 
-                  fontSize: '13px', 
-                  fontWeight: '600',
-                  color: stat.changeColor === 'text-green-600' ? '#059669' : '#EA580C'
-                }}>
-                  {stat.change}
-                </p>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Recent Activity */}
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: '16px',
-          padding: '28px',
-          border: '1px solid #E2E8F0',
-          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'
-        }}>
-          <h2 style={{ 
-            fontSize: '20px', 
-            fontWeight: '600', 
-            color: '#1E293B',
-            marginBottom: '20px'
-          }}>
-            Recent Activity
-          </h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {[
-              { text: 'Permit #1234 approved', time: '2 hours ago', color: '#2563EB' },
-              { text: 'New project "Main St Renovation" created', time: '5 hours ago', color: '#2563EB' },
-              { text: 'Document uploaded to Project #456', time: '1 day ago', color: '#2563EB' },
-              { text: 'Permit #1230 requires attention', time: '2 days ago', color: '#EA580C' },
-            ].map((item, index) => (
-              <div 
-                key={index}
-                style={{
-                  borderLeft: `3px solid ${item.color}`,
-                  paddingLeft: '16px',
-                  paddingTop: '8px',
-                  paddingBottom: '8px',
-                  transition: 'all 0.2s ease',
-                  cursor: 'pointer'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#F8FAFC';
-                  e.currentTarget.style.paddingLeft = '20px';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                  e.currentTarget.style.paddingLeft = '16px';
-                }}
-              >
-                <div style={{ 
-                  fontSize: '15px', 
-                  fontWeight: '500', 
-                  color: '#1E293B',
-                  marginBottom: '4px'
-                }}>
-                  {item.text}
-                </div>
-                <div style={{ 
-                  fontSize: '13px', 
-                  color: '#94A3B8'
-                }}>
-                  {item.time}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

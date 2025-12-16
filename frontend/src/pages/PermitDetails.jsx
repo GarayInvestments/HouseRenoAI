@@ -16,6 +16,10 @@ import {
 import api from '../lib/api';
 import { useAppStore } from '../stores/appStore';
 import { PERMIT_STATUS_OPTIONS, PERMIT_TYPE_OPTIONS, formatEnumLabel } from '../constants/enums';
+import { StatusBadge, PageHeader, LoadingState } from '@/components/app';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 export default function PermitDetails() {
   const { currentPermitId, navigateToPermits, navigateToProject, navigateToClient } = useAppStore();
@@ -149,72 +153,16 @@ export default function PermitDetails() {
     setEditedPermit(prev => ({ ...prev, [field]: value }));
   };
 
-  const getStatusColor = (status) => {
-    const lowerStatus = status?.toLowerCase();
-    if (lowerStatus?.includes('approved')) {
-      return { bg: '#ECFDF5', text: '#059669', border: '#A7F3D0' };
-    }
-    if (lowerStatus?.includes('pending') || lowerStatus?.includes('submitted')) {
-      return { bg: '#FEF3C7', text: '#D97706', border: '#FCD34D' };
-    }
-    if (lowerStatus?.includes('review')) {
-      return { bg: '#DBEAFE', text: '#2563EB', border: '#93C5FD' };
-    }
-    return { bg: '#F3F4F6', text: '#6B7280', border: '#D1D5DB' };
-  };
-
-  const getStatusIcon = (status) => {
-    const lowerStatus = status?.toLowerCase();
-    if (lowerStatus?.includes('approved')) return <CheckCircle size={20} />;
-    if (lowerStatus?.includes('pending') || lowerStatus?.includes('submitted')) return <Clock size={20} />;
-    if (lowerStatus?.includes('review')) return <AlertCircle size={20} />;
-    return null;
-  };
-
   if (loading) {
-    return (
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100vh',
-        gap: '16px',
-        backgroundColor: '#F8FAFC'
-      }}>
-        <Loader2 className="animate-spin" size={40} style={{ color: '#2563EB' }} />
-        <p style={{ color: '#64748B', fontSize: '14px' }}>Loading permit details...</p>
-      </div>
-    );
+    return <LoadingState message="Loading permit details..." />;
   }
 
   if (error || !permit) {
     return (
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100vh',
-        gap: '16px',
-        backgroundColor: '#F8FAFC'
-      }}>
-        <AlertCircle size={40} style={{ color: '#DC2626' }} />
-        <p style={{ color: '#DC2626', fontSize: '14px' }}>{error || 'Permit not found'}</p>
-        <button
-          onClick={navigateToPermits}
-          style={{
-            padding: '8px 16px',
-            backgroundColor: '#2563EB',
-            color: '#FFFFFF',
-            border: 'none',
-            borderRadius: '8px',
-            fontSize: '14px',
-            cursor: 'pointer'
-          }}
-        >
-          Back to Permits
-        </button>
+      <div className="flex flex-col items-center justify-center h-screen gap-4 bg-slate-50">
+        <AlertCircle size={40} className="text-red-600" />
+        <p className="text-red-600 text-sm">{error || 'Permit not found'}</p>
+        <Button onClick={navigateToPermits}>Back to Permits</Button>
       </div>
     );
   }
@@ -224,50 +172,19 @@ export default function PermitDetails() {
   const permitId = permit?.['Permit ID'] || permit?.permit_id;
   const dateSubmitted = permit?.['Date Submitted'] || permit?.application_date;
   const dateApproved = permit?.['Date Approved'] || permit?.approval_date;
-  const statusStyle = getStatusColor(permitStatus);
 
   return (
-    <div style={{
-      backgroundColor: '#F8FAFC',
-      minHeight: '100vh',
-      padding: '32px'
-    }}>
-      <div style={{
-        maxWidth: '1200px',
-        margin: '0 auto'
-      }}>
+    <div className="bg-slate-50 min-h-screen p-8">
+      <div className="max-w-6xl mx-auto">
         {/* Back Button & Edit Controls */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-          <button
-            onClick={navigateToPermits}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '8px 16px',
-              backgroundColor: '#FFFFFF',
-              border: '1px solid #E2E8F0',
-              borderRadius: '8px',
-              fontSize: '14px',
-              color: '#64748B',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#F8FAFC';
-              e.currentTarget.style.color = '#2563EB';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#FFFFFF';
-              e.currentTarget.style.color = '#64748B';
-            }}
-          >
-            <ArrowLeft size={16} />
+        <div className="flex justify-between items-center mb-6">
+          <Button variant="outline" onClick={navigateToPermits}>
+            <ArrowLeft size={16} className="mr-2" />
             Back to Permits
-          </button>
+          </Button>
 
           {!isEditing ? (
-            <button
+            <Button
               onClick={() => {
                 setIsEditing(true);
                 setEditedPermit({
@@ -278,496 +195,246 @@ export default function PermitDetails() {
                   'Permit Type': permit['Permit Type'] ?? permit.permit_type
                 });
               }}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: '#2563EB',
-                color: '#FFFFFF',
-                border: 'none',
-                borderRadius: '8px',
-                fontSize: '14px',
-                fontWeight: '500',
-                cursor: 'pointer'
-              }}
             >
               Edit Permit
-            </button>
+            </Button>
           ) : (
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
                 onClick={handleCancel}
                 disabled={isSaving}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: '#FFFFFF',
-                  color: '#64748B',
-                  border: '1px solid #E2E8F0',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  cursor: isSaving ? 'not-allowed' : 'pointer',
-                  opacity: isSaving ? 0.5 : 1
-                }}
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleSave}
                 disabled={isSaving}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: '#059669',
-                  color: '#FFFFFF',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  cursor: isSaving ? 'not-allowed' : 'pointer',
-                  opacity: isSaving ? 0.5 : 1
-                }}
+                className="bg-green-600 hover:bg-green-700"
               >
                 {isSaving ? 'Saving...' : 'Save Changes'}
-              </button>
+              </Button>
             </div>
           )}
         </div>
 
         {/* Header Card */}
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: '12px',
-          padding: '32px',
-          border: '1px solid #E2E8F0',
-          marginBottom: '24px',
-          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)'
-        }}>
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            marginBottom: '16px'
-          }}>
-            <div>
-              {isEditing ? (
-                <input
-                  type="text"
-                  value={editedPermit?.['Permit Number'] || editedPermit?.permit_number || ''}
-                  onChange={(e) => {
-                    handleEditChange('Permit Number', e.target.value);
-                    handleEditChange('permit_number', e.target.value);
-                  }}
-                  style={{
-                    fontSize: '32px',
-                    fontWeight: '600',
-                    color: '#1E293B',
-                    marginBottom: '8px',
-                    width: '100%',
-                    padding: '8px',
-                    border: '2px solid #2563EB',
-                    borderRadius: '8px',
-                    outline: 'none'
-                  }}
-                  placeholder="Permit Number"
-                />
-              ) : (
-                <h1 style={{
-                  fontSize: '32px',
-                  fontWeight: '600',
-                  color: '#1E293B',
-                  marginBottom: '8px'
-                }}>
-                  Permit {permitNumber || 'Unknown'}
-                </h1>
-              )}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                color: '#64748B',
-                fontSize: '14px',
-                marginBottom: '12px'
-              }}>
-                <Hash size={14} />
-                Permit ID: {permitId || permit?.business_id || 'N/A'}
-              </div>
-            </div>
-            {isEditing ? (
-              <select
-                value={editedPermit?.['Permit Status'] || editedPermit?.status || ''}
-                onChange={(e) => {
-                  handleEditChange('Permit Status', e.target.value);
-                  handleEditChange('status', e.target.value);
-                }}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  border: '2px solid #2563EB',
-                  outline: 'none'
-                }}
-              >
-                <option value="">Select status...</option>
-                {PERMIT_STATUS_OPTIONS.map(opt => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <span
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '8px 16px',
-                  borderRadius: '8px',
-                  backgroundColor: statusStyle.bg,
-                  color: statusStyle.text,
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  border: `1px solid ${statusStyle.border}`,
-                  textTransform: 'capitalize'
-                }}
-              >
-                {getStatusIcon(permitStatus)}
-                {permitStatus || 'N/A'}
-              </span>
-            )}
-
-          </div>
-
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-            gap: '16px',
-            paddingTop: '16px',
-            borderTop: '1px solid #F1F5F9'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '8px',
-                backgroundColor: '#DBEAFE',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <Calendar size={20} style={{ color: '#2563EB' }} />
-              </div>
-              <div style={{ flex: 1 }}>
-                <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '2px' }}>Date Submitted</p>
-                {isEditing ? (
-                  <input
-                    type="date"
-                    value={toDateInput(editedPermit?.['Date Submitted'] || editedPermit?.application_date)}
-                    onChange={(e) => handleEditChange('Date Submitted', e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '6px 10px',
-                      border: '1px solid #D1D5DB',
-                      borderRadius: '6px',
-                      fontSize: '14px',
-                      outline: 'none'
-                    }}
-                  />
-                ) : (
-                  <p style={{ fontSize: '14px', color: '#1E293B', fontWeight: '500' }}>
-                    {formatDate(dateSubmitted)}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '8px',
-                backgroundColor: '#ECFDF5',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <CheckCircle size={20} style={{ color: '#059669' }} />
-              </div>
-              <div style={{ flex: 1 }}>
-                <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '2px' }}>Date Approved</p>
-                {isEditing ? (
-                  <input
-                    type="date"
-                    value={toDateInput(editedPermit?.['Date Approved'] || editedPermit?.approval_date)}
-                    onChange={(e) => handleEditChange('Date Approved', e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '6px 10px',
-                      border: '1px solid #D1D5DB',
-                      borderRadius: '6px',
-                      fontSize: '14px',
-                      outline: 'none'
-                    }}
-                  />
-                ) : (
-                  <p style={{ fontSize: '14px', color: '#1E293B', fontWeight: '500' }}>
-                    {formatDate(dateApproved)}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '8px',
-                backgroundColor: '#F0F9FF',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <FileText size={20} style={{ color: '#0284C7' }} />
-              </div>
-              <div style={{ flex: 1 }}>
-                <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '2px' }}>Permit Type</p>
-                {isEditing ? (
-                  <select
-                    value={editedPermit?.['Permit Type'] || editedPermit?.permit_type || ''}
-                    onChange={(e) => handleEditChange('Permit Type', e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '6px 10px',
-                      border: '1px solid #D1D5DB',
-                      borderRadius: '6px',
-                      fontSize: '14px',
-                      outline: 'none'
-                    }}
-                  >
-                    <option value="">Select type...</option>
-                    {PERMIT_TYPE_OPTIONS.map(opt => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <p style={{ fontSize: '14px', color: '#1E293B', fontWeight: '500' }}>
-                    {formatEnumLabel(permit['Permit Type'] || permit.permit_type) || 'N/A'}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '8px',
-                backgroundColor: '#FEF3C7',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <FolderKanban size={20} style={{ color: '#D97706' }} />
-              </div>
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <div className="flex justify-between items-start mb-4">
               <div>
-                <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '2px' }}>Project</p>
-                {project ? (
-                  <button
-                    onClick={() => navigateToProject(permit['Project ID'])}
-                    style={{
-                      fontSize: '14px',
-                      color: '#2563EB',
-                      fontWeight: '500',
-                      background: 'none',
-                      border: 'none',
-                      padding: 0,
-                      cursor: 'pointer',
-                      textDecoration: 'underline',
-                      textAlign: 'left'
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={editedPermit?.['Permit Number'] || editedPermit?.permit_number || ''}
+                    onChange={(e) => {
+                      handleEditChange('Permit Number', e.target.value);
+                      handleEditChange('permit_number', e.target.value);
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.color = '#1D4ED8'}
-                    onMouseLeave={(e) => e.currentTarget.style.color = '#2563EB'}
-                  >
-                    {project['Project Name'] || permit['Project ID']}
-                  </button>
+                    className="text-3xl font-semibold text-slate-800 mb-2 w-full px-2 py-1 border-2 border-blue-600 rounded-lg outline-none"
+                    placeholder="Permit Number"
+                  />
                 ) : (
-                  <p style={{ fontSize: '14px', color: '#1E293B', fontWeight: '500' }}>
-                    {permit['Project ID'] || 'N/A'}
-                  </p>
+                  <h1 className="text-3xl font-semibold text-slate-800 mb-2">
+                    Permit {permitNumber || 'Unknown'}
+                  </h1>
                 )}
+                <div className="flex items-center gap-2 text-slate-500 text-sm mb-3">
+                  <Hash size={14} />
+                  Permit ID: {permitId || permit?.business_id || 'N/A'}
+                </div>
               </div>
+              {isEditing ? (
+                <select
+                  value={editedPermit?.['Permit Status'] || editedPermit?.status || ''}
+                  onChange={(e) => {
+                    handleEditChange('Permit Status', e.target.value);
+                    handleEditChange('status', e.target.value);
+                  }}
+                  className="px-4 py-2 rounded-lg text-sm font-medium border-2 border-blue-600 outline-none"
+                >
+                  <option value="">Select status...</option>
+                  {PERMIT_STATUS_OPTIONS.map(opt => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <StatusBadge status={permitStatus?.toLowerCase()} type="permit" />
+              )}
             </div>
 
-            {client && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '8px',
-                  backgroundColor: '#FEE2E2',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <User size={20} style={{ color: '#DC2626' }} />
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4 border-t border-slate-200">
+              {/* Date Submitted */}
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                  <Calendar size={20} className="text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs text-slate-500 mb-0.5">Date Submitted</p>
+                  {isEditing ? (
+                    <input
+                      type="date"
+                      value={toDateInput(editedPermit?.['Date Submitted'] || editedPermit?.application_date)}
+                      onChange={(e) => handleEditChange('Date Submitted', e.target.value)}
+                      className="w-full px-2.5 py-1.5 border border-slate-300 rounded text-sm outline-none"
+                    />
+                  ) : (
+                    <p className="text-sm text-slate-800 font-medium">
+                      {formatDate(dateSubmitted)}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Date Approved */}
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
+                  <CheckCircle size={20} className="text-green-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs text-slate-500 mb-0.5">Date Approved</p>
+                  {isEditing ? (
+                    <input
+                      type="date"
+                      value={toDateInput(editedPermit?.['Date Approved'] || editedPermit?.approval_date)}
+                      onChange={(e) => handleEditChange('Date Approved', e.target.value)}
+                      className="w-full px-2.5 py-1.5 border border-slate-300 rounded text-sm outline-none"
+                    />
+                  ) : (
+                    <p className="text-sm text-slate-800 font-medium">
+                      {formatDate(dateApproved)}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Permit Type */}
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-sky-50 flex items-center justify-center">
+                  <FileText size={20} className="text-sky-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs text-slate-500 mb-0.5">Permit Type</p>
+                  {isEditing ? (
+                    <select
+                      value={editedPermit?.['Permit Type'] || editedPermit?.permit_type || ''}
+                      onChange={(e) => handleEditChange('Permit Type', e.target.value)}
+                      className="w-full px-2.5 py-1.5 border border-slate-300 rounded text-sm outline-none"
+                    >
+                      <option value="">Select type...</option>
+                      {PERMIT_TYPE_OPTIONS.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <p className="text-sm text-slate-800 font-medium">
+                      {formatEnumLabel(permit['Permit Type'] || permit.permit_type) || 'N/A'}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Project */}
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center">
+                  <FolderKanban size={20} className="text-amber-600" />
                 </div>
                 <div>
-                  <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '2px' }}>Client</p>
-                  <button
-                    onClick={() => navigateToClient(client['Client ID'] || client['ID'])}
-                    style={{
-                      fontSize: '14px',
-                      color: '#2563EB',
-                      fontWeight: '500',
-                      background: 'none',
-                      border: 'none',
-                      padding: 0,
-                      cursor: 'pointer',
-                      textDecoration: 'underline',
-                      textAlign: 'left'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.color = '#1D4ED8'}
-                    onMouseLeave={(e) => e.currentTarget.style.color = '#2563EB'}
-                  >
-                    {client['Full Name'] || client['Client Name'] || client['Client ID'] || client['ID']}
-                  </button>
+                  <p className="text-xs text-slate-500 mb-0.5">Project</p>
+                  {project ? (
+                    <button
+                      onClick={() => navigateToProject(permit['Project ID'])}
+                      className="text-sm text-blue-600 font-medium underline hover:text-blue-800 text-left"
+                    >
+                      {project['Project Name'] || permit['Project ID']}
+                    </button>
+                  ) : (
+                    <p className="text-sm text-slate-800 font-medium">
+                      {permit['Project ID'] || 'N/A'}
+                    </p>
+                  )}
                 </div>
               </div>
-            )}
-          </div>
-        </div>
 
-        {/* Details Grid */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
-          gap: '24px'
-        }}>
+              {/* Client */}
+              {client && (
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center">
+                    <User size={20} className="text-red-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-0.5">Client</p>
+                    <button
+                      onClick={() => navigateToClient(client['Client ID'] || client['ID'])}
+                      className="text-sm text-blue-600 font-medium underline hover:text-blue-800 text-left"
+                    >
+                      {client['Full Name'] || client['Client Name'] || client['Client ID'] || client['ID']}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+          {/* Details Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* City Portal Link */}
           {permit['City Portal Link'] && (
-            <div style={{
-              backgroundColor: '#FFFFFF',
-              borderRadius: '12px',
-              padding: '24px',
-              border: '1px solid #E2E8F0',
-              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)'
-            }}>
-              <h2 style={{
-                fontSize: '18px',
-                fontWeight: '600',
-                color: '#1E293B',
-                marginBottom: '16px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}>
-                <ExternalLink size={20} style={{ color: '#2563EB' }} />
-                City Portal
-              </h2>
-              <a
-                href={permit['City Portal Link']}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '10px 16px',
-                  backgroundColor: '#2563EB',
-                  color: '#FFFFFF',
-                  borderRadius: '8px',
-                  textDecoration: 'none',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  transition: 'all 0.2s ease'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#1D4ED8';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#2563EB';
-                }}
-              >
-                <ExternalLink size={16} />
-                Open City Portal
-              </a>
-            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ExternalLink size={20} className="text-blue-600" />
+                  City Portal
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <a
+                  href={permit['City Portal Link']}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                >
+                  <ExternalLink size={16} />
+                  Open City Portal
+                </a>
+              </CardContent>
+            </Card>
           )}
 
           {/* File Upload */}
           {permit['File Upload'] && (
-            <div style={{
-              backgroundColor: '#FFFFFF',
-              borderRadius: '12px',
-              padding: '24px',
-              border: '1px solid #E2E8F0',
-              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)'
-            }}>
-              <h2 style={{
-                fontSize: '18px',
-                fontWeight: '600',
-                color: '#1E293B',
-                marginBottom: '16px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}>
-                <FileText size={20} style={{ color: '#2563EB' }} />
-                Documents
-              </h2>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                padding: '12px',
-                backgroundColor: '#F8FAFC',
-                borderRadius: '8px',
-                border: '1px solid #E2E8F0'
-              }}>
-                <FileText size={20} style={{ color: '#64748B' }} />
-                <div style={{ flex: 1 }}>
-                  <p style={{
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    color: '#1E293B',
-                    marginBottom: '2px'
-                  }}>
-                    {permit['File Upload'].split('/').pop()}
-                  </p>
-                  <p style={{
-                    fontSize: '12px',
-                    color: '#64748B'
-                  }}>
-                    Permit Document
-                  </p>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText size={20} className="text-blue-600" />
+                  Documents
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                  <FileText size={20} className="text-slate-500" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-slate-800 mb-0.5">
+                      {permit['File Upload'].split('/').pop()}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      Permit Document
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1"
+                  >
+                    <Download size={14} />
+                    Download
+                  </Button>
                 </div>
-                <button
-                  style={{
-                    padding: '6px 12px',
-                    backgroundColor: '#FFFFFF',
-                    border: '1px solid #E2E8F0',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    fontSize: '12px',
-                    fontWeight: '500',
-                    color: '#64748B',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#F8FAFC';
-                    e.currentTarget.style.borderColor = '#2563EB';
-                    e.currentTarget.style.color = '#2563EB';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = '#FFFFFF';
-                    e.currentTarget.style.borderColor = '#E2E8F0';
-                    e.currentTarget.style.color = '#64748B';
-                  }}
-                >
-                  <Download size={14} />
-                  Download
-                </button>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           )}
         </div>
       </div>
