@@ -5,6 +5,12 @@ import { useAppStore } from '../stores/appStore';
 import useInspectionsStore from '../stores/inspectionsStore';
 import LoadingScreen from '../components/LoadingScreen';
 import ErrorState from '../components/ErrorState';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import StatusBadge from '@/components/app/StatusBadge';
+import StatsCard from '@/components/app/StatsCard';
+import EmptyState from '@/components/app/EmptyState';
 
 export default function Inspections() {
   const { navigateToInspectionDetails } = useAppStore();
@@ -21,7 +27,6 @@ export default function Inspections() {
   } = useInspectionsStore();
   
   const [searchTerm, setSearchTerm] = useState('');
-  const [hoveredCard, setHoveredCard] = useState(null);
   const [projects, setProjects] = useState([]);
   const [permits, setPermits] = useState([]);
 
@@ -164,209 +169,93 @@ export default function Inspections() {
   }
 
   return (
-    <div style={{
-      backgroundColor: '#F8FAFC',
-      minHeight: '100vh',
-      padding: '32px'
-    }}>
-      <div style={{
-        maxWidth: '1400px',
-        margin: '0 auto'
-      }}>
+    <div className="bg-gray-50 min-h-screen p-8">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          marginBottom: '32px'
-        }}>
+        <div className="flex justify-between items-start mb-8">
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-              <ClipboardCheck size={32} color="#6366F1" strokeWidth={2} />
-              <h1 style={{
-                fontSize: '32px',
-                fontWeight: '700',
-                color: '#1E293B',
-                margin: 0
-              }}>
+            <div className="flex items-center gap-3 mb-2">
+              <ClipboardCheck size={32} className="text-indigo-600" strokeWidth={2} />
+              <h1 className="text-3xl font-bold text-gray-800">
                 Inspections
               </h1>
             </div>
-            <p style={{
-              fontSize: '16px',
-              color: '#64748B',
-              margin: 0
-            }}>
+            <p className="text-base text-gray-500">
               Track building inspections and deficiencies
             </p>
           </div>
 
-          <button
-            onMouseEnter={() => setHoveredCard('add-button')}
-            onMouseLeave={() => setHoveredCard(null)}
+          <Button
             onClick={() => {/* TODO: Open create inspection modal */}}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '12px 24px',
-              backgroundColor: hoveredCard === 'add-button' ? '#5B21B6' : '#6366F1',
-              color: '#FFFFFF',
-              border: 'none',
-              borderRadius: '8px',
-              fontSize: '15px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              boxShadow: '0 2px 4px rgba(99, 102, 241, 0.2)'
-            }}
+            className="bg-indigo-600 hover:bg-purple-700"
           >
             <Plus size={20} />
             New Inspection
-          </button>
+          </Button>
         </div>
 
         {/* Filters and Search */}
-        <div style={{
-          display: 'flex',
-          gap: '16px',
-          marginBottom: '24px',
-          flexWrap: 'wrap'
-        }}>
+        <div className="flex gap-4 mb-6 flex-wrap">
           {/* Status Filters */}
-          <div style={{
-            display: 'flex',
-            gap: '8px',
-            padding: '4px',
-            backgroundColor: '#FFFFFF',
-            borderRadius: '8px',
-            border: '1px solid #E2E8F0'
-          }}>
+          <div className="flex gap-2 p-1 bg-white rounded-lg border border-gray-200">
             {['all', 'scheduled', 'in-progress', 'completed', 'failed'].map(status => (
-              <button
+              <Button
                 key={status}
+                variant={filter === status ? 'default' : 'ghost'}
+                size="sm"
                 onClick={() => setFilter(status)}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: filter === status ? '#6366F1' : 'transparent',
-                  color: filter === status ? '#FFFFFF' : '#64748B',
-                  border: 'none',
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  textTransform: 'capitalize'
-                }}
+                className={filter === status ? 'bg-indigo-600 hover:bg-indigo-700' : ''}
               >
                 {status === 'all' ? 'All' : status.replace('-', ' ')}
-              </button>
+              </Button>
             ))}
           </div>
 
           {/* Search */}
-          <div style={{
-            flex: 1,
-            minWidth: '300px',
-            position: 'relative'
-          }}>
-            <Search size={20} color="#94A3B8" style={{
-              position: 'absolute',
-              left: '12px',
-              top: '50%',
-              transform: 'translateY(-50%)'
-            }} />
+          <div className="flex-1 min-w-[300px] relative">
+            <Search size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               placeholder="Search by ID, type, inspector, or project..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '12px 12px 12px 44px',
-                fontSize: '15px',
-                border: '1px solid #E2E8F0',
-                borderRadius: '8px',
-                backgroundColor: '#FFFFFF'
-              }}
+              className="w-full pl-11 pr-3 py-3 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
         </div>
 
         {/* Stats Summary */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-          gap: '16px',
-          marginBottom: '24px'
-        }}>
-          <div style={{
-            padding: '20px',
-            backgroundColor: '#FFFFFF',
-            borderRadius: '8px',
-            border: '1px solid #E2E8F0'
-          }}>
-            <div style={{ fontSize: '14px', color: '#64748B', marginBottom: '4px' }}>Total Inspections</div>
-            <div style={{ fontSize: '24px', fontWeight: '700', color: '#1E293B' }}>{inspections.length}</div>
-          </div>
-          <div style={{
-            padding: '20px',
-            backgroundColor: '#FFFFFF',
-            borderRadius: '8px',
-            border: '1px solid #E2E8F0'
-          }}>
-            <div style={{ fontSize: '14px', color: '#64748B', marginBottom: '4px' }}>Scheduled</div>
-            <div style={{ fontSize: '24px', fontWeight: '700', color: '#D97706' }}>
-              {inspections.filter(i => (i.status || '').toLowerCase() === 'scheduled').length}
-            </div>
-          </div>
-          <div style={{
-            padding: '20px',
-            backgroundColor: '#FFFFFF',
-            borderRadius: '8px',
-            border: '1px solid #E2E8F0'
-          }}>
-            <div style={{ fontSize: '14px', color: '#64748B', marginBottom: '4px' }}>In Progress</div>
-            <div style={{ fontSize: '24px', fontWeight: '700', color: '#2563EB' }}>
-              {inspections.filter(i => (i.status || '').toLowerCase() === 'in-progress').length}
-            </div>
-          </div>
-          <div style={{
-            padding: '20px',
-            backgroundColor: '#FFFFFF',
-            borderRadius: '8px',
-            border: '1px solid #E2E8F0'
-          }}>
-            <div style={{ fontSize: '14px', color: '#64748B', marginBottom: '4px' }}>Completed</div>
-            <div style={{ fontSize: '24px', fontWeight: '700', color: '#059669' }}>
-              {inspections.filter(i => (i.status || '').toLowerCase() === 'completed').length}
-            </div>
-          </div>
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-4 mb-6">
+          <StatsCard 
+            label="Total Inspections" 
+            value={inspections.length}
+          />
+          <StatsCard 
+            label="Scheduled" 
+            value={inspections.filter(i => (i.status || '').toLowerCase() === 'scheduled').length}
+            valueClassName="text-amber-600"
+          />
+          <StatsCard 
+            label="In Progress" 
+            value={inspections.filter(i => (i.status || '').toLowerCase() === 'in-progress').length}
+            valueClassName="text-blue-600"
+          />
+          <StatsCard 
+            label="Completed" 
+            value={inspections.filter(i => (i.status || '').toLowerCase() === 'completed').length}
+            valueClassName="text-green-600"
+          />
         </div>
 
         {/* Inspections Grid */}
         {filteredInspections.length === 0 ? (
-          <div style={{
-            padding: '64px 24px',
-            textAlign: 'center',
-            backgroundColor: '#FFFFFF',
-            borderRadius: '12px',
-            border: '2px dashed #E2E8F0'
-          }}>
-            <ClipboardCheck size={48} color="#CBD5E1" style={{ margin: '0 auto 16px' }} />
-            <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#64748B', margin: '0 0 8px 0' }}>
-              {searchTerm ? 'No inspections found' : 'No inspections yet'}
-            </h3>
-            <p style={{ fontSize: '15px', color: '#94A3B8', margin: 0 }}>
-              {searchTerm ? 'Try adjusting your search or filters' : 'Create your first inspection to get started'}
-            </p>
-          </div>
+          <EmptyState
+            icon={ClipboardCheck}
+            title={searchTerm ? 'No inspections found' : 'No inspections yet'}
+            description={searchTerm ? 'Try adjusting your search or filters' : 'Create your first inspection to get started'}
+          />
         ) : (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-            gap: '20px'
-          }}>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-5">
             {filteredInspections.map((inspection) => {
               const inspectionStatus = inspection.status || inspection['Inspection Status'] || 'unknown';
               const inspectionId = inspection.inspection_id || inspection['Inspection ID'];
@@ -377,131 +266,11 @@ export default function Inspections() {
               const inspector = inspection.inspector || 'Not assigned';
               const result = inspection.result || inspection['Result'];
               const projectId = inspection.project_id || inspection['Project ID'];
-              const permitId = inspection.permit_id || inspection['Permit ID'];
-              const statusColor = getStatusColor(inspectionStatus);
 
               return (
-                <div
+                <Card
                   key={inspectionId}
-                  onMouseEnter={() => setHoveredCard(inspectionId)}
-                  onMouseLeave={() => setHoveredCard(null)}
                   onClick={() => navigateToInspectionDetails(inspectionId)}
-                  style={{
-                    padding: '24px',
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: '12px',
-                    border: `2px solid ${hoveredCard === inspectionId ? '#6366F1' : '#E2E8F0'}`,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    transform: hoveredCard === inspectionId ? 'translateY(-2px)' : 'translateY(0)',
-                    boxShadow: hoveredCard === inspectionId ? '0 8px 16px rgba(0,0,0,0.08)' : '0 2px 4px rgba(0,0,0,0.04)'
-                  }}
+                  className="cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-lg hover:border-indigo-600"
                 >
-                  {/* Header */}
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-start',
-                    marginBottom: '16px'
-                  }}>
-                    <div style={{ flex: 1 }}>
-                      <h3 style={{
-                        fontSize: '18px',
-                        fontWeight: '700',
-                        color: '#1E293B',
-                        margin: '0 0 4px 0'
-                      }}>
-                        {inspectionType}
-                      </h3>
-                      <div style={{
-                        fontSize: '13px',
-                        color: '#64748B',
-                        fontFamily: 'monospace'
-                      }}>
-                        {businessId}
-                      </div>
-                    </div>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      padding: '6px 12px',
-                      fontSize: '13px',
-                      fontWeight: '600',
-                      backgroundColor: statusColor.bg,
-                      color: statusColor.text,
-                      border: `1px solid ${statusColor.border}`,
-                      borderRadius: '6px'
-                    }}>
-                      {getStatusIcon(inspectionStatus)}
-                      <span style={{ textTransform: 'capitalize' }}>
-                        {inspectionStatus.replace('-', ' ')}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Details */}
-                  <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '12px',
-                    paddingTop: '16px',
-                    borderTop: '1px solid #F1F5F9'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Building2 size={16} color="#94A3B8" />
-                      <span style={{ fontSize: '14px', color: '#64748B' }}>
-                        {getProjectName(projectId)}
-                      </span>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <User size={16} color="#94A3B8" />
-                      <span style={{ fontSize: '14px', color: '#64748B' }}>
-                        {inspector}
-                      </span>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Calendar size={16} color="#94A3B8" />
-                      <span style={{ fontSize: '14px', color: '#64748B' }}>
-                        {completedDate ? `Completed: ${formatDate(completedDate)}` : `Scheduled: ${formatDate(scheduledDate)}`}
-                      </span>
-                    </div>
-
-                    {result && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '14px', color: '#64748B', fontWeight: '600' }}>
-                          Result:
-                        </span>
-                        {getResultBadge(result)}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Deficiencies count */}
-                  {inspection.deficiencies && Array.isArray(inspection.deficiencies) && inspection.deficiencies.length > 0 && (
-                    <div style={{
-                      marginTop: '12px',
-                      padding: '8px 12px',
-                      backgroundColor: '#FEF3C7',
-                      borderRadius: '6px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}>
-                      <AlertCircle size={16} color="#D97706" />
-                      <span style={{ fontSize: '13px', color: '#D97706', fontWeight: '600' }}>
-                        {inspection.deficiencies.length} {inspection.deficiencies.length === 1 ? 'deficiency' : 'deficiencies'}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+                  <CardContent className=\"p-6\">\n                    {/* Header */}\n                    <div className=\"flex justify-between items-start mb-4\">\n                      <div className=\"flex-1\">\n                        <h3 className=\"text-lg font-bold text-gray-800 mb-1\">\n                          {inspectionType}\n                        </h3>\n                        <div className=\"text-sm text-gray-500 font-mono\">\n                          {businessId}\n                        </div>\n                      </div>\n                      <StatusBadge type=\"inspection\" status={inspectionStatus} />\n                    </div>\n\n                    {/* Details */}\n                    <div className=\"flex flex-col gap-3 pt-4 border-t border-gray-100\">\n                      <div className=\"flex items-center gap-2\">\n                        <Building2 size={16} className=\"text-gray-400\" />\n                        <span className=\"text-sm text-gray-500\">\n                          {getProjectName(projectId)}\n                        </span>\n                      </div>\n\n                      <div className=\"flex items-center gap-2\">\n                        <User size={16} className=\"text-gray-400\" />\n                        <span className=\"text-sm text-gray-500\">\n                          {inspector}\n                        </span>\n                      </div>\n\n                      <div className=\"flex items-center gap-2\">\n                        <Calendar size={16} className=\"text-gray-400\" />\n                        <span className=\"text-sm text-gray-500\">\n                          {completedDate ? `Completed: ${formatDate(completedDate)}` : `Scheduled: ${formatDate(scheduledDate)}`}\n                        </span>\n                      </div>\n\n                      {result && (\n                        <div className=\"flex items-center gap-2\">\n                          <span className=\"text-sm text-gray-500 font-semibold\">\n                            Result:\n                          </span>\n                          {getResultBadge(result)}\n                        </div>\n                      )}\n                    </div>\n\n                    {/* Deficiencies count */}\n                    {inspection.deficiencies && Array.isArray(inspection.deficiencies) && inspection.deficiencies.length > 0 && (\n                      <div className=\"mt-3 p-2 px-3 bg-amber-50 rounded-md flex items-center gap-2\">\n                        <AlertCircle size={16} className=\"text-amber-600\" />\n                        <span className=\"text-sm text-amber-600 font-semibold\">\n                          {inspection.deficiencies.length} {inspection.deficiencies.length === 1 ? 'deficiency' : 'deficiencies'}\n                        </span>\n                      </div>\n                    )}\n                  </CardContent>\n                </Card>\n              );\n            })}\n          </div>\n        )}\n      </div>\n    </div>\n  );\n}
