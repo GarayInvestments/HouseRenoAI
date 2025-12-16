@@ -170,62 +170,24 @@ export default function Payments() {
   }
 
   return (
-    <div style={{ 
-      padding: '24px',
-      maxWidth: '1400px',
-      margin: '0 auto',
-      minHeight: '100vh',
-      backgroundColor: '#F9FAFB'
-    }}>
+    <div className="p-6 max-w-7xl mx-auto min-h-screen bg-gray-50">
       {/* Header */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '24px',
-        flexWrap: 'wrap',
-        gap: '16px'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <DollarSign size={32} color="#059669" />
-          <h1 style={{ 
-            fontSize: '28px', 
-            fontWeight: '700',
-            color: '#111827',
-            margin: 0
-          }}>
+      <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
+        <div className="flex items-center gap-3">
+          <DollarSign size={32} className="text-green-600" />
+          <h1 className="text-3xl font-bold text-gray-900">
             Payments
           </h1>
         </div>
         
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          <button
-            onClick={() => {/* TODO: Open record payment modal */}}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: '#059669',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: '600',
-              fontSize: '14px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#047857'}
-            onMouseLeave={(e) => e.target.style.backgroundColor = '#059669'}
-          >
-            <Plus size={16} />
-            Record Payment
-          </button>
-        </div>
+        <Button onClick={() => {/* TODO: Open record payment modal */}}>
+          <Plus size={16} />
+          Record Payment
+        </Button>
       </div>
 
-      {/* Sync Control Panel - replaces old sync status banner */}
-      <div style={{ marginBottom: '20px' }}>
+      {/* Sync Control Panel */}
+      <div className="mb-5">
         <SyncControlPanel
           onManualSync={handleSyncQuickBooks}
           syncStatus={qbSyncStatus}
@@ -236,200 +198,78 @@ export default function Payments() {
       </div>
 
       {/* Stats Cards */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-        gap: '16px',
-        marginBottom: '24px'
-      }}>
-        <div style={{
-          backgroundColor: 'white',
-          padding: '20px',
-          borderRadius: '12px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          border: '1px solid #E5E7EB'
-        }}>
-          <div style={{ fontSize: '14px', color: '#6B7280', marginBottom: '8px' }}>
-            Total Payments
-          </div>
-          <div style={{ fontSize: '28px', fontWeight: '700', color: '#111827' }}>
-            {stats.total}
-          </div>
-        </div>
-
-        <div style={{
-          backgroundColor: 'white',
-          padding: '20px',
-          borderRadius: '12px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          border: '1px solid #E5E7EB'
-        }}>
-          <div style={{ fontSize: '14px', color: '#6B7280', marginBottom: '8px' }}>
-            Total Amount
-          </div>
-          <div style={{ fontSize: '28px', fontWeight: '700', color: '#2563EB' }}>
-            {formatCurrency(stats.totalAmount)}
-          </div>
-        </div>
-
-        <div style={{
-          backgroundColor: 'white',
-          padding: '20px',
-          borderRadius: '12px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          border: '1px solid #E5E7EB'
-        }}>
-          <div style={{ fontSize: '14px', color: '#6B7280', marginBottom: '8px' }}>
-            Cleared
-          </div>
-          <div style={{ fontSize: '28px', fontWeight: '700', color: '#059669' }}>
-            {formatCurrency(stats.clearedAmount)}
-          </div>
-        </div>
-
-        <div style={{
-          backgroundColor: 'white',
-          padding: '20px',
-          borderRadius: '12px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          border: '1px solid #E5E7EB'
-        }}>
-          <div style={{ fontSize: '14px', color: '#6B7280', marginBottom: '8px' }}>
-            Pending
-          </div>
-          <div style={{ fontSize: '28px', fontWeight: '700', color: '#D97706' }}>
-            {stats.pending}
-          </div>
-        </div>
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-4 mb-6">
+        <StatsCard 
+          label="Total Payments" 
+          value={stats.total}
+        />
+        <StatsCard 
+          label="Total Amount" 
+          value={formatCurrency(stats.totalAmount)}
+          valueClassName="text-blue-600"
+        />
+        <StatsCard 
+          label="Cleared" 
+          value={formatCurrency(stats.clearedAmount)}
+          valueClassName="text-green-600"
+        />
+        <StatsCard 
+          label="Pending" 
+          value={stats.pending}
+          valueClassName="text-amber-600"
+        />
       </div>
 
       {/* Search and Filters */}
-      <div style={{
-        display: 'flex',
-        gap: '12px',
-        marginBottom: '20px',
-        flexWrap: 'wrap'
-      }}>
+      <div className="flex gap-3 mb-5 flex-wrap">
         {/* Search */}
-        <div style={{ 
-          position: 'relative', 
-          flex: '1 1 300px',
-          minWidth: '200px'
-        }}>
-          <Search 
-            size={18} 
-            style={{ 
-              position: 'absolute', 
-              left: '12px', 
-              top: '50%', 
-              transform: 'translateY(-50%)',
-              color: '#9CA3AF'
-            }} 
-          />
+        <div className="relative flex-1 min-w-[200px]">
+          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
             placeholder="Search payments..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '10px 12px 10px 40px',
-              border: '1px solid #E5E7EB',
-              borderRadius: '8px',
-              fontSize: '14px',
-              outline: 'none',
-              transition: 'all 0.2s ease'
-            }}
-            onFocus={(e) => e.target.style.borderColor = '#2563EB'}
-            onBlur={(e) => e.target.style.borderColor = '#E5E7EB'}
+            className="w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
 
         {/* Status Filters */}
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+        <div className="flex gap-2 flex-wrap">
           {['all', 'PENDING', 'POSTED', 'FAILED', 'REFUNDED'].map((status) => (
-            <button
+            <Button
               key={status}
+              variant={filter === status ? 'default' : 'outline'}
+              size="sm"
               onClick={() => setFilter(status)}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: filter === status ? '#059669' : 'white',
-                color: filter === status ? 'white' : '#374151',
-                border: '1px solid #E5E7EB',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: '500',
-                textTransform: 'capitalize',
-                transition: 'all 0.2s ease'
-              }}
+              className="capitalize"
             >
               {status === 'all' ? 'All' : formatEnumLabel(status)}
               {status !== 'all' && stats[status.toLowerCase()] > 0 && (
-                <span style={{
-                  marginLeft: '6px',
-                  padding: '2px 6px',
-                  backgroundColor: filter === status ? 'rgba(255,255,255,0.2)' : '#F3F4F6',
-                  borderRadius: '10px',
-                  fontSize: '12px',
-                  fontWeight: '600'
-                }}>
+                <Badge variant="secondary" className="ml-2">
                   {stats[status.toLowerCase()]}
-                </span>
+                </Badge>
               )}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
 
       {/* Payments List */}
       {filteredPayments.length === 0 ? (
-        <div style={{
-          backgroundColor: 'white',
-          padding: '60px 20px',
-          borderRadius: '12px',
-          textAlign: 'center',
-          border: '2px dashed #E5E7EB'
-        }}>
-          <DollarSign size={48} color="#9CA3AF" style={{ margin: '0 auto 16px' }} />
-          <h3 style={{ 
-            fontSize: '18px', 
-            fontWeight: '600',
-            color: '#374151',
-            marginBottom: '8px'
-          }}>
-            No payments found
-          </h3>
-          <p style={{ color: '#6B7280', fontSize: '14px', marginBottom: '20px' }}>
-            {searchTerm ? 'Try adjusting your search or filters' : 'Get started by recording your first payment'}
-          </p>
-          {!searchTerm && (
-            <button
-              onClick={() => {/* TODO: Open record payment modal */}}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: '#059669',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontWeight: '600',
-                fontSize: '14px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
-            >
+        <EmptyState
+          icon={DollarSign}
+          title="No payments found"
+          description={searchTerm ? 'Try adjusting your search or filters' : 'Get started by recording your first payment'}
+          action={!searchTerm && (
+            <Button onClick={() => {/* TODO: Open record payment modal */}}>
               <Plus size={16} />
               Record Payment
-            </button>
+            </Button>
           )}
-        </div>
+        />
       ) : (
-        <div style={{
-          display: 'grid',
-          gap: '12px'
-        }}>
+        <div className="grid gap-3">
           {filteredPayments.map((payment, index) => {
             const paymentId = payment.payment_id || payment['Payment ID'] || payment.id;
             const businessId = payment.business_id || payment['Business ID'] || payment['Payment ID'] || paymentId;
@@ -442,107 +282,68 @@ export default function Payments() {
             const clientId = payment.client_id || payment['Client ID'];
 
             return (
-              <div
+              <Card
                 key={`payment-${paymentId || index}`}
                 onClick={() => navigateToPaymentDetails(paymentId)}
-                className="bg-white p-5 rounded-xl border border-gray-200 cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-lg"
+                className="cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-lg"
               >
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-                  gap: '20px',
-                  alignItems: 'center'
-                }}>
-                  {/* Payment Info */}
-                  <div>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      marginBottom: '8px'
-                    }}>
-                      <DollarSign size={18} color="#059669" />
-                      <span style={{
-                        fontSize: '20px',
-                        fontWeight: '700',
-                        color: '#059669'
-                      }}>
-                        {formatCurrency(amount)}
-                      </span>
-                    </div>
-                    <div style={{ fontSize: '13px', color: '#6B7280' }}>
-                      {businessId}
-                    </div>
-                  </div>
-
-                  {/* Client & Invoice */}
-                  <div>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      marginBottom: '4px',
-                      fontSize: '14px',
-                      color: '#374151'
-                    }}>
-                      <User size={14} color="#6B7280" />
-                      {getClientName(clientId)}
-                    </div>
-                    {invoiceId && (
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        fontSize: '13px',
-                        color: '#6B7280'
-                      }}>
-                        <FileText size={14} color="#9CA3AF" />
-                        Invoice: {getInvoiceNumber(invoiceId)}
+                <CardContent className="p-5">
+                  <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-5 items-center">
+                    {/* Payment Info */}
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <DollarSign size={18} className="text-green-600" />
+                        <span className="text-xl font-bold text-green-600">
+                          {formatCurrency(amount)}
+                        </span>
                       </div>
-                    )}
-                  </div>
-
-                  {/* Payment Method & Date */}
-                  <div>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      marginBottom: '4px',
-                      fontSize: '14px',
-                      color: '#374151'
-                    }}>
-                      <span>{getPaymentMethodIcon(paymentMethod)}</span>
-                      {paymentMethod}
-                    </div>
-                    {referenceNumber && (
-                      <div style={{
-                        fontSize: '13px',
-                        color: '#6B7280'
-                      }}>
-                        Ref: {referenceNumber}
+                      <div className="text-sm text-gray-500">
+                        {businessId}
                       </div>
-                    )}
-                  </div>
+                    </div>
 
-                  {/* Date */}
-                  <div>
-                    <div style={{
-                      fontSize: '13px',
-                      color: '#6B7280',
-                      marginBottom: '4px'
-                    }}>
-                      <Calendar size={14} style={{ display: 'inline', marginRight: '4px' }} />
-                      {formatDate(paymentDate)}
+                    {/* Client & Invoice */}
+                    <div>
+                      <div className="flex items-center gap-1.5 mb-1 text-sm text-gray-700">
+                        <User size={14} className="text-gray-500" />
+                        {getClientName(clientId)}
+                      </div>
+                      {invoiceId && (
+                        <div className="flex items-center gap-1.5 text-sm text-gray-500">
+                          <FileText size={14} className="text-gray-400" />
+                          Invoice: {getInvoiceNumber(invoiceId)}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Payment Method & Date */}
+                    <div>
+                      <div className="flex items-center gap-1.5 mb-1 text-sm text-gray-700">
+                        <span>{getPaymentMethodIcon(paymentMethod)}</span>
+                        {paymentMethod}
+                      </div>
+                      {referenceNumber && (
+                        <div className="text-sm text-gray-500">
+                          Ref: {referenceNumber}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Date */}
+                    <div>
+                      <div className="text-sm text-gray-500 mb-1">
+                        <Calendar size={14} className="inline mr-1" />
+                        {formatDate(paymentDate)}
+                      </div>
+                    </div>
+
+                    {/* Status */}
+                    <div className="text-right">
+                      <StatusBadge type="payment" status={status} />
                     </div>
                   </div>
-
-                  {/* Status */}
-                  <div style={{ textAlign: 'right' }}>
-                    <StatusBadge type="payment" status={status} />
-                  </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             );
           })}
         </div>

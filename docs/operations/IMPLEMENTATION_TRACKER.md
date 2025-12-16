@@ -21,8 +21,8 @@
 - ✅ Clients.jsx (745→503 lines)
 - ✅ Dashboard.jsx (196→73 lines)
 - ✅ PermitDetails.jsx (777→444 lines)
-- 🔄 Invoices.jsx (helpers removed, layout pending)
-- 🔄 Payments.jsx (helpers removed, layout pending)
+- ✅ Invoices.jsx (598→321 lines, 46% reduction) - Completed: Dec 16 5:15 PM EST
+- 🔄 Payments.jsx (in progress)
 
 **Remaining** (Priority Order):
 1. Complete Invoices.jsx (stats cards, filters, card grid)
