@@ -1,12 +1,15 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Search, Phone, Mail, MapPin, User, Loader2, AlertCircle, Plus, Edit2, Trash2 } from 'lucide-react';
+import { Search, Phone, Mail, MapPin, User, Plus, Edit2, Trash2 } from 'lucide-react';
 import api from '../lib/api';
 import useAppStore from '../stores/appStore';
 import Modal from '../components/Modal';
 import FormField from '../components/FormField';
 import ConfirmDialog from '../components/ConfirmDialog';
-import ErrorState from '../components/ErrorState';
-import LoadingScreen from '../components/LoadingScreen';
+import { Button } from '../components/ui/Button';
+import { Badge } from '../components/ui/Badge';
+import { Card, CardContent } from '../components/ui/Card';
+import LoadingState from '../components/app/LoadingState';
+import EmptyState from '../components/app/EmptyState';
 
 export default function Clients() {
   // Clients page with card layout
@@ -214,115 +217,50 @@ export default function Clients() {
   }, [clients, searchQuery]);
 
   if (loading) {
-    return <LoadingScreen />;
+    return <LoadingState message="Loading clients..." />;
   }
 
   if (error) {
     return (
-      <div style={{ padding: '20px', backgroundColor: '#F8FAFC', minHeight: '100vh' }}>
-        <ErrorState message={error} onRetry={fetchClients} fullScreen />
-      </div>
+      <EmptyState
+        title="Failed to load clients"
+        description={error}
+        action={
+          <Button onClick={fetchClients}>
+            Retry
+          </Button>
+        }
+      />
     );
   }
 
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100%',
-      backgroundColor: '#F8FAFC'
-    }}>
+    <div className="flex flex-col h-full bg-gray-50">
       {/* Header */}
-      <div style={{
-        backgroundColor: '#FFFFFF',
-        borderBottom: '1px solid #E2E8F0',
-        padding: '24px 32px',
-        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)'
-      }}>
-        <div style={{
-          marginBottom: '16px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start'
-        }}>
+      <div className="bg-white border-b border-gray-200 px-8 py-6">
+        <div className="mb-4 flex justify-between items-start">
           <div>
-            <h1 style={{
-              fontSize: '24px',
-              fontWeight: '600',
-              color: '#1E293B',
-              marginBottom: '4px'
-            }}>Clients</h1>
-            <p style={{
-              color: '#64748B',
-              fontSize: '14px'
-            }}>
+            <h1 className="text-2xl font-semibold text-gray-900 mb-1">Clients</h1>
+            <p className="text-gray-600 text-sm">
               {filteredClients.length} {filteredClients.length === 1 ? 'client' : 'clients'}
             </p>
           </div>
           
-          {/* New Client Button */}
-          <button
-            onClick={handleOpenCreate}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '10px 16px',
-              backgroundColor: '#2563EB',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              fontSize: '14px',
-              fontWeight: '500',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
-            // CSS-only hover - no React state change
-            onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#1D4ED8'; }}
-            onMouseOut={(e) => { e.currentTarget.style.backgroundColor = '#2563EB'; }}
-          >
+          <Button onClick={handleOpenCreate}>
             <Plus size={18} />
             New Client
-          </button>
+          </Button>
         </div>
 
         {/* Search Bar */}
-        <div style={{ position: 'relative' }}>
-          <Search style={{
-            position: 'absolute',
-            left: '12px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            color: '#94A3B8',
-            width: '20px',
-            height: '20px'
-          }} />
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
           <input
             type="text"
             placeholder="Search by name, email, phone, or address..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            style={{
-              width: '100%',
-              paddingLeft: '44px',
-              paddingRight: '16px',
-              paddingTop: '10px',
-              paddingBottom: '10px',
-              border: '1px solid #E2E8F0',
-              borderRadius: '10px',
-              fontSize: '14px',
-              outline: 'none',
-              transition: 'all 0.2s ease'
-            }}
-            // CSS-only focus effects - no state updates
-            onFocus={(e) => {
-              e.currentTarget.style.borderColor = '#2563EB';
-              e.currentTarget.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.1)';
-            }}
-            onBlur={(e) => {
-              e.currentTarget.style.borderColor = '#E2E8F0';
-              e.currentTarget.style.boxShadow = 'none';
-            }}
+            className="w-full pl-11 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all"
           />
         </div>
       </div>
