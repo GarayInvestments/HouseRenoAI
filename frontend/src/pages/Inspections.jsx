@@ -28,25 +28,22 @@ export default function Inspections() {
   
   const [searchTerm, setSearchTerm] = useState('');
   const [projects, setProjects] = useState([]);
-  const [permits, setPermits] = useState([]);
 
   useEffect(() => {
     fetchAllData();
     window.history.replaceState({ page: 'inspections' }, '');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchAllData = async () => {
     try {
       // Fetch all data in parallel
-      const [inspectionsData, projectsData, permitsData] = await Promise.all([
-        fetchInspections(),
-        api.getProjects(),
-        api.getPermits()
+      const [projectsData] = await Promise.all([
+        api.getProjects()
       ]);
       
+      await fetchInspections();
       setProjects(Array.isArray(projectsData) ? projectsData : []);
-      const permitsArray = permitsData?.items || permitsData || [];
-      setPermits(Array.isArray(permitsArray) ? permitsArray : []);
     } catch (err) {
       console.error('Failed to load inspections:', err);
     }
@@ -58,14 +55,6 @@ export default function Inspections() {
       p['Project ID'] === projectId
     );
     return project?.project_name || project?.['Project Name'] || 'Unknown Project';
-  };
-
-  const getPermitNumber = (permitId) => {
-    const permit = permits.find(p => 
-      p.permit_id === permitId || 
-      p['Permit ID'] === permitId
-    );
-    return permit?.permit_number || permit?.business_id || permit?.['Permit Number'] || 'N/A';
   };
 
   // Format date helper
@@ -96,37 +85,8 @@ export default function Inspections() {
     }
     
     return result;
-  }, [inspections, filter, searchTerm, projects]);
-
-  const getStatusColor = (status) => {
-    const lowerStatus = status?.toLowerCase();
-    if (lowerStatus === 'completed') {
-      return { bg: '#ECFDF5', text: '#059669', border: '#A7F3D0' };
-    }
-    if (lowerStatus === 'in-progress') {
-      return { bg: '#DBEAFE', text: '#2563EB', border: '#93C5FD' };
-    }
-    if (lowerStatus === 'scheduled') {
-      return { bg: '#FEF3C7', text: '#D97706', border: '#FCD34D' };
-    }
-    if (lowerStatus === 'failed') {
-      return { bg: '#FEE2E2', text: '#DC2626', border: '#FECACA' };
-    }
-    if (lowerStatus === 'cancelled') {
-      return { bg: '#F3F4F6', text: '#6B7280', border: '#D1D5DB' };
-    }
-    return { bg: '#F3F4F6', text: '#6B7280', border: '#D1D5DB' };
-  };
-
-  const getStatusIcon = (status) => {
-    const lowerStatus = status?.toLowerCase();
-    if (lowerStatus === 'completed') return <CheckCircle size={16} />;
-    if (lowerStatus === 'in-progress') return <Loader2 size={16} className="animate-spin" />;
-    if (lowerStatus === 'scheduled') return <Clock size={16} />;
-    if (lowerStatus === 'failed') return <AlertCircle size={16} />;
-    if (lowerStatus === 'cancelled') return <XCircle size={16} />;
-    return <Clock size={16} />;
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inspections, filter, searchTerm, projects, getFilteredInspections, getProjectName]);
 
   const getResultBadge = (result) => {
     if (!result) return null;
@@ -273,4 +233,69 @@ export default function Inspections() {
                   onClick={() => navigateToInspectionDetails(inspectionId)}
                   className="cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-lg hover:border-indigo-600"
                 >
-                  <CardContent className=\"p-6\">\n                    {/* Header */}\n                    <div className=\"flex justify-between items-start mb-4\">\n                      <div className=\"flex-1\">\n                        <h3 className=\"text-lg font-bold text-gray-800 mb-1\">\n                          {inspectionType}\n                        </h3>\n                        <div className=\"text-sm text-gray-500 font-mono\">\n                          {businessId}\n                        </div>\n                      </div>\n                      <StatusBadge type=\"inspection\" status={inspectionStatus} />\n                    </div>\n\n                    {/* Details */}\n                    <div className=\"flex flex-col gap-3 pt-4 border-t border-gray-100\">\n                      <div className=\"flex items-center gap-2\">\n                        <Building2 size={16} className=\"text-gray-400\" />\n                        <span className=\"text-sm text-gray-500\">\n                          {getProjectName(projectId)}\n                        </span>\n                      </div>\n\n                      <div className=\"flex items-center gap-2\">\n                        <User size={16} className=\"text-gray-400\" />\n                        <span className=\"text-sm text-gray-500\">\n                          {inspector}\n                        </span>\n                      </div>\n\n                      <div className=\"flex items-center gap-2\">\n                        <Calendar size={16} className=\"text-gray-400\" />\n                        <span className=\"text-sm text-gray-500\">\n                          {completedDate ? `Completed: ${formatDate(completedDate)}` : `Scheduled: ${formatDate(scheduledDate)}`}\n                        </span>\n                      </div>\n\n                      {result && (\n                        <div className=\"flex items-center gap-2\">\n                          <span className=\"text-sm text-gray-500 font-semibold\">\n                            Result:\n                          </span>\n                          {getResultBadge(result)}\n                        </div>\n                      )}\n                    </div>\n\n                    {/* Deficiencies count */}\n                    {inspection.deficiencies && Array.isArray(inspection.deficiencies) && inspection.deficiencies.length > 0 && (\n                      <div className=\"mt-3 p-2 px-3 bg-amber-50 rounded-md flex items-center gap-2\">\n                        <AlertCircle size={16} className=\"text-amber-600\" />\n                        <span className=\"text-sm text-amber-600 font-semibold\">\n                          {inspection.deficiencies.length} {inspection.deficiencies.length === 1 ? 'deficiency' : 'deficiencies'}\n                        </span>\n                      </div>\n                    )}\n                  </CardContent>\n                </Card>\n              );\n            })}\n          </div>\n        )}\n      </div>\n    </div>\n  );\n}
+                  <CardContent className="p-6">
+                    {/* Header */}
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-bold text-gray-800 mb-1">
+                          {inspectionType}
+                        </h3>
+                        <div className="text-sm text-gray-500 font-mono">
+                          {businessId}
+                        </div>
+                      </div>
+                      <StatusBadge type="inspection" status={inspectionStatus} />
+                    </div>
+
+                    {/* Details */}
+                    <div className="flex flex-col gap-3 pt-4 border-t border-gray-100">
+                      <div className="flex items-center gap-2">
+                        <Building2 size={16} className="text-gray-400" />
+                        <span className="text-sm text-gray-500">
+                          {getProjectName(projectId)}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <User size={16} className="text-gray-400" />
+                        <span className="text-sm text-gray-500">
+                          {inspector}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Calendar size={16} className="text-gray-400" />
+                        <span className="text-sm text-gray-500">
+                          {completedDate ? `Completed: ${formatDate(completedDate)}` : `Scheduled: ${formatDate(scheduledDate)}`}
+                        </span>
+                      </div>
+
+                      {result && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-500 font-semibold">
+                            Result:
+                          </span>
+                          {getResultBadge(result)}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Deficiencies count */}
+                    {inspection.deficiencies && Array.isArray(inspection.deficiencies) && inspection.deficiencies.length > 0 && (
+                      <div className="mt-3 p-2 px-3 bg-amber-50 rounded-md flex items-center gap-2">
+                        <AlertCircle size={16} className="text-amber-600" />
+                        <span className="text-sm text-amber-600 font-semibold">
+                          {inspection.deficiencies.length} {inspection.deficiencies.length === 1 ? 'deficiency' : 'deficiencies'}
+                        </span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
