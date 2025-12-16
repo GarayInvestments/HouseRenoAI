@@ -51,19 +51,19 @@ export default function StatsCard({
       {...props}
     >
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-gray-600">
+        <CardTitle className="text-sm font-medium text-muted-foreground">
           {label}
         </CardTitle>
         {icon && (
-          <div className="text-blue-600" aria-hidden="true">
+          <div className="text-primary" aria-hidden="true">
             {icon}
           </div>
         )}
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold text-gray-900">{value}</div>
+        <div className="text-2xl font-semibold text-foreground">{value}</div>
         {subtitle && (
-          <p className="text-xs text-gray-500 mt-1">{subtitle}</p>
+          <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
         )}
         {trend && (
           <p

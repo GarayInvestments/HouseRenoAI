@@ -301,6 +301,7 @@ class DBService:
             projects_data = []
             for project in projects:
                 project_dict = {
+                    "id": project.project_id,  # Frontend expects lowercase 'id'
                     "Project ID": project.project_id,
                     "Client ID": project.client_id or "",
                     "Project Name": project.project_name or "Unnamed Project",

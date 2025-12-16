@@ -1,4 +1,4 @@
-import { LayoutDashboard, MessageSquare, FileText, FolderKanban, Users, FolderOpen, Settings, ClipboardCheck, Receipt, DollarSign, MapPin, Building2, UserCheck, Eye } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, FileText, FolderKanban, Users, FolderOpen, Settings, ClipboardCheck, Receipt, DollarSign, MapPin, Building2, UserCheck, Eye, Boxes } from 'lucide-react';
 import { useAppStore } from '../stores/appStore';
 
 const navItems = [

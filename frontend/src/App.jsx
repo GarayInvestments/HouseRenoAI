@@ -20,7 +20,7 @@ import Projects from './pages/Projects';
 import ProjectDetails from './pages/ProjectDetails';
 import Clients from './pages/Clients';
 import ClientDetails from './pages/ClientDetails';
-import LicensedBusinesses from './pages/LicensedBusinesses';
+import LicensedBusinesses from './pages/LicensedBusinesses_NEW';
 import Qualifiers from './pages/Qualifiers';
 import OversightActions from './pages/OversightActions';
 import Documents from './pages/Documents';

@@ -23,7 +23,7 @@ export default function LicensedBusinesses() {
     try {
       setLoading(true);
       setError(null);
-      const response = await api.get('/licensed-businesses');
+      const response = await api.request('/licensed-businesses');
       setBusinesses(Array.isArray(response) ? response : []);
     } catch (err) {
       setError('Failed to load licensed businesses. Please try again.');

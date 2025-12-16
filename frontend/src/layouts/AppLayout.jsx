@@ -15,7 +15,7 @@ export default function AppLayout({ children }) {
   const drawerOpen = useAppStore((state) => state.drawerOpen);
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
+    <div className="flex flex-col h-screen bg-background text-foreground">
       {/* Top Navigation Bar */}
       <TopBar />
 
@@ -25,7 +25,7 @@ export default function AppLayout({ children }) {
         <Sidebar />
 
         {/* Main Content - Scrollable */}
-        <main className="flex-1 overflow-y-auto bg-gray-50">
+        <main className="flex-1 overflow-y-auto bg-background">
           {children}
         </main>
       </div>

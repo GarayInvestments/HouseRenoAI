@@ -1,4 +1,4 @@
-import { UserCheck, Plus, Search, FileText, Building2, Loader2, AlertCircle } from 'lucide-react';
+import { UserCheck, Plus, Search, FileText, Building2, Loader2, AlertCircle, XCircle } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import api from '../lib/api';
 import { useAppStore } from '../stores/appStore';
@@ -16,6 +16,8 @@ export default function Qualifiers() {
   const [selectedQualifier, setSelectedQualifier] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
+  const [endingAssignment, setEndingAssignment] = useState(null);
+  const [confirmEndDialog, setConfirmEndDialog] = useState(null); // { qualifierId, businessId, businessName }
 
   useEffect(() => {
     fetchData();
@@ -27,8 +29,8 @@ export default function Qualifiers() {
       setLoading(true);
       setError(null);
       const [qualifiersResponse, businessesResponse] = await Promise.all([
-        api.get('/qualifiers'),
-        api.get('/licensed-businesses')
+        api.getQualifiers(),
+        api.request('/licensed-businesses')
       ]);
       setQualifiers(Array.isArray(qualifiersResponse) ? qualifiersResponse : []);
       setBusinesses(Array.isArray(businessesResponse) ? businessesResponse : []);
@@ -54,7 +56,7 @@ export default function Qualifiers() {
       setIsSaving(true);
       setSaveError(null);
       
-      const response = await api.post('/qualifiers', formData);
+      const response = await api.request('/qualifiers', { method: 'POST', body: formData });
       
       setQualifiers([...qualifiers, response]);
       setShowCreateModal(false);
@@ -71,9 +73,24 @@ export default function Qualifiers() {
       setIsSaving(true);
       setSaveError(null);
       
-      await api.post(`/qualifiers/${selectedQualifier.id}/assign`, {
-        licensed_business_id: businessId
+      const requestBody = {
+        licensed_business_id: businessId,
+        qualifier_id: selectedQualifier.id,
+        start_date: new Date().toISOString().split('T')[0],
+        is_primary: true
+      };
+      
+      console.log('[ASSIGN] Starting assignment:', {
+        url: `/qualifiers/${selectedQualifier.id}/assign`,
+        body: requestBody
       });
+      
+      const result = await api.request(`/qualifiers/${selectedQualifier.id}/assign`, {
+        method: 'POST',
+        body: requestBody
+      });
+      
+      console.log('[ASSIGN] Assignment successful:', result);
       
       // Refresh data to show updated assignments
       await fetchData();
@@ -84,6 +101,31 @@ export default function Qualifiers() {
       console.error('Error assigning qualifier:', err);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleEndAssignment = async (qualifierId, businessId, businessName) => {
+    setConfirmEndDialog({ qualifierId, businessId, businessName });
+  };
+
+  const confirmEndAssignment = async () => {
+    const { qualifierId, businessId } = confirmEndDialog;
+
+    try {
+      setEndingAssignment(businessId);
+      setConfirmEndDialog(null);
+      
+      await api.request(`/qualifiers/${qualifierId}/assignments/${businessId}/end`, {
+        method: 'PUT'
+      });
+      
+      // Refresh data to show updated assignments
+      await fetchData();
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to end assignment. Please try again.');
+      console.error('Error ending assignment:', err);
+    } finally {
+      setEndingAssignment(null);
     }
   };
 
@@ -235,11 +277,37 @@ export default function Qualifiers() {
                     {qualifier.assigned_businesses && qualifier.assigned_businesses.length > 0 ? (
                       <div className="mt-3 bg-gray-50 p-3 rounded-lg">
                         <p className="text-sm font-medium text-gray-700 mb-2">Assigned to:</p>
-                        <div className="space-y-1">
+                        <div className="space-y-2">
                           {qualifier.assigned_businesses.map((business, idx) => (
-                            <div key={idx} className="flex items-center text-sm text-gray-600">
-                              <Building2 className="w-4 h-4 mr-2 text-gray-400" />
-                              {typeof business === 'string' ? business : business.business_name || business.business_id}
+                            <div key={idx} className="flex items-center justify-between text-sm">
+                              <div className="flex items-center text-gray-600">
+                                <Building2 className="w-4 h-4 mr-2 text-gray-400" />
+                                <span>{typeof business === 'string' ? business : business.business_name || business.business_id}</span>
+                                {business.start_date && (
+                                  <span className="ml-2 text-xs text-gray-400">
+                                    (since {new Date(business.start_date).toLocaleDateString()})
+                                  </span>
+                                )}
+                              </div>
+                              <button
+                                onClick={() => handleEndAssignment(
+                                  qualifier.id,
+                                  business.business_id,
+                                  business.business_name || business.business_id
+                                )}
+                                disabled={endingAssignment === business.business_id}
+                                className="flex items-center px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
+                                title="End this assignment"
+                              >
+                                {endingAssignment === business.business_id ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <>
+                                    <XCircle className="w-3 h-3 mr-1" />
+                                    End
+                                  </>
+                                )}
+                              </button>
                             </div>
                           ))}
                         </div>
@@ -270,6 +338,34 @@ export default function Qualifiers() {
           </div>
         )}
       </div>
+
+      {/* End Assignment Confirmation Dialog */}
+      {confirmEndDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              End assignment for {confirmEndDialog.businessName}?
+            </h3>
+            <p className="text-sm text-gray-600 mb-6">
+              This will set the end date to today and free up capacity.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setConfirmEndDialog(null)}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmEndAssignment}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create Modal */}
       {showCreateModal && (

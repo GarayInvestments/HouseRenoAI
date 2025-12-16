@@ -50,7 +50,10 @@ class ApiService {
         ...options.headers,
       },
       ...options,
+      ...(options.body && { body: JSON.stringify(options.body) }),
     };
+
+    console.log('[API] Request config:', { url, method: config.method, hasBody: !!config.body });
 
     try {
       const response = await fetch(url, config);

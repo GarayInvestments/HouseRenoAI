@@ -33,10 +33,10 @@ export default function OversightActions() {
       setError(null);
       
       const [actionsResponse, projectsResponse, qualifiersResponse, businessesResponse] = await Promise.all([
-        api.get('/oversight-actions'),
-        api.get('/projects'),
-        api.get('/qualifiers'),
-        api.get('/licensed-businesses')
+        api.request('/oversight-actions'),
+        api.getProjects(),
+        api.getQualifiers(),
+        api.request('/licensed-businesses')
       ]);
       
       setActions(Array.isArray(actionsResponse) ? actionsResponse : []);
@@ -117,12 +117,14 @@ export default function OversightActions() {
               onChange={(e) => setProjectFilter(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
             >
-              <option value="">All Projects</option>
-              {projects.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.project_name || project.project_id}
-                </option>
-              ))}
+              {[
+                <option key="all" value="">All Projects</option>,
+                ...projects.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project['Project Name'] || project.project_name || project['Project ID']}
+                  </option>
+                ))
+              ]}
             </select>
           </div>
 
@@ -133,12 +135,14 @@ export default function OversightActions() {
               onChange={(e) => setQualifierFilter(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
             >
-              <option value="">All Qualifiers</option>
-              {qualifiers.map((qualifier) => (
-                <option key={qualifier.id} value={qualifier.id}>
-                  {qualifier.full_name}
-                </option>
-              ))}
+              {[
+                <option key="all" value="">All Qualifiers</option>,
+                ...qualifiers.map((qualifier) => (
+                  <option key={qualifier.id} value={qualifier.id}>
+                    {qualifier.full_name}
+                  </option>
+                ))
+              ]}
             </select>
           </div>
 
@@ -149,12 +153,14 @@ export default function OversightActions() {
               onChange={(e) => setBusinessFilter(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
             >
-              <option value="">All Businesses</option>
-              {businesses.map((business) => (
-                <option key={business.id} value={business.id}>
-                  {business.business_name}
-                </option>
-              ))}
+              {[
+                <option key="all" value="">All Businesses</option>,
+                ...businesses.map((business) => (
+                  <option key={business.id} value={business.id}>
+                    {business.business_name}
+                  </option>
+                ))
+              ]}
             </select>
           </div>
 
@@ -165,12 +171,14 @@ export default function OversightActions() {
               onChange={(e) => setActionTypeFilter(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
             >
-              <option value="">All Types</option>
-              {actionTypes.map((type) => (
-                <option key={type} value={type}>
-                  {type.replace('_', ' ')}
-                </option>
-              ))}
+              {[
+                <option key="all" value="">All Types</option>,
+                ...actionTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {type.replace('_', ' ')}
+                  </option>
+                ))
+              ]}
             </select>
           </div>
         </div>
@@ -408,12 +416,14 @@ function CreateActionModal({ onClose, onSave, projects, qualifiers, businesses, 
                 onChange={(e) => setFormData({...formData, project_id: e.target.value})}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="">-- Select a project --</option>
-                {projects.map((project) => (
-                  <option key={project.id} value={project.id}>
-                    {project.project_name || project.project_id}
-                  </option>
-                ))}
+                {[
+                  <option key="" value="">-- Select a project --</option>,
+                  ...projects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project['Project Name'] || project.project_name || project['Project ID']}
+                    </option>
+                  ))
+                ]}
               </select>
             </div>
 
@@ -458,12 +468,14 @@ function CreateActionModal({ onClose, onSave, projects, qualifiers, businesses, 
                 onChange={(e) => setFormData({...formData, qualifier_id: e.target.value})}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="">-- Select qualifier (optional) --</option>
-                {qualifiers.map((qualifier) => (
-                  <option key={qualifier.id} value={qualifier.id}>
-                    {qualifier.full_name}
-                  </option>
-                ))}
+                {[
+                  <option key="" value="">-- Select qualifier (optional) --</option>,
+                  ...qualifiers.map((qualifier) => (
+                    <option key={qualifier.id} value={qualifier.id}>
+                      {qualifier.full_name}
+                    </option>
+                  ))
+                ]}
               </select>
             </div>
 
@@ -476,12 +488,14 @@ function CreateActionModal({ onClose, onSave, projects, qualifiers, businesses, 
                 onChange={(e) => setFormData({...formData, licensed_business_id: e.target.value})}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="">-- Select business (optional) --</option>
-                {businesses.map((business) => (
-                  <option key={business.id} value={business.id}>
-                    {business.business_name}
-                  </option>
-                ))}
+                {[
+                  <option key="" value="">-- Select business (optional) --</option>,
+                  ...businesses.map((business) => (
+                    <option key={business.id} value={business.id}>
+                      {business.business_name}
+                    </option>
+                  ))
+                ]}
               </select>
             </div>
 

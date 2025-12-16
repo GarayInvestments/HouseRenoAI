@@ -1,182 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
-@plugin 'tailwindcss-animate';
 @import "tailwindcss";
-@import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
-
-@theme {
-  --color-primary: #2563EB;
-  --color-primary-50: #EFF6FF;
-  --color-primary-100: #DBEAFE;
-  --color-primary-200: #BFDBFE;
-  --color-primary-300: #93C5FD;
-  --color-primary-400: #60A5FA;
-  --color-primary-500: #2563EB;
-  --color-primary-600: #1D4ED8;
-  --color-primary-700: #1E40AF;
-  --color-primary-800: #1E3A8A;
-  --color-primary-900: #1E3A8A;
-
-  --color-accent: #60A5FA;
-  --color-accent-light: #93C5FD;
-
-  --color-neutral-text: #475569;
-  --color-neutral-border: #E2E8F0;
-  --color-neutral-bg: #F8FAFC;
-
-  --font-family-sans: Inter, Roboto, system-ui, sans-serif;
-}
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background-color: #F8FAFC;
-  color: #334155;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-h1, h2, h3, h4, h5, h6 {
-  font-weight: 600;
-  color: #1E293B;
-}
-
-@keyframes pulse {
-  0%, 100% {
-    opacity: 0.4;
-    transform: scale(0.8);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-/* Markdown Content Styling for AI Chat */
-.markdown-content {
-  color: #1E293B;
-}
-
-.markdown-content h1,
-.markdown-content h2,
-.markdown-content h3,
-.markdown-content h4,
-.markdown-content h5,
-.markdown-content h6 {
-  font-weight: 600;
-  margin-top: 16px;
-  margin-bottom: 8px;
-  color: #0F172A;
-}
-
-.markdown-content h1 { font-size: 20px; }
-.markdown-content h2 { font-size: 18px; }
-.markdown-content h3 { font-size: 16px; }
-.markdown-content h4 { font-size: 14px; }
-
-.markdown-content p {
-  margin: 8px 0;
-  line-height: 1.6;
-}
-
-.markdown-content p:first-child {
-  margin-top: 0;
-}
-
-.markdown-content p:last-child {
-  margin-bottom: 0;
-}
-
-.markdown-content ul,
-.markdown-content ol {
-  margin: 8px 0;
-  padding-left: 24px;
-}
-
-.markdown-content li {
-  margin: 4px 0;
-  line-height: 1.6;
-}
-
-.markdown-content strong {
-  font-weight: 600;
-  color: #0F172A;
-}
-
-.markdown-content em {
-  font-style: italic;
-}
-
-.markdown-content code {
-  background-color: #F1F5F9;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-family: 'Courier New', monospace;
-  font-size: 13px;
-  color: #DC2626;
-}
-
-.markdown-content pre {
-  background-color: #F1F5F9;
-  padding: 12px;
-  border-radius: 8px;
-  overflow-x: auto;
-  margin: 12px 0;
-}
-
-.markdown-content pre code {
-  background-color: transparent;
-  padding: 0;
-  color: #1E293B;
-}
-
-.markdown-content blockquote {
-  border-left: 3px solid #2563EB;
-  padding-left: 12px;
-  margin: 12px 0;
-  color: #64748B;
-  font-style: italic;
-}
-
-.markdown-content table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 12px 0;
-}
-
-.markdown-content th,
-.markdown-content td {
-  border: 1px solid #E2E8F0;
-  padding: 8px 12px;
-  text-align: left;
-}
-
-.markdown-content th {
-  background-color: #F1F5F9;
-  font-weight: 600;
-}
-
-.markdown-content a {
-  color: #2563EB;
-  text-decoration: underline;
-}
-
-.markdown-content a:hover {
-  color: #1D4ED8;
-}
-
-.markdown-content hr {
-  border: none;
-  border-top: 1px solid #E2E8F0;
-  margin: 16px 0;
-}
+/* ============================================
+   SHADCN/UI THEME TOKENS (Slate - New York)
+   ============================================ */
 
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
@@ -217,18 +44,19 @@ h1, h2, h3, h4, h5, h6 {
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
 }
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
+  --background: oklch(0.985 0.002 247.839);
   --foreground: oklch(0.129 0.042 264.695);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.129 0.042 264.695);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
+  --primary: oklch(0.391 0.090 240.876);
+  --primary-foreground: oklch(0.985 0.002 247.839);
   --secondary: oklch(0.968 0.007 247.896);
   --secondary-foreground: oklch(0.208 0.042 265.755);
   --muted: oklch(0.968 0.007 247.896);
@@ -236,22 +64,22 @@ h1, h2, h3, h4, h5, h6 {
   --accent: oklch(0.968 0.007 247.896);
   --accent-foreground: oklch(0.208 0.042 265.755);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
+  --border: oklch(0.907 0.011 252.894);
+  --input: oklch(0.907 0.011 252.894);
+  --ring: oklch(0.391 0.090 240.876);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.984 0.003 247.858);
+  --sidebar: oklch(0.985 0.002 247.839);
   --sidebar-foreground: oklch(0.129 0.042 264.695);
-  --sidebar-primary: oklch(0.208 0.042 265.755);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
+  --sidebar-primary: oklch(0.391 0.090 240.876);
+  --sidebar-primary-foreground: oklch(0.985 0.002 247.839);
   --sidebar-accent: oklch(0.968 0.007 247.896);
   --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
-  --sidebar-border: oklch(0.929 0.013 255.508);
-  --sidebar-ring: oklch(0.704 0.04 256.788);
+  --sidebar-border: oklch(0.907 0.011 252.894);
+  --sidebar-ring: oklch(0.391 0.090 240.876);
 }
 
 .dark {
@@ -261,7 +89,7 @@ h1, h2, h3, h4, h5, h6 {
   --card-foreground: oklch(0.984 0.003 247.858);
   --popover: oklch(0.208 0.042 265.755);
   --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
+  --primary: oklch(0.546 0.215 262.881);
   --primary-foreground: oklch(0.208 0.042 265.755);
   --secondary: oklch(0.279 0.041 260.031);
   --secondary-foreground: oklch(0.984 0.003 247.858);
@@ -272,7 +100,7 @@ h1, h2, h3, h4, h5, h6 {
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
+  --ring: oklch(0.546 0.215 262.881);
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
@@ -280,19 +108,155 @@ h1, h2, h3, h4, h5, h6 {
   --chart-5: oklch(0.645 0.246 16.439);
   --sidebar: oklch(0.208 0.042 265.755);
   --sidebar-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary: oklch(0.546 0.215 262.881);
   --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
   --sidebar-accent: oklch(0.279 0.041 260.031);
   --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.551 0.027 264.364);
+  --sidebar-ring: oklch(0.546 0.215 262.881);
 }
 
+/* ============================================
+   BASE LAYER - Let theme tokens drive styles
+   ============================================ */
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
   }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold text-foreground;
+  }
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ============================================
+   MARKDOWN CONTENT (AI Chat)
+   ============================================ */
+.markdown-content {
+  @apply text-foreground;
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
+  @apply font-semibold text-foreground;
+  margin-top: 16px;
+  margin-bottom: 8px;
+}
+
+.markdown-content h1 { font-size: 20px; }
+.markdown-content h2 { font-size: 18px; }
+.markdown-content h3 { font-size: 16px; }
+.markdown-content h4 { font-size: 14px; }
+
+.markdown-content p {
+  margin: 8px 0;
+  line-height: 1.6;
+}
+
+.markdown-content p:first-child {
+  margin-top: 0;
+}
+
+.markdown-content p:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  margin: 8px 0;
+  padding-left: 24px;
+}
+
+.markdown-content li {
+  margin: 4px 0;
+  line-height: 1.6;
+}
+
+.markdown-content strong {
+  @apply font-semibold text-foreground;
+}
+
+.markdown-content em {
+  font-style: italic;
+}
+
+.markdown-content code {
+  @apply bg-muted text-destructive;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+}
+
+.markdown-content pre {
+  @apply bg-muted;
+  padding: 12px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 12px 0;
+}
+
+.markdown-content pre code {
+  @apply bg-transparent text-foreground;
+  padding: 0;
+}
+
+.markdown-content blockquote {
+  @apply border-l-primary text-muted-foreground;
+  border-left-width: 3px;
+  padding-left: 12px;
+  margin: 12px 0;
+  font-style: italic;
+}
+
+.markdown-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+}
+
+.markdown-content th,
+.markdown-content td {
+  @apply border-border;
+  border-width: 1px;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.markdown-content th {
+  @apply bg-muted font-semibold;
+}
+
+.markdown-content a {
+  @apply text-primary underline;
+}
+
+.markdown-content a:hover {
+  @apply text-primary/80;
+}
+
+.markdown-content hr {
+  @apply border-border;
+  border-top-width: 1px;
+  margin: 16px 0;
 }

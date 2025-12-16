@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends, status
 from typing import List, Dict, Any
 import logging
 from sqlalchemy import text
+from datetime import date
 
 from app.db.session import AsyncSessionLocal
 from app.services.db_service import db_service
@@ -21,27 +22,42 @@ router = APIRouter()
 @router.get("/")
 async def get_qualifiers():
     """
-    Get all qualifiers for dropdown selection
-    Returns: List of {id, qualifier_id, full_name, qualifier_id_number, license_status}
+    Get all qualifiers with their current assignment counts
+    Returns: List of {id, qualifier_id, full_name, qualifier_id_number, license_status, assigned_businesses}
     """
     try:
         async with AsyncSessionLocal() as session:
             result = await session.execute(text("""
                 SELECT 
-                    id,
-                    qualifier_id,
-                    full_name,
-                    qualifier_id_number,
-                    license_type,
-                    license_status,
-                    max_licenses_allowed
-                FROM qualifiers
-                WHERE license_status = 'active'
-                ORDER BY full_name
+                    q.id,
+                    q.qualifier_id,
+                    q.full_name,
+                    q.qualifier_id_number,
+                    q.license_type,
+                    q.license_status,
+                    q.max_licenses_allowed,
+                    COALESCE(
+                        json_agg(
+                            json_build_object(
+                                'business_id', lb.business_id,
+                                'business_name', lb.business_name,
+                                'start_date', lbq.start_date,
+                                'end_date', lbq.end_date
+                            )
+                        ) FILTER (WHERE lb.business_id IS NOT NULL AND lbq.end_date IS NULL),
+                        '[]'::json
+                    ) as assigned_businesses
+                FROM qualifiers q
+                LEFT JOIN licensed_business_qualifiers lbq ON q.id = lbq.qualifier_id AND lbq.end_date IS NULL
+                LEFT JOIN licensed_businesses lb ON lbq.licensed_business_id = lb.id
+                WHERE q.license_status = 'ACTIVE'
+                GROUP BY q.id, q.qualifier_id, q.full_name, q.qualifier_id_number, q.license_type, q.license_status, q.max_licenses_allowed
+                ORDER BY q.full_name
             """))
             
             qualifiers = []
             for row in result:
+                assigned = row[7] if row[7] else []
                 qualifiers.append({
                     "id": str(row[0]),
                     "qualifier_id": row[1],
@@ -49,10 +65,11 @@ async def get_qualifiers():
                     "qualifier_id_number": row[3],
                     "license_type": row[4],
                     "license_status": row[5],
-                    "max_licenses_allowed": row[6]
+                    "max_licenses_allowed": row[6],
+                    "assigned_businesses": assigned
                 })
             
-            logger.info(f"Retrieved {len(qualifiers)} qualifiers")
+            logger.info(f"Retrieved {len(qualifiers)} qualifiers with assignments")
             return qualifiers
             
     except Exception as e:
@@ -236,9 +253,12 @@ async def assign_qualifier_to_business(
     Validates capacity (max 2 licenses per NC law).
     Protected endpoint - requires authentication.
     """
+    logger.info(f"[ASSIGN] Received assignment request: qualifier_id={qualifier_id}, data={assignment_data.dict()}, user={current_user.email}")
     try:
         # Check capacity before assigning
+        logger.info(f"[ASSIGN] Checking capacity for qualifier {qualifier_id}")
         capacity_check = await db_service.check_qualifier_capacity(qualifier_id)
+        logger.info(f"[ASSIGN] Capacity check result: {capacity_check}")
         
         if not capacity_check["can_assign"]:
             raise HTTPException(
@@ -262,9 +282,7 @@ async def assign_qualifier_to_business(
             qualifier_id,
             assignment_dict["start_date"],
             assignment_dict.get("end_date"),
-            assignment_dict.get("cutoff_date"),
-            assignment_dict.get("is_primary", True),
-            assignment_dict.get("assignment_notes")
+            notes=assignment_dict.get("assignment_notes")
         )
         
         logger.info(f"[QUALIFIERS] Assigned qualifier {qualifier_id} to business {assignment_data.licensed_business_id} by user {current_user.email}")
@@ -277,6 +295,62 @@ async def assign_qualifier_to_business(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to assign qualifier: {str(e)}"
+        )
+
+
+@router.put("/{qualifier_id}/assignments/{business_id}/end")
+async def end_qualifier_assignment(
+    qualifier_id: str,
+    business_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    End an active qualifier assignment by setting end_date to today.
+    This maintains audit trail while freeing up capacity.
+    Protected endpoint - requires authentication.
+    """
+    logger.info(f"[UNASSIGN] Ending assignment: qualifier_id={qualifier_id}, business_id={business_id}, user={current_user.email}")
+    try:
+        async with AsyncSessionLocal() as session:
+            # Find active assignment
+            result = await session.execute(text("""
+                UPDATE licensed_business_qualifiers lbq
+                SET end_date = CURRENT_DATE,
+                    updated_at = CURRENT_TIMESTAMP
+                FROM licensed_businesses lb
+                WHERE lbq.licensed_business_id = lb.id
+                    AND lbq.qualifier_id = :qualifier_id
+                    AND lb.business_id = :business_id
+                    AND lbq.end_date IS NULL
+                RETURNING lbq.id, lb.business_name
+            """), {
+                "qualifier_id": qualifier_id,
+                "business_id": business_id
+            })
+            
+            row = result.fetchone()
+            if not row:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="No active assignment found"
+                )
+            
+            await session.commit()
+            
+            logger.info(f"[UNASSIGN] Ended assignment: {row[1]} (assignment_id={row[0]})")
+            return {
+                "message": f"Assignment ended for {row[1]}",
+                "assignment_id": str(row[0]),
+                "end_date": str(date.today())
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to end assignment {qualifier_id}/{business_id}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to end assignment: {str(e)}"
         )
 
 

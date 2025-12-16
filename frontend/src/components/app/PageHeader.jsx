@@ -49,7 +49,7 @@ export default function PageHeader({
 }) {
   return (
     <div
-      className={cn('flex items-center justify-between mb-6', className)}
+      className={cn('flex items-center justify-between', className)}
       {...props}
     >
       <div className="flex items-center gap-4">
@@ -65,15 +65,15 @@ export default function PageHeader({
         )}
         
         {icon && (
-          <div className="text-blue-600" aria-hidden="true">
+          <div className="text-primary" aria-hidden="true">
             {icon}
           </div>
         )}
         
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+        <div className="space-y-1">
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground">{title}</h1>
           {subtitle && (
-            <p className="text-sm text-gray-500 mt-1">{subtitle}</p>
+            <p className="text-base text-muted-foreground">{subtitle}</p>
           )}
         </div>
       </div>

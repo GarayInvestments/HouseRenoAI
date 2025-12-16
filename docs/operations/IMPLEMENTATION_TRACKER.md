@@ -1,8 +1,8 @@
 # House Renovators AI - Implementation Tracker
 
-**Version**: 6.0 (Frontend Design System Migration - Planning)  
-**Last Updated**: December 15, 2025 6:15 PM EST  
-**Current Phase**: **Frontend Design System Migration - 🟡 Phase 1: Foundation Setup**  
+**Version**: 6.2 (React Key Warning Fix + Projects API Normalization)  
+**Last Updated**: December 15, 2025 10:30 PM EST  
+**Current Phase**: **Frontend Design System Migration - ✅ Phase 1.5: CSS Foundation Fixed**  
 **Overall Progress**: Phases 0-Q Complete, Phases 18-21 Complete, Phase W Complete (Backend + Frontend)
 
 > **Purpose**: Active execution tracker for current and upcoming work. Historical phases (0-E) archived in `docs/archive/IMPLEMENTATION_HISTORY.md` for audit/compliance. See `PROJECT_ROADMAP.md` for technical specs.
@@ -12,14 +12,56 @@
 ## 🔵 NEW INITIATIVE: Frontend Design System Migration
 
 **Start Date**: December 15, 2025  
-**Status**: 🟡 Planning → Foundation Setup  
+**Status**: ✅ Phase 1.5 Complete - CSS Foundation Fixed  
 **Priority**: High (Developer Velocity & Maintainability)
 
 **Full Implementation Plan**: [`docs/operations/FRONTEND_DESIGN_SYSTEM_MIGRATION.md`](FRONTEND_DESIGN_SYSTEM_MIGRATION.md)
 
 **Goal**: Migrate from inline/page-specific styling to centralized component library (Tailwind CSS + shadcn/ui)
 
-**Current Phase**: Phase 1 - Foundation Setup ✅ **COMPLETE** (December 15, 2025 7:00 PM EST)
+### Phase 1.5 - CSS Foundation Fix ✅ **COMPLETE** (December 15, 2025 7:55 PM EST)
+
+**🚨 CRITICAL BUG FIXED**: shadcn theme tokens were not applying due to conflicting CSS
+
+**Root Cause Analysis**:
+The original `index.css` had **THREE conflicting style systems** fighting each other:
+1. **Lines 4-25**: Custom `@theme` block with hardcoded hex colors (`--color-primary: #2563EB`)
+2. **Lines 172-220**: shadcn's `@theme inline` block with `oklch()` colors  
+3. **Lines 222-248**: `:root` block with oklch CSS variables
+4. **Lines 33-40**: Hardcoded `body { background-color: #F8FAFC; color: #334155; }` overriding theme
+
+**Result**: Theme tokens like `bg-background`, `text-foreground`, `bg-card`, `border-border` resolved to wrong colors or didn't apply at all. UI looked "primitive" despite using shadcn components.
+
+**Solution**: Complete CSS rewrite with clean shadcn-only structure:
+- Single `:root` block with all shadcn CSS variables (oklch color space)
+- Single `.dark` block for dark mode support
+- `@layer base` for body styling using theme tokens
+- Removed ALL hardcoded hex colors from CSS
+- Removed conflicting `@theme` blocks
+- Kept only markdown styling as custom CSS (non-conflicting)
+
+**Files Changed**:
+- `frontend/src/index.css` - Complete rewrite (was 295 lines of conflicts → now ~180 lines clean)
+- `frontend/tailwind.config.js` - Removed conflicting color definitions (kept minimal extend)
+- `frontend/src/layouts/AppLayout.jsx` - Updated to use `bg-background text-foreground`
+- `frontend/src/pages/LicensedBusinesses_NEW.jsx` - Pilot page now renders correctly with shadcn styling
+
+**Verification**: LicensedBusinesses page now displays with proper shadcn aesthetics:
+- Cards have correct `bg-card` background with subtle shadows
+- Text uses proper `text-foreground` / `text-muted-foreground` hierarchy
+- Borders use `border-border` token
+- Buttons render with proper primary colors
+- Hover states and transitions work correctly
+
+**Lesson Learned**: When integrating shadcn/ui with Tailwind v4:
+1. **DO NOT** mix custom `@theme` blocks with shadcn's CSS variables
+2. **DO NOT** hardcode colors in `body {}` - use `@layer base` with tokens
+3. **ALWAYS** use a single `:root` block for all CSS variables
+4. shadcn expects `oklch()` color space - don't mix with hex values
+
+---
+
+### Phase 1 - Foundation Setup ✅ **COMPLETE** (December 15, 2025 7:00 PM EST)
 - ✅ Install shadcn/ui CLI and initialize (Completed: 6:30 PM EST)
 - ✅ Add 5 base components: Button, Badge, Card, Input, Table (Completed: 6:35 PM EST)
 - ✅ Create 5 application components: (Completed: 7:00 PM EST)
@@ -73,6 +115,40 @@
 - ✅ Design changes made in one place
 - ✅ Developer velocity improvement
 - ✅ Consistent, cohesive UI
+
+---
+
+## 🟢 Recently Completed (Last 48 Hours)
+
+### React Key Warning Fix + Projects API Normalization (December 15, 2025 10:30 PM EST)
+
+**Problem**: OversightActions.jsx showing React key prop warning + blank project dropdowns
+
+**Root Cause**:
+- Backend `/v1/projects` endpoint returned `"Project ID"` (legacy Google Sheets format)
+- Frontend expected `id` field for React keys
+- Result: All 12 projects had `undefined` IDs → React key warning
+- Modal project dropdowns were blank (looking for `project.project_name` but backend returns `"Project Name"`)
+
+**Solution**:
+1. **Backend Fix** (`app/services/db_service.py`):
+   - Added `"id": project.project_id` to response dictionary (line 303)
+   - Maintains backward compatibility with `"Project ID"` field
+
+2. **Frontend Fix** (`frontend/src/pages/OversightActions.jsx`):
+   - Filter dropdown: Updated to check `project['Project Name'] || project.project_name || project['Project ID']`
+   - Modal dropdown: Updated to check same field fallback pattern
+   - Removed debug code (IIFE that checked for duplicate IDs)
+
+**Result**:
+- ✅ React key warnings eliminated
+- ✅ Project names display correctly in filter dropdown
+- ✅ Project names display correctly in "Log Oversight Action" modal
+- ✅ Backend maintains backward compatibility with old field names
+
+**Files Changed** (2):
+- `app/services/db_service.py` (line 303)
+- `frontend/src/pages/OversightActions.jsx` (lines 120-130, 420-430)
 
 ---
 
