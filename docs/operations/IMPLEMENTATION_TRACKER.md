@@ -1,123 +1,171 @@
 # House Renovators AI - Implementation Tracker
 
-**Version**: 6.2 (React Key Warning Fix + Projects API Normalization)  
-**Last Updated**: December 15, 2025 10:30 PM EST  
-**Current Phase**: **Frontend Design System Migration - ✅ Phase 1.5: CSS Foundation Fixed**  
-**Overall Progress**: Phases 0-Q Complete, Phases 18-21 Complete, Phase W Complete (Backend + Frontend)
+**Version**: 6.3 (Tracker Reorganization)  
+**Last Updated**: December 15, 2025 10:40 PM EST  
+**Overall Progress**: All core features complete, design system migration in progress
 
-> **Purpose**: Active execution tracker for current and upcoming work. Historical phases (0-E) archived in `docs/archive/IMPLEMENTATION_HISTORY.md` for audit/compliance. See `PROJECT_ROADMAP.md` for technical specs.
-
----
-
-## 🔵 ACTIVE INITIATIVE: Frontend Design System Migration
-
-**Start Date**: December 15, 2025  
-**Status**: ✅ Phase 1 & 1.5 Complete (Archived to `docs/history/PHASE_COMPLETIONS/`)  
-**Priority**: High (Developer Velocity & Maintainability)
-
-**Full Implementation Plan**: [`docs/operations/FRONTEND_DESIGN_SYSTEM_MIGRATION.md`](FRONTEND_DESIGN_SYSTEM_MIGRATION.md)
-
-**Goal**: Migrate from inline/page-specific styling to centralized component library (Tailwind CSS + shadcn/ui)
-
-### Completed Phases
-- ✅ **Phase 1**: Component Foundation Setup (5 base + 5 app components) - Dec 15, 7:00 PM EST
-- ✅ **Phase 1.5**: CSS Foundation Fix (cleaned conflicting style systems) - Dec 15, 7:55 PM EST
-
-**Details**: See [`docs/history/PHASE_COMPLETIONS/PHASE_DESIGN_SYSTEM_FOUNDATION_2025_12_15.md`](../history/PHASE_COMPLETIONS/PHASE_DESIGN_SYSTEM_FOUNDATION_2025_12_15.md)
-
-### Up Next
-- [ ] **Phase 2**: Pilot Migration (Dashboard + PermitDetails)
-  - Migrate 2 high-visibility pages to prove migration pattern
-  - Document migration workflow for team
-  - Create before/after validation
+> **Purpose**: Track active work and immediate next steps. Completed milestones archived in `docs/history/PHASE_COMPLETIONS/`.
 
 ---
 
-## 🟢 Recently Completed (Last 48 Hours)
+## 🎯 UP NEXT (Priority Order)
 
-### React Key Warning Fix + Projects API Normalization (December 15, 2025 10:30 PM EST)
+### 1. Frontend Design System - Phase 2 (Next Session)
+**Status**: Ready to start  
+**Effort**: 4-6 hours  
+**Goal**: Migrate 2 pilot pages (Dashboard + PermitDetails) to prove migration pattern
 
-**Problem**: OversightActions.jsx showing React key prop warning + blank project dropdowns
+**Tasks**:
+- [ ] Migrate Dashboard.jsx to use new components (StatsCard, PageHeader)
+- [ ] Migrate PermitDetails.jsx to use new components (StatusBadge, Card)
+- [ ] Document migration pattern for remaining 15 pages
+- [ ] Create before/after screenshots for validation
 
-**Root Cause**:
-- Backend `/v1/projects` endpoint returned `"Project ID"` (legacy Google Sheets format)
-- Frontend expected `id` field for React keys
-- Result: All 12 projects had `undefined` IDs → React key warning
-- Modal project dropdowns were blank (looking for `project.project_name` but backend returns `"Project Name"`)
-
-**Solution**:
-1. **Backend Fix** (`app/services/db_service.py`):
-   - Added `"id": project.project_id` to response dictionary (line 303)
-   - Maintains backward compatibility with `"Project ID"` field
-
-2. **Frontend Fix** (`frontend/src/pages/OversightActions.jsx`):
-   - Filter dropdown: Updated to check `project['Project Name'] || project.project_name || project['Project ID']`
-   - Modal dropdown: Updated to check same field fallback pattern
-   - Removed debug code (IIFE that checked for duplicate IDs)
-
-**Result**:
-- ✅ React key warnings eliminated
-- ✅ Project names display correctly in filter dropdown
-- ✅ Project names display correctly in "Log Oversight Action" modal
-- ✅ Backend maintains backward compatibility with old field names
-
-**Files Changed** (2):
-- `app/services/db_service.py` (line 303)
-- `frontend/src/pages/OversightActions.jsx` (lines 120-130, 420-430)
+**Why Next**: Phase 1 foundation complete, ready to validate migration approach
 
 ---
 
-## 🎉 LATEST MILESTONE: Phase W.1 - Frontend Sync Enhancements Complete
+## 🟢 COMPLETED TODAY (December 15, 2025)
 
-**Completion Date**: December 15, 2025 5:20 PM EST  
-**Status**: ✅ **COMPLETE**
+### ✅ React Key Warning Fix (10:30 PM EST)
+**Problem**: OversightActions showing blank project dropdowns + React warnings  
+**Fix**: Backend now returns `id` field, frontend checks multiple field names  
+**Files**: `app/services/db_service.py`, `frontend/src/pages/OversightActions.jsx`
 
-**What Was Delivered**:
-- ✅ SyncControlPanel component: Unified sync control UI (420 lines)
-  - Circuit breaker health badge (3 states: CLOSED/green, OPEN/red, HALF_OPEN/yellow)
-  - Sync status badge (idle/syncing/success/error with icons)
-  - Manual "Sync Now" button with loading state
-  - Scheduler controls (pause/resume buttons)
-  - Reset circuit breaker button (admin, only when circuit open)
-  - Last sync time display ("X min ago" / "Xh Xm ago" format)
-  - Next sync time display (12-hour format with timezone)
-  - Error message banner (conditional, red background)
-- ✅ API integration: 5 endpoints with Supabase auth + 30-second polling
-  - GET /v1/quickbooks/sync/circuit-breaker (fetches state, failure_count, threshold)
-  - GET /v1/quickbooks/sync/scheduler (fetches is_running, is_paused, next_run_time)
-  - POST /v1/quickbooks/sync/scheduler/pause (pauses automatic syncs)
-  - POST /v1/quickbooks/sync/scheduler/resume (resumes automatic syncs)
-  - POST /v1/quickbooks/sync/circuit-breaker/reset (manually resets circuit)
-- ✅ Integration: Replaced old sync banners in Invoices + Payments pages
-  - Removed redundant gray "Sync QuickBooks" buttons (functionality now in SyncControlPanel)
-  - Cleaner UI with comprehensive sync context
-- ✅ Bug fixes (5):
-  1. Missing default export in PaymentDetails.jsx (broke imports)
-  2. Orphaned JSX fragments in Invoices.jsx (syntax errors from incomplete old code removal)
-  3. Orphaned JSX fragments in Payments.jsx (same issue)
-  4. Case mismatch: Backend returns lowercase `"closed"`, frontend checked uppercase `"CLOSED"`
-  5. Nested data structure: Backend returns `{ circuit_breaker: { state: ... } }`, frontend expected flat
-- ✅ Mobile responsiveness (12 pages): Reduced card minimum widths to eliminate horizontal scroll
-  - Dashboard, Invoices, Payments, Inspections, SiteVisits: Stats cards 200-250px → 140px
-  - Clients, Permits, Settings: Main cards 350-500px → 300-320px
-  - InvoiceDetails, InspectionDetails: Line items/photos 200px → 160px
-  - ClientDetails: Stats 200px → 140px
-- ✅ Backend bug fix: QuickBooks token timezone warning
-  - Warning: "can't compare offset-naive and offset-aware datetimes"
-  - Root cause: `datetime.now()` (naive) vs `token_expires_at` (aware from PostgreSQL)
-  - Fix: Changed to `datetime.now(timezone.utc)` for timezone-aware comparison
-  - Result: Clean backend startup logs
-- ✅ Production verified: Phase 21 confirmed deployed (migration applied, 12/12 payments synced)
+### ✅ Frontend Design System Phase 1 & 1.5 (7:55 PM EST)
+**Delivered**: 5 base + 5 app components, CSS foundation fixed  
+**Details**: Archived to [`PHASE_DESIGN_SYSTEM_FOUNDATION_2025_12_15.md`](../history/PHASE_COMPLETIONS/PHASE_DESIGN_SYSTEM_FOUNDATION_2025_12_15.md)
 
-**Files Changed** (15):
-- Frontend (13): SyncControlPanel.jsx (NEW - 420 lines), Invoices.jsx, Payments.jsx, PaymentDetails.jsx, Dashboard.jsx, Clients.jsx, ClientDetails.jsx, Permits.jsx, Settings.jsx, Inspections.jsx, InspectionDetails.jsx, SiteVisits.jsx, InvoiceDetails.jsx
-- Backend (1): main.py (timezone fix)
-- Docs (1): IMPLEMENTATION_TRACKER.md (Version 5.9)
+### ✅ Phase W.1 - Frontend Sync UI (5:20 PM EST)
+**Delivered**: SyncControlPanel component with circuit breaker + scheduler controls  
+**Result**: Unified sync observability across Invoices + Payments pages
 
-**Technical Wins**:
-- Single component provides complete sync observability (circuit breaker + scheduler + manual controls)
-- 30-second polling keeps UI current without user action
-- State badges use color psychology (green=healthy, red=blocked, yellow=testing)
+---
+
+## 📊 SYSTEM STATUS
+
+### Core Infrastructure
+| Component | Status | Last Updated |
+|-----------|--------|--------------|
+| **Backend API** | ✅ Production | All endpoints operational |
+| **Database** | ✅ Production | PostgreSQL (Supabase) |
+| **Authentication** | ✅ Production | Supabase Auth |
+| **QuickBooks Sync** | ✅ Production | Auto-sync 3x daily (8 AM, 1 PM, 6 PM EST) |
+| **Circuit Breaker** | ✅ Active | 3-failure threshold, 60s cooldown |
+| **Deployment** | ✅ Automated | Fly.io (backend) + Cloudflare (frontend) |
+
+### Feature Completeness
+| Feature Area | Status | Notes |
+|--------------|--------|-------|
+| **Clients & Projects** | ✅ Complete | Full CRUD with QB sync |
+| **Permits & Inspections** | ✅ Complete | JSONB photos/deficiencies support |
+| **Invoices & Payments** | ✅ Complete | QB metadata + navigation |
+| **Compliance (Phase Q)** | ✅ Complete | Licensed businesses, qualifiers, oversight |
+| **QuickBooks Integration** | ✅ Complete | OAuth2, auto-sync, circuit breaker |
+| **ENUMs (Status/Type)** | ✅ Complete | 10 ENUMs across 5 entities |
+| **Design System** | 🔄 In Progress | Phase 1 complete, Phase 2 next |
+
+---
+
+## 📚 RECENT MILESTONES (Last 7 Days)
+
+**Complete details archived in [`docs/history/PHASE_COMPLETIONS/`](../history/PHASE_COMPLETIONS/)**
+
+### Phase 21 - QuickBooks Payment Metadata (Dec 15, 3:45 PM EST)
+- Migration: 8 QB payment columns + 2 indexes
+- Promotion logic: Extracts nested QB fields from cache
+- Result: 12/12 payments populated with QB metadata
+
+### Phase 20 - QuickBooks Invoice Metadata (Dec 15, 11:50 PM EST)
+- Migration: 10 QB invoice columns + 2 indexes
+- Navigation: Reusable arrow/swipe/keyboard components
+- Result: 13/13 invoices synced with complete QB metadata
+
+### Phase 19 - Frontend ENUM Integration (Dec 14, 11:58 PM EST)
+- Dropdown integration across 5 detail pages
+- Centralized constants/enums.js with helper functions
+- All status/type fields now use ENUMs
+
+### Phase 18 - Type ENUMs (Dec 14, 11:45 PM EST)
+- 5 type ENUMs added (permit_type, project_type, license_type, etc.)
+- Migration with data preservation: 14 permits, 12 projects
+- Total: 10 ENUMs (5 status + 5 type) across domain model
+
+### Phase Q - Qualifier Compliance (Dec 15, 12:45 PM EST)
+- Q.1: 5 new tables + triggers (capacity enforcement, audit trail)
+- Q.2: SQLAlchemy models + 8 db_service methods
+- Q.3: 17 API endpoints (CRUD for licensed businesses, qualifiers, oversight)
+- Q.4: 3 frontend pages (Licensed Businesses, Qualifiers, Oversight Actions)
+
+### Phase W - QuickBooks Auto-Sync (Dec 15, 4:15 PM EST)
+- Circuit breaker pattern (3 states, 60s cooldown)
+- Scheduler: 3x daily sync (8 AM, 1 PM, 6 PM EST)
+- Database caching: 5 tables (customers, invoices, payments, estimates, bills)
+- Delta sync: 98% API reduction (100+ calls/day → 6 calls/day)
+
+---
+
+## 📖 HISTORICAL REFERENCE
+
+### Archived Phases (Completed 2024-2025)
+**Location**: [`docs/archive/IMPLEMENTATION_HISTORY.md`](../archive/IMPLEMENTATION_HISTORY.md)
+
+- **Phases 0-E**: Initial setup, database migrations, Google Sheets integration (deprecated Dec 2025)
+- **Phase F**: Frontend CRUD pages for all entities
+- **Phases 18-21**: ENUM migrations + QuickBooks metadata enhancements
+
+**Note**: Historical phases are documented for audit/compliance. Active work focuses on current initiatives only.
+
+---
+
+## 🔧 DEVELOPMENT WORKFLOW
+
+### Daily Development
+1. **Backend**: `python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000`
+2. **Frontend**: `cd frontend && npm run dev`
+3. **Local dev points to production Fly.io backend by default** (override in `frontend/.env.local` if needed)
+
+### Deployment
+- **Push to `main`** → Auto-deploys backend (Fly.io) + frontend (Cloudflare Pages)
+- **Backend secrets**: `fly secrets set KEY=value`
+- **Monitor**: `fly logs --app houserenovators-api --follow`
+
+### Testing Patterns
+- **Protected endpoints**: Use Supabase Auth token via frontend
+- **QuickBooks**: Check `/v1/quickbooks/status` → connect via `/v1/quickbooks/connect` if needed
+- **Chat testing**: See [`docs/guides/CHAT_TESTING_SOP.md`](../guides/CHAT_TESTING_SOP.md)
+
+### Key Documentation
+- **API Reference**: [`docs/guides/API_DOCUMENTATION.md`](../guides/API_DOCUMENTATION.md)
+- **QuickBooks Guide**: [`docs/guides/QUICKBOOKS_GUIDE.md`](../guides/QUICKBOOKS_GUIDE.md)
+- **Terminal Management**: [`docs/guides/TERMINAL_MANAGEMENT.md`](../guides/TERMINAL_MANAGEMENT.md) (CRITICAL for server stability)
+- **Troubleshooting**: [`docs/guides/TROUBLESHOOTING.md`](../guides/TROUBLESHOOTING.md)
+
+---
+
+## 💡 NOTES FOR NEXT SESSION
+
+### Design System Migration Context
+- **Phase 1 Complete**: 5 base components + 5 app components created
+- **Phase 1.5 Complete**: CSS foundation fixed (conflicting style systems eliminated)
+- **Phase 2 Ready**: Pilot pages (Dashboard + PermitDetails) waiting for migration
+- **Pattern to Prove**: Replace inline styles with component library approach
+- **Success Metric**: Zero inline styles in pilot pages, identical visual appearance
+
+### Active Configuration
+- **PostgreSQL**: Supabase (primary data store)
+- **Auth**: Supabase Auth (JWT-based, route-level protection via `get_current_user`)
+- **QB Sync**: Automated 3x daily (8 AM, 1 PM, 6 PM EST)
+- **Circuit Breaker**: 3-failure threshold, 60-second cooldown, exponential backoff
+- **Frontend**: React 18 + Vite, Zustand state management, shadcn/ui components (Phase 1)
+
+### Known Patterns
+- **Backend field names**: Often use legacy Google Sheets format (`"Project ID"`, `"Project Name"`)
+- **Frontend compatibility**: Always check multiple field name variants for backwards compatibility
+- **React keys**: Use `id` field (guaranteed unique) not display names
+- **Database introspection**: Use `psql` with pgpass.conf for schema verification before migrations
+
+---
 - Conditional controls (pause vs resume based on scheduler state, reset only when circuit open)
 - Removed duplicate "Sync QuickBooks" buttons - cleaner interface
 - Case-insensitive state matching prevents `(/)` bug
@@ -132,166 +180,17 @@
 
 ---
 
-## 🎉 PREVIOUS MILESTONE: Phase 21 - QuickBooks Payment Metadata Complete
-
-**Completion Date**: December 15, 2025 3:45 PM EST  
-**Status**: ✅ **COMPLETE**
-
-**What Was Delivered**:
-- ✅ Migration 83243f5ed087: 8 QuickBooks payment columns + 2 indexes
-  - deposit_account VARCHAR(50), currency_code VARCHAR(3), total_amount NUMERIC(12,2), unapplied_amount NUMERIC(12,2)
-  - process_payment BOOLEAN, linked_transactions JSONB, qb_metadata JSONB, private_note TEXT
-  - Indexes on currency_code and deposit_account for query performance
-- ✅ Backend promotion logic: Extracts nested QB fields from payments cache
-  - Handles DepositToAccountRef.value, CurrencyRef.value, Line array with LinkedTxn
-  - Null safety for all nested JSON access (qb_data.get().get() pattern)
-  - json.dumps() for JSONB serialization of Line array and MetaData object
-- ✅ Transaction isolation: Commit per payment, rollback per error (prevents cascade)
-  - Result: 12/12 payments populated with QB metadata
-- ✅ db_service API serialization: QB fields in both get_payment methods
-  - get_payment_by_business_id (line 617)
-  - get_payment_by_payment_id (line 665)
-- ✅ Frontend QuickBooks Details section: 5 fields + private note + linked transactions
-  - Currency, Deposit Account, Total Amount, Unapplied Amount, Payment Type
-  - Private note displayed conditionally (if present)
-  - Linked transactions parsed from JSONB with error handling (try/catch)
-- ✅ Navigation integration: Arrows + swipe + keyboard (reused from invoices)
-  - useDetailsNavigation hook with payments array from paymentsStore
-  - NavigationArrows component in header
-  - Touch handlers for 50px swipe threshold
-
-**Bugs Fixed** (5):
-1. **JSX syntax error**: Duplicate header section after navigation integration
-   - Symptom: "Expected corresponding JSX closing tag for <div>"
-   - Fix: Removed duplicate back button and title (lines 189-205)
-2. **Falsy value bug**: unapplied_amount = 0.0 treated as None
-   - Symptom: "Unapplied Amount: Not synced" when value was $0.00
-   - Root cause: `if payment.unapplied_amount else None` treats 0.0 as falsy
-   - Fix: Changed to `if payment.unapplied_amount is not None else None` (both methods)
-3. **Label clarity**: "Process Payment: No" confusing
-   - Fix: Changed to "Payment Type: Manual/Received" (clearer business meaning)
-4. **Navigation not working**: payments from wrong store
-   - Root cause: Getting `payments` from appStore (doesn't exist), should be paymentsStore
-   - Fix: Changed to `const { fetchPayment, payments } = usePaymentsStore()`
-5. **Navigation ID key mismatch**: Used 'payment_id' instead of 'Payment ID'
-   - Symptom: Arrows visible (1 of 12) but clicks/swipes not working
-   - Root cause: API returns Title Case keys ('Payment ID'), not snake_case ('payment_id')
-   - Fix: Changed idField parameter to `'Payment ID'` in useDetailsNavigation
-
-**Files Changed** (5 total):
-- Backend (3): migration 83243f5ed087, Payment model (app/db/models.py), quickbooks_sync_service (extraction + SQL), db_service (both get_payment methods)
-- Frontend (2): PaymentDetails.jsx (QB section + navigation), stores updated (paymentsStore usage)
-
-**Technical Wins**:
-- Mirrored successful QB invoice integration pattern exactly
-- JSONB null handling prevents "Not synced" for valid 0.0 values
-- Label improvements increase business user clarity
-- Navigation debugging process established (store → key → hook order)
-- 100% payment metadata population (12/12 synced)
+**End of Active Tracker**
 
 ---
 
-## 🎉 PREVIOUS MILESTONE: Phase 20 - QuickBooks Invoice Metadata Complete
+## 📚 ARCHIVED CONTENT
 
-**Completion Date**: December 15, 2025 11:50 PM EST  
-**Status**: ✅ **COMPLETE**
+**All detailed phase information archived to:**
+- `docs/history/PHASE_COMPLETIONS/` - Phase completion documents
+- `docs/archive/IMPLEMENTATION_HISTORY.md` - Historical phases 0-E
 
-**What Was Delivered**:
-- ✅ Migration e3b3d8b8d28d: 10 QuickBooks invoice columns + 2 indexes
-  - email_status, print_status, bill_email, bill_address (JSONB), ship_address (JSONB)
-  - currency_code, payment_terms, qb_metadata (JSONB), private_note, customer_memo
-- ✅ Backend promotion logic: Extracts nested QB fields with null safety
-  - Handles BillEmail.Address, CurrencyRef.value, SalesTermRef.name, CustomerMemo.value
-- ✅ Transaction cascade bug fixed: Commit per invoice, rollback per error
-  - Result: 13/13 invoices promoted (was 1/13 before fix)
-- ✅ Frontend QuickBooks Details section: Always visible with "Not synced" for NULL
-- ✅ Line items parsing: Double-encoded JSON handling (string → parsed → array)
-- ✅ Field mapping fixed: unit_price || rate || Rate (QuickBooks vs app naming)
-- ✅ Flat-fee display: qty=0 converted to qty=1 for cleaner UI
-- ✅ Reusable navigation components:
-  - useDetailsNavigation hook (touch gestures, keyboard arrows, state management)
-  - NavigationArrows component (arrow buttons + counter)
-  - 50px swipe threshold, left/right detection
-- ✅ All 13/13 invoices synced with complete QB metadata
-
-**Files Changed** (11 total):
-- Backend (6): migration e3b3d8b8d28d, Invoice model, quickbooks_sync_service (extraction + transaction), db_service (API serialization)
-- Frontend (5): InvoiceDetails (QB section + parsing + navigation), useDetailsNavigation hook (NEW), NavigationArrows component (NEW)
-
-**Technical Wins**:
-- Fixed SQLAlchemy model sync (JSON → JSONB for JSONB columns)
-- Transaction isolation prevents cascade failures
-- Double-parse logic handles database string encoding
-- QB flat-fee convention (qty=0) handled gracefully
-- Navigation pattern ready for ClientDetails, ProjectDetails, PermitDetails
-
----
-
-## 🎉 PREVIOUS MILESTONE: Phase 19 - Frontend ENUM Integration Complete
-
-**Completion Date**: December 14, 2025 11:58 PM EST  
-**Status**: ✅ **COMPLETE**
-
-**What Was Delivered**:
-- ✅ Complete ENUM dropdown integration across 5 detail pages
-- ✅ ClientDetails: client_status dropdown with color-coded badges (5 status colors)
-- ✅ ProjectDetails: project_type dropdown (replaced text input, 7 types)
-- ✅ PermitDetails: permit_type field added (8 types), status dropdown (6 statuses)
-- ✅ InvoiceDetails: invoice_status dropdown (6 QB-aligned statuses)
-- ✅ Payments: payment_status logic updated (4 ENUMs with icons/colors)
-- ✅ Centralized constants/enums.js with helper functions (formatEnumLabel, getEnumLabel)
-- ✅ Runtime fixes: undefined business_id, date input format (toDateInput helper), navigation pattern
-
-**Phase 18 Foundation** (Dec 14, 2025 11:45 PM EST):
-- 5 type ENUMs (permit_type, project_type, license_type, license_status, action_type)
-- Migration 044de0a80b9e with data preservation (14 permits, 12 projects migrated)
-- Total: 10 ENUMs (5 status + 5 type) across domain model
-- Zero data loss, intelligent CASE mappings, CHECK constraint handling
-
-**Data Migration Results**:
-- ✅ Permits: 9 BUILDING, 5 OTHER (14 total)
-- ✅ Projects: All 12 projects migrated to standardized types
-- ✅ Licensed businesses: 2 SPECIALTY/ACTIVE licenses
-- ✅ Qualifiers: 2 ACTIVE qualifiers (CHECK constraint handled)
-- ✅ Oversight actions: Ready with action_type_enum
-
-**Technical Wins**:
-- Dropped conflicting CHECK constraints before migration
-- Fixed server_default case mismatch (ACTIVE vs 'active')
-- Comprehensive data preservation with intelligent CASE mappings
-- Zero data loss, all existing values mapped correctly
-
----
-
-## ⚠️ CRITICAL PRIORITY: Phase Q (Qualifier Compliance)
-
-**STATUS**: 🔴 **MANDATORY - CANNOT BE DEFERRED**
-
-**Why This Takes Priority**:
-- Compliance systems are **foundational**, not additive
-- Partial implementation is more dangerous than no implementation
-- Current system can silently allow illegal states (qualifier capacity exceeded, etc.)
-- Legal exposure exists now, not in the future
-
-**Phase Q supersedes all other planned work until complete.**
-
----
-
-## 🎯 Quick Status
-
-| Phase | Status | Progress | Notes |
-|-------|--------|----------|-------|
-| **Phases 0-E** | 🔒 ARCHIVED | 100% | See `docs/archive/IMPLEMENTATION_HISTORY.md` |
-| **Phase F: Frontend CRUD** | ✅ COMPLETE | 100% | All pages: Permits ✅, Inspections ✅, Invoices ✅, Payments ✅, Site Visits ✅ |
-| **Phase 18: Type ENUMs** | ✅ COMPLETE | 100% | **5 type ENUMs, 10 total ENUMs, migration complete (Dec 14, 11:45 PM EST)** |
-| **Phase 19: Frontend ENUM Integration** | ✅ COMPLETE | 100% | **All 5 detail pages updated with dropdowns (Dec 14, 11:58 PM EST)** |
-| **Phase 20: QB Invoice Metadata** | ✅ COMPLETE | 100% | **10 QB columns, navigation components, 13/13 synced (Dec 15, 11:50 PM EST)** |
-| **Phase Q: Qualifier Compliance** | ✅ COMPLETE | 100% | **ALL PHASES COMPLETE: Q.1 Schema ✅, Q.2 Models ✅, Q.3 API ✅, Q.4 Frontend ✅ (Dec 15, 12:45 PM EST)** |
-| **Phase W: QuickBooks Webhooks** | 🔄 IN PROGRESS | 60% | **Sync Rules ✅, Cache Tables ✅, Circuit Breaker Next (Dec 14, 8:30 PM EST)** |
-
-**Latest Milestone**: ✅ Phase 20 Complete - QuickBooks invoice metadata with reusable navigation (Dec 15, 11:50 PM EST)  
-**Current Focus**: Phase W circuit breaker pattern for API resilience  
-**Blockers**: None  
+**For complete technical details on completed phases, see archived documentation.**  
 
 **Phase Q Progress**: 40/40 hours (100% complete) ✅
 - Q.1: Database schema (5 new tables + triggers) - ✅ 12/12 hours (Dec 14, 4:30 PM EST)
