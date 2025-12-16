@@ -314,861 +314,458 @@ export default function ProjectDetails() {
               )}
             </div>
 
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-            gap: '16px',
-            paddingTop: '16px',
-            borderTop: '1px solid #F1F5F9'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '8px',
-                backgroundColor: '#DBEAFE',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <MapPin size={20} style={{ color: '#2563EB' }} />
+            {/* Info Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-gray-100">
+              {/* Location */}
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <MapPin size={20} className="text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs text-gray-500 mb-0.5">Location</p>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editedProject?.['Project Address'] || ''}
+                      onChange={(e) => handleEditChange('Project Address', e.target.value)}
+                      className="w-full text-sm font-medium px-2.5 py-1.5 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Project Address"
+                    />
+                  ) : (
+                    <p className="text-sm text-gray-800 font-medium">
+                      {project['Project Address'] || 'No address'}
+                    </p>
+                  )}
+                </div>
               </div>
-              <div style={{ flex: 1 }}>
-                <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '2px' }}>Location</p>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    value={editedProject?.['Project Address'] || ''}
-                    onChange={(e) => handleEditChange('Project Address', e.target.value)}
-                    style={{
-                      width: '100%',
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      padding: '6px 10px',
-                      border: '1px solid #D1D5DB',
-                      borderRadius: '6px',
-                      outline: 'none'
-                    }}
-                    placeholder="Project Address"
-                  />
-                ) : (
-                  <p style={{ fontSize: '14px', color: '#1E293B', fontWeight: '500' }}>
-                    {project['Project Address'] || 'No address'}
-                  </p>
-                )}
-              </div>
-            </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '8px',
-                backgroundColor: '#ECFDF5',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <Building size={20} style={{ color: '#059669' }} />
+              {/* Type */}
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+                  <Building size={20} className="text-green-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs text-gray-500 mb-0.5">Type</p>
+                  {isEditing ? (
+                    <select
+                      value={editedProject?.['Project Type'] || editedProject?.project_type || ''}
+                      onChange={(e) => handleEditChange('Project Type', e.target.value)}
+                      className="w-full text-sm font-medium px-2.5 py-1.5 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="">Select type...</option>
+                      {PROJECT_TYPE_OPTIONS.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <p className="text-sm text-gray-800 font-medium">
+                      {formatEnumLabel(project['Project Type'] || project.project_type) || 'N/A'}
+                    </p>
+                  )}
+                </div>
               </div>
-              <div style={{ flex: 1 }}>
-                <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '2px' }}>Type</p>
-                {isEditing ? (
-                  <select
-                    value={editedProject?.['Project Type'] || editedProject?.project_type || ''}
-                    onChange={(e) => handleEditChange('Project Type', e.target.value)}
-                    style={{
-                      width: '100%',
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      padding: '6px 10px',
-                      border: '1px solid #D1D5DB',
-                      borderRadius: '6px',
-                      outline: 'none'
-                    }}
-                  >
-                    <option value="">Select type...</option>
-                    {PROJECT_TYPE_OPTIONS.map(opt => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <p style={{ fontSize: '14px', color: '#1E293B', fontWeight: '500' }}>
-                    {formatEnumLabel(project['Project Type'] || project.project_type) || 'N/A'}
-                  </p>
-                )}
-              </div>
-            </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '8px',
-                backgroundColor: '#FEF3C7',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <Calendar size={20} style={{ color: '#D97706' }} />
+              {/* Start Date */}
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
+                  <Calendar size={20} className="text-amber-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs text-gray-500 mb-0.5">Start Date</p>
+                  {isEditing ? (
+                    <input
+                      type="date"
+                      value={editedProject?.['Start Date'] || ''}
+                      onChange={(e) => handleEditChange('Start Date', e.target.value)}
+                      className="w-full text-sm font-medium px-2.5 py-1.5 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  ) : (
+                    <p className="text-sm text-gray-800 font-medium">
+                      {formatDate(project['Start Date'])}
+                    </p>
+                  )}
+                </div>
               </div>
-              <div style={{ flex: 1 }}>
-                <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '2px' }}>Start Date</p>
-                {isEditing ? (
-                  <input
-                    type="date"
-                    value={editedProject?.['Start Date'] || ''}
-                    onChange={(e) => handleEditChange('Start Date', e.target.value)}
-                    style={{
-                      width: '100%',
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      padding: '6px 10px',
-                      border: '1px solid #D1D5DB',
-                      borderRadius: '6px',
-                      outline: 'none'
-                    }}
-                  />
-                ) : (
-                  <p style={{ fontSize: '14px', color: '#1E293B', fontWeight: '500' }}>
-                    {formatDate(project['Start Date'])}
-                  </p>
-                )}
-              </div>
-            </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '8px',
-                backgroundColor: '#FEE2E2',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <Users size={20} style={{ color: '#DC2626' }} />
-              </div>
-              <div>
-                <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '2px' }}>Client</p>
-                {project['Client ID'] ? (
-                  <button
-                    onClick={() => useAppStore.getState().navigateToClient(project['Client ID'])}
-                    style={{
-                      fontSize: '14px',
-                      color: '#2563EB',
-                      fontWeight: '500',
-                      background: 'none',
-                      border: 'none',
-                      padding: 0,
-                      cursor: 'pointer',
-                      textDecoration: 'underline',
-                      textAlign: 'left'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.color = '#1D4ED8'}
-                    onMouseLeave={(e) => e.currentTarget.style.color = '#2563EB'}
-                  >
-                    {project['Owner Name (PM\'s Client)'] || project['Client ID']}
-                  </button>
-                ) : (
-                  <p style={{ fontSize: '14px', color: '#1E293B', fontWeight: '500' }}>
-                    {project['Owner Name (PM\'s Client)'] || 'Unknown'}
-                  </p>
-                )}
+              {/* Client */}
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
+                  <Users size={20} className="text-red-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 mb-0.5">Client</p>
+                  {project['Client ID'] ? (
+                    <button
+                      onClick={() => useAppStore.getState().navigateToClient(project['Client ID'])}
+                      className="text-sm text-blue-600 font-medium underline hover:text-blue-800 transition-colors bg-transparent border-none p-0 cursor-pointer text-left"
+                    >
+                      {project['Owner Name (PM\'s Client)'] || project['Client ID']}
+                    </button>
+                  ) : (
+                    <p className="text-sm text-gray-800 font-medium">
+                      {project['Owner Name (PM\'s Client)'] || 'Unknown'}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
         </CardContent>
       </Card>
 
         {/* Financial Summary - Invoices & Payments */}
         {(invoices.length > 0 || payments.length > 0) && (
-          <div style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: '12px',
-            padding: '32px',
-            border: '1px solid #E2E8F0',
-            marginBottom: '24px',
-            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)'
-          }}>
-            <h2 style={{
-              fontSize: '20px',
-              fontWeight: '600',
-              color: '#1E293B',
-              marginBottom: '24px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}>
-              <DollarSign size={20} style={{ color: '#2563EB' }} />
-              Financial Summary
-            </h2>
-            
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-              gap: '24px'
-            }}>
-              {/* Invoices */}
-              {invoices.length > 0 && (
-                <div>
-                  <h3 style={{
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    color: '#64748B',
-                    marginBottom: '16px',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em'
-                  }}>Invoices</h3>
-                  <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '12px'
-                  }}>
-                    {invoices.map(invoice => (
-                      <div key={invoice.invoice_id} style={{
-                        padding: '16px',
-                        backgroundColor: '#F8FAFC',
-                        borderRadius: '8px',
-                        border: '1px solid #E2E8F0'
-                      }}>
-                        <div style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'flex-start'
-                        }}>
-                          <div>
-                            <div style={{
-                              fontSize: '15px',
-                              fontWeight: '600',
-                              color: '#1E293B',
-                              marginBottom: '4px'
-                            }}>{invoice.invoice_number}</div>
-                            <div style={{
-                              fontSize: '13px',
-                              color: '#64748B'
-                            }}>
-                              {invoice.invoice_date ? new Date(invoice.invoice_date).toLocaleDateString() : 'No date'}
+          <Card className="mb-6">
+            <CardContent className="p-8">
+              <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center gap-2">
+                <DollarSign size={20} className="text-blue-600" />
+                Financial Summary
+              </h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Invoices */}
+                {invoices.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wide">Invoices</h3>
+                    <div className="flex flex-col gap-3">
+                      {invoices.map(invoice => (
+                        <div key={invoice.invoice_id} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <div className="text-[15px] font-semibold text-gray-800 mb-1">{invoice.invoice_number}</div>
+                              <div className="text-[13px] text-gray-500">
+                                {invoice.invoice_date ? new Date(invoice.invoice_date).toLocaleDateString() : 'No date'}
+                              </div>
                             </div>
-                          </div>
-                          <div style={{ textAlign: 'right' }}>
-                            <div style={{
-                              fontSize: '18px',
-                              fontWeight: '700',
-                              color: '#1E293B',
-                              marginBottom: '4px'
-                            }}>
-                              ${Number(invoice.total_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </div>
-                            <div style={{
-                              fontSize: '11px',
-                              padding: '3px 10px',
-                              borderRadius: '4px',
-                              display: 'inline-block',
-                              backgroundColor: invoice.status === 'PAID' ? '#DCFCE7' : invoice.status === 'SENT' ? '#FEF3C7' : '#F1F5F9',
-                              color: invoice.status === 'PAID' ? '#166534' : invoice.status === 'SENT' ? '#92400E' : '#475569',
-                              fontWeight: '600'
-                            }}>
-                              {invoice.status || 'DRAFT'}
+                            <div className="text-right">
+                              <div className="text-lg font-bold text-gray-800 mb-1">
+                                ${Number(invoice.total_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </div>
+                              <Badge className={invoice.status === 'PAID' ? 'bg-green-100 text-green-800' : invoice.status === 'SENT' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-600'}>
+                                {invoice.status || 'DRAFT'}
+                              </Badge>
                             </div>
                           </div>
                         </div>
+                      ))}
+                      <div className="mt-3 p-4 bg-blue-50 rounded-lg flex justify-between items-center">
+                        <span className="text-[15px] font-semibold text-blue-800">Total Invoiced</span>
+                        <span className="text-xl font-bold text-blue-800">
+                          ${invoices.reduce((sum, inv) => sum + Number(inv.total_amount || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
                       </div>
-                    ))}
-                    <div style={{
-                      marginTop: '12px',
-                      padding: '16px',
-                      backgroundColor: '#EFF6FF',
-                      borderRadius: '8px',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center'
-                    }}>
-                      <span style={{ fontSize: '15px', fontWeight: '600', color: '#1E40AF' }}>Total Invoiced</span>
-                      <span style={{ fontSize: '20px', fontWeight: '700', color: '#1E40AF' }}>
-                        ${invoices.reduce((sum, inv) => sum + Number(inv.total_amount || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </span>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Payments */}
-              {payments.length > 0 && (
-                <div>
-                  <h3 style={{
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    color: '#64748B',
-                    marginBottom: '16px',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em'
-                  }}>Payments Received</h3>
-                  <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '12px'
-                  }}>
-                    {payments.map(payment => (
-                      <div key={payment.payment_id} style={{
-                        padding: '16px',
-                        backgroundColor: '#F8FAFC',
-                        borderRadius: '8px',
-                        border: '1px solid #E2E8F0'
-                      }}>
-                        <div style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'flex-start'
-                        }}>
-                          <div>
-                            <div style={{
-                              fontSize: '15px',
-                              fontWeight: '600',
-                              color: '#1E293B',
-                              marginBottom: '4px'
-                            }}>{payment.payment_method || 'Payment'}</div>
-                            <div style={{
-                              fontSize: '13px',
-                              color: '#64748B'
-                            }}>
-                              {payment.payment_date ? new Date(payment.payment_date).toLocaleDateString() : 'No date'}
+                {/* Payments */}
+                {payments.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wide">Payments Received</h3>
+                    <div className="flex flex-col gap-3">
+                      {payments.map(payment => (
+                        <div key={payment.payment_id} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <div className="text-[15px] font-semibold text-gray-800 mb-1">{payment.payment_method || 'Payment'}</div>
+                              <div className="text-[13px] text-gray-500">
+                                {payment.payment_date ? new Date(payment.payment_date).toLocaleDateString() : 'No date'}
+                              </div>
                             </div>
-                          </div>
-                          <div style={{ textAlign: 'right' }}>
-                            <div style={{
-                              fontSize: '18px',
-                              fontWeight: '700',
-                              color: '#059669',
-                              marginBottom: '4px'
-                            }}>
-                              ${Number(payment.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </div>
-                            <div style={{
-                              fontSize: '11px',
-                              padding: '3px 10px',
-                              borderRadius: '4px',
-                              display: 'inline-block',
-                              backgroundColor: payment.status === 'POSTED' ? '#DCFCE7' : '#FEF3C7',
-                              color: payment.status === 'POSTED' ? '#166534' : '#92400E',
-                              fontWeight: '600'
-                            }}>
-                              {payment.status || 'PENDING'}
+                            <div className="text-right">
+                              <div className="text-lg font-bold text-green-600 mb-1">
+                                ${Number(payment.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </div>
+                              <Badge className={payment.status === 'POSTED' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}>
+                                {payment.status || 'PENDING'}
+                              </Badge>
                             </div>
                           </div>
                         </div>
+                      ))}
+                      <div className="mt-3 p-4 bg-green-100 rounded-lg flex justify-between items-center">
+                        <span className="text-[15px] font-semibold text-green-800">Total Paid</span>
+                        <span className="text-xl font-bold text-green-800">
+                          ${payments.reduce((sum, pmt) => sum + Number(pmt.amount || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
                       </div>
-                    ))}
-                    <div style={{
-                      marginTop: '12px',
-                      padding: '16px',
-                      backgroundColor: '#DCFCE7',
-                      borderRadius: '8px',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center'
-                    }}>
-                      <span style={{ fontSize: '15px', fontWeight: '600', color: '#166534' }}>Total Paid</span>
-                      <span style={{ fontSize: '20px', fontWeight: '700', color: '#166534' }}>
-                        ${payments.reduce((sum, pmt) => sum + Number(pmt.amount || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </span>
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
 
-            {/* Outstanding Balance */}
-            {invoices.length > 0 && payments.length > 0 && (
-              <div style={{
-                marginTop: '24px',
-                padding: '20px',
-                backgroundColor: '#FEF3C7',
-                borderRadius: '12px',
-                border: '2px solid #F59E0B'
-              }}>
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center'
-                }}>
-                  <span style={{ fontSize: '18px', fontWeight: '600', color: '#92400E' }}>
-                    Outstanding Balance
-                  </span>
-                  <span style={{ fontSize: '28px', fontWeight: '700', color: '#92400E' }}>
-                    ${
-                      (
+              {/* Outstanding Balance */}
+              {invoices.length > 0 && payments.length > 0 && (
+                <div className="mt-6 p-5 bg-amber-100 rounded-xl border-2 border-amber-500">
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg font-semibold text-amber-800">
+                      Outstanding Balance
+                    </span>
+                    <span className="text-3xl font-bold text-amber-800">
+                      ${(
                         invoices.reduce((sum, inv) => sum + Number(inv.total_amount || 0), 0) -
                         payments.reduce((sum, pmt) => sum + Number(pmt.amount || 0), 0)
-                      ).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                    }
-                  </span>
+                      ).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </CardContent>
+          </Card>
         )}
 
         {/* Details Grid */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
-          gap: '24px'
-        }}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Financial Details */}
-          <div style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: '12px',
-            padding: '24px',
-            border: '1px solid #E2E8F0',
-            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)'
-          }}>
-            <h2 style={{
-              fontSize: '18px',
-              fontWeight: '600',
-              color: '#1E293B',
-              marginBottom: '16px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}>
-              <DollarSign size={20} style={{ color: '#2563EB' }} />
-              Financial Details
-            </h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div>
-                <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '4px' }}>Project Cost</p>
-                {isEditing ? (
-                  <input
-                    type="number"
-                    value={editedProject?.['Project Cost (Materials + Labor)'] || ''}
-                    onChange={(e) => handleEditChange('Project Cost (Materials + Labor)', parseFloat(e.target.value) || 0)}
-                    style={{
-                      width: '100%',
-                      fontSize: '20px',
-                      fontWeight: '600',
-                      padding: '8px',
-                      border: '1px solid #D1D5DB',
-                      borderRadius: '6px',
-                      outline: 'none'
-                    }}
-                    placeholder="0"
-                  />
-                ) : (
-                  <p style={{ fontSize: '20px', color: '#1E293B', fontWeight: '600' }}>
-                    {formatCurrency(project['Project Cost (Materials + Labor)'])}
-                  </p>
-                )}
+          <Card>
+            <CardContent className="p-6">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <DollarSign size={20} className="text-blue-600" />
+                Financial Details
+              </h2>
+              <div className="flex flex-col gap-3">
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Project Cost</p>
+                  {isEditing ? (
+                    <input
+                      type="number"
+                      value={editedProject?.['Project Cost (Materials + Labor)'] || ''}
+                      onChange={(e) => handleEditChange('Project Cost (Materials + Labor)', parseFloat(e.target.value) || 0)}
+                      className="w-full text-xl font-semibold p-2 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="0"
+                    />
+                  ) : (
+                    <p className="text-xl text-gray-800 font-semibold">
+                      {formatCurrency(project['Project Cost (Materials + Labor)'])}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">HR PC Service Fee</p>
+                  {isEditing ? (
+                    <input
+                      type="number"
+                      value={editedProject?.['HR PC Service Fee'] || ''}
+                      onChange={(e) => handleEditChange('HR PC Service Fee', parseFloat(e.target.value) || 0)}
+                      className="w-full text-lg font-medium p-2 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="0"
+                    />
+                  ) : (
+                    <p className="text-lg text-gray-800 font-medium">
+                      {formatCurrency(project['HR PC Service Fee'])}
+                    </p>
+                  )}
+                </div>
               </div>
-              <div>
-                <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '4px' }}>HR PC Service Fee</p>
-                {isEditing ? (
-                  <input
-                    type="number"
-                    value={editedProject?.['HR PC Service Fee'] || ''}
-                    onChange={(e) => handleEditChange('HR PC Service Fee', parseFloat(e.target.value) || 0)}
-                    style={{
-                      width: '100%',
-                      fontSize: '18px',
-                      fontWeight: '500',
-                      padding: '8px',
-                      border: '1px solid #D1D5DB',
-                      borderRadius: '6px',
-                      outline: 'none'
-                    }}
-                    placeholder="0"
-                  />
-                ) : (
-                  <p style={{ fontSize: '18px', color: '#1E293B', fontWeight: '500' }}>
-                    {formatCurrency(project['HR PC Service Fee'])}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* Location Details */}
-          <div style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: '12px',
-            padding: '24px',
-            border: '1px solid #E2E8F0',
-            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)'
-          }}>
-            <h2 style={{
-              fontSize: '18px',
-              fontWeight: '600',
-              color: '#1E293B',
-              marginBottom: '16px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}>
-              <MapPin size={20} style={{ color: '#2563EB' }} />
-              Location Details
-            </h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div>
-                <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '4px' }}>City</p>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    value={editedProject?.City || ''}
-                    onChange={(e) => handleEditChange('City', e.target.value)}
-                    style={{
-                      width: '100%',
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      padding: '6px 10px',
-                      border: '1px solid #D1D5DB',
-                      borderRadius: '6px',
-                      outline: 'none'
-                    }}
-                  />
-                ) : (
-                  <p style={{ fontSize: '14px', color: '#1E293B', fontWeight: '500' }}>
-                    {project.City || 'N/A'}
-                  </p>
-                )}
+          <Card>
+            <CardContent className="p-6">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <MapPin size={20} className="text-blue-600" />
+                Location Details
+              </h2>
+              <div className="flex flex-col gap-3">
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">City</p>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editedProject?.City || ''}
+                      onChange={(e) => handleEditChange('City', e.target.value)}
+                      className="w-full text-sm font-medium px-2.5 py-1.5 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  ) : (
+                    <p className="text-sm text-gray-800 font-medium">
+                      {project.City || 'N/A'}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">County</p>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editedProject?.County || ''}
+                      onChange={(e) => handleEditChange('County', e.target.value)}
+                      className="w-full text-sm font-medium px-2.5 py-1.5 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  ) : (
+                    <p className="text-sm text-gray-800 font-medium">
+                      {project.County || 'N/A'}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Jurisdiction ID</p>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editedProject?.Jurisdiction || ''}
+                      onChange={(e) => handleEditChange('Jurisdiction', e.target.value)}
+                      className="w-full text-sm font-medium px-2.5 py-1.5 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  ) : (
+                    <p className="text-sm text-gray-800 font-medium">
+                      {project.Jurisdiction || 'N/A'}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Primary Inspector ID</p>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editedProject?.['Primary Inspector'] || ''}
+                      onChange={(e) => handleEditChange('Primary Inspector', e.target.value)}
+                      className="w-full text-sm font-medium px-2.5 py-1.5 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  ) : (
+                    <p className="text-sm text-gray-800 font-medium">
+                      {project['Primary Inspector'] || 'N/A'}
+                    </p>
+                  )}
+                </div>
               </div>
-              <div>
-                <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '4px' }}>County</p>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    value={editedProject?.County || ''}
-                    onChange={(e) => handleEditChange('County', e.target.value)}
-                    style={{
-                      width: '100%',
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      padding: '6px 10px',
-                      border: '1px solid #D1D5DB',
-                      borderRadius: '6px',
-                      outline: 'none'
-                    }}
-                  />
-                ) : (
-                  <p style={{ fontSize: '14px', color: '#1E293B', fontWeight: '500' }}>
-                    {project.County || 'N/A'}
-                  </p>
-                )}
-              </div>
-              <div>
-                <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '4px' }}>Jurisdiction ID</p>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    value={editedProject?.Jurisdiction || ''}
-                    onChange={(e) => handleEditChange('Jurisdiction', e.target.value)}
-                    style={{
-                      width: '100%',
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      padding: '6px 10px',
-                      border: '1px solid #D1D5DB',
-                      borderRadius: '6px',
-                      outline: 'none'
-                    }}
-                  />
-                ) : (
-                  <p style={{ fontSize: '14px', color: '#1E293B', fontWeight: '500' }}>
-                    {project.Jurisdiction || 'N/A'}
-                  </p>
-                )}
-              </div>
-              <div>
-                <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '4px' }}>Primary Inspector ID</p>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    value={editedProject?.['Primary Inspector'] || ''}
-                    onChange={(e) => handleEditChange('Primary Inspector', e.target.value)}
-                    style={{
-                      width: '100%',
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      padding: '6px 10px',
-                      border: '1px solid #D1D5DB',
-                      borderRadius: '6px',
-                      outline: 'none'
-                    }}
-                  />
-                ) : (
-                  <p style={{ fontSize: '14px', color: '#1E293B', fontWeight: '500' }}>
-                    {project['Primary Inspector'] || 'N/A'}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Scope of Work */}
         {project['Scope of Work'] && (
-          <div style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: '12px',
-            padding: '24px',
-            border: '1px solid #E2E8F0',
-            marginTop: '24px',
-            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)'
-          }}>
-            <h2 style={{
-              fontSize: '18px',
-              fontWeight: '600',
-              color: '#1E293B',
-              marginBottom: '16px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}>
-              <FileText size={20} style={{ color: '#2563EB' }} />
-              Scope of Work
-            </h2>
-            <p style={{
-              fontSize: '14px',
-              color: '#475569',
-              lineHeight: '1.6',
-              whiteSpace: 'pre-wrap'
-            }}>
-              {project['Scope of Work']}
-            </p>
-          </div>
+          <Card className="mt-6">
+            <CardContent className="p-6">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <FileText size={20} className="text-blue-600" />
+                Scope of Work
+              </h2>
+              <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
+                {project['Scope of Work']}
+              </p>
+            </CardContent>
+          </Card>
         )}
 
         {/* Compliance Section (Phase Q) */}
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: '12px',
-          padding: '24px',
-          border: '1px solid #E2E8F0',
-          marginTop: '24px',
-          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)'
-        }}>
-          <h2 style={{
-            fontSize: '18px',
-            fontWeight: '600',
-            color: '#1E293B',
-            marginBottom: '16px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}>
-            <FileText size={20} style={{ color: '#2563EB' }} />
-            Compliance Information
-          </h2>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-            gap: '16px'
-          }}>
-            <div>
-              <label style={{
-                display: 'block',
-                fontSize: '14px',
-                fontWeight: '500',
-                color: '#374151',
-                marginBottom: '4px'
-              }}>Licensed Business</label>
-              {isEditing ? (
-                <select
-                  value={editedProject?.licensed_business_id || ''}
-                  onChange={(e) => handleEditChange('licensed_business_id', e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    border: '1px solid #D1D5DB',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    outline: 'none'
-                  }}
-                >
-                  <option value="">Select Business...</option>
-                  {businesses.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.business_name} ({b.license_number})
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <p style={{ color: '#111827', fontSize: '14px' }}>
-                  {project.licensed_business_id || 'Not assigned'}
-                </p>
-              )}
-            </div>
+        <Card className="mt-6">
+          <CardContent className="p-6">
+            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <FileText size={20} className="text-blue-600" />
+              Compliance Information
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Licensed Business</label>
+                {isEditing ? (
+                  <select
+                    value={editedProject?.licensed_business_id || ''}
+                    onChange={(e) => handleEditChange('licensed_business_id', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">Select Business...</option>
+                    {businesses.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.business_name} ({b.license_number})
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <p className="text-sm text-gray-900">
+                    {project.licensed_business_id || 'Not assigned'}
+                  </p>
+                )}
+              </div>
 
-            <div>
-              <label style={{
-                display: 'block',
-                fontSize: '14px',
-                fontWeight: '500',
-                color: '#374151',
-                marginBottom: '4px'
-              }}>Qualifier</label>
-              {isEditing ? (
-                <select
-                  value={editedProject?.qualifier_id || ''}
-                  onChange={(e) => handleEditChange('qualifier_id', e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    border: '1px solid #D1D5DB',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    outline: 'none'
-                  }}
-                >
-                  <option value="">Select Qualifier...</option>
-                  {qualifiers.map((q) => (
-                    <option key={q.id} value={q.id}>
-                      {q.full_name} ({q.qualifier_id_number})
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <p style={{ color: '#111827', fontSize: '14px' }}>
-                  {project.qualifier_id || 'Not assigned'}
-                </p>
-              )}
-            </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Qualifier</label>
+                {isEditing ? (
+                  <select
+                    value={editedProject?.qualifier_id || ''}
+                    onChange={(e) => handleEditChange('qualifier_id', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">Select Qualifier...</option>
+                    {qualifiers.map((q) => (
+                      <option key={q.id} value={q.id}>
+                        {q.full_name} ({q.qualifier_id_number})
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <p className="text-sm text-gray-900">
+                    {project.qualifier_id || 'Not assigned'}
+                  </p>
+                )}
+              </div>
 
-            <div>
-              <label style={{
-                display: 'block',
-                fontSize: '14px',
-                fontWeight: '500',
-                color: '#374151',
-                marginBottom: '4px'
-              }}>Engagement Model</label>
-              {isEditing ? (
-                <select
-                  value={editedProject?.engagement_model || ''}
-                  onChange={(e) => handleEditChange('engagement_model', e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    border: '1px solid #D1D5DB',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    outline: 'none'
-                  }}
-                >
-                  <option value="">Select Model...</option>
-                  <option value="DIRECT_GC">Direct GC</option>
-                  <option value="THIRD_PARTY_QUALIFIER">Third-Party Qualifier</option>
-                </select>
-              ) : (
-                <p style={{ color: '#111827', fontSize: '14px' }}>
-                  {project.engagement_model || 'Not set'}
-                </p>
-              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Engagement Model</label>
+                {isEditing ? (
+                  <select
+                    value={editedProject?.engagement_model || ''}
+                    onChange={(e) => handleEditChange('engagement_model', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">Select Model...</option>
+                    <option value="DIRECT_GC">Direct GC</option>
+                    <option value="THIRD_PARTY_QUALIFIER">Third-Party Qualifier</option>
+                  </select>
+                ) : (
+                  <p className="text-sm text-gray-900">
+                    {project.engagement_model || 'Not set'}
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
         {/* Notes */}
         {(project.Notes || isEditing) && (
-          <div style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: '12px',
-            padding: '24px',
-            border: '1px solid #E2E8F0',
-            marginTop: '24px',
-            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)'
-          }}>
-            <h2 style={{
-              fontSize: '18px',
-              fontWeight: '600',
-              color: '#1E293B',
-              marginBottom: '16px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}>
-              <FileText size={20} style={{ color: '#D97706' }} />
-              Notes
-            </h2>
-            {isEditing ? (
-              <textarea
-                value={editedProject?.Notes || ''}
-                onChange={(e) => handleEditChange('Notes', e.target.value)}
-                style={{
-                  width: '100%',
-                  minHeight: '100px',
-                  padding: '12px',
-                  border: '1px solid #D1D5DB',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  outline: 'none',
-                  fontFamily: 'inherit',
-                  resize: 'vertical'
-                }}
-                placeholder="Add project notes..."
-              />
-            ) : (
-              <p style={{
-                fontSize: '14px',
-                color: '#475569',
-                lineHeight: '1.6',
-                whiteSpace: 'pre-wrap'
-              }}>
-                {project.Notes}
-              </p>
-            )}
-          </div>
+          <Card className="mt-6">
+            <CardContent className="p-6">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <FileText size={20} className="text-amber-600" />
+                Notes
+              </h2>
+              {isEditing ? (
+                <textarea
+                  value={editedProject?.Notes || ''}
+                  onChange={(e) => handleEditChange('Notes', e.target.value)}
+                  className="w-full min-h-[100px] p-3 border border-gray-300 rounded-lg text-sm outline-none font-inherit resize-y focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Add project notes..."
+                />
+              ) : (
+                <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
+                  {project.Notes}
+                </p>
+              )}
+            </CardContent>
+          </Card>
         )}
 
         {/* Photo Album Link */}
         {project['Photo Album'] && (
-          <div style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: '12px',
-            padding: '24px',
-            border: '1px solid #E2E8F0',
-            marginTop: '24px',
-            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)'
-          }}>
-            <h2 style={{
-              fontSize: '18px',
-              fontWeight: '600',
-              color: '#1E293B',
-              marginBottom: '16px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}>
-              <ImageIcon size={20} style={{ color: '#2563EB' }} />
-              Photo Album
-            </h2>
-            <a
-              href={project['Photo Album']}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '10px 16px',
-                backgroundColor: '#2563EB',
-                color: '#FFFFFF',
-                borderRadius: '8px',
-                textDecoration: 'none',
-                fontSize: '14px',
-                fontWeight: '500',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#1D4ED8';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#2563EB';
-              }}
-            >
-              <ImageIcon size={16} />
-              View Photos
-            </a>
-          </div>
+          <Card className="mt-6">
+            <CardContent className="p-6">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <ImageIcon size={20} className="text-blue-600" />
+                Photo Album
+              </h2>
+              <Button asChild>
+                <a
+                  href={project['Photo Album']}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2"
+                >
+                  <ImageIcon size={16} />
+                  View Photos
+                </a>
+              </Button>
+            </CardContent>
+          </Card>
         )}
       </div>
     </div>
