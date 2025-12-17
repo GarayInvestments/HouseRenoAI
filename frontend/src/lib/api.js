@@ -246,7 +246,7 @@ class ApiService {
 
   // Projects endpoints
   async getProjects() {
-    return this.request('/projects', {
+    return this.request('/projects/', {
       method: 'GET',
     });
   }
@@ -266,7 +266,7 @@ class ApiService {
 
   // Clients endpoints
   async getClients() {
-    return this.request('/clients', {
+    return this.request('/clients/', {
       method: 'GET',
     });
   }
@@ -278,7 +278,7 @@ class ApiService {
   }
 
   async createClient(clientData) {
-    return this.request('/clients', {
+    return this.request('/clients/', {
       method: 'POST',
       body: JSON.stringify(clientData),
     });
@@ -309,7 +309,7 @@ class ApiService {
 
   // Projects endpoints (extended)
   async createProject(projectData) {
-    return this.request('/projects', {
+    return this.request('/projects/', {
       method: 'POST',
       body: JSON.stringify(projectData),
     });
@@ -331,7 +331,7 @@ class ApiService {
 
   // Invoices endpoints
   async getInvoices() {
-    return this.request('/invoices', {
+    return this.request('/invoices/', {
       method: 'GET',
     });
   }
@@ -344,7 +344,7 @@ class ApiService {
   }
 
   async createInvoice(invoiceData) {
-    return this.request('/invoices', {
+    return this.request('/invoices/', {
       method: 'POST',
       body: JSON.stringify(invoiceData),
     });
@@ -371,13 +371,13 @@ class ApiService {
 
   // Payments endpoints
   async getPayments() {
-    return this.request('/payments', {
+    return this.request('/payments/', {
       method: 'GET',
     });
   }
 
   async createPayment(paymentData) {
-    return this.request('/payments', {
+    return this.request('/payments/', {
       method: 'POST',
       body: JSON.stringify(paymentData),
     });
