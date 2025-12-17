@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, User, Mail, Phone, MapPin, Calendar, FileText, Loader2 } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Calendar, FileText, Loader2 } from 'lucide-react';
 import api from '../lib/api';
 import useAppStore from '../stores/appStore';
-import { useProjectsStore } from '../stores/projectsStore';
-import { usePermitsStore } from '../stores/permitsStore';
-import LoadingScreen from '../components/LoadingScreen';
 import ErrorState from '../components/ErrorState';
-import { CLIENT_STATUS_OPTIONS, formatEnumLabel } from '../constants/enums';
+import { CLIENT_STATUS_OPTIONS } from '../constants/enums';
+import { PageHeader, StatusBadge, LoadingState } from '@/components/app';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 
 export default function ClientDetails() {
   const [client, setClient] = useState(null);
@@ -22,8 +23,6 @@ export default function ClientDetails() {
   const currentClientId = useAppStore((state) => state.currentClientId);
   const navigateToClients = useAppStore((state) => state.navigateToClients);
   const setCurrentView = useAppStore((state) => state.setCurrentView);
-  const getProjectsByClient = useProjectsStore((state) => state.getProjectsByClient);
-  const getPermitsByClient = usePermitsStore((state) => state.getPermitsByClient);
 
   useEffect(() => {
     // Handle browser back button
@@ -141,23 +140,6 @@ export default function ClientDetails() {
     setEditedClient(prev => ({ ...prev, [field]: value }));
   };
 
-  const getClientStatusColor = (status) => {
-    switch (status?.toUpperCase()) {
-      case 'ACTIVE':
-        return { bg: '#DBEAFE', text: '#2563EB', border: '#93C5FD' };
-      case 'COMPLETED':
-        return { bg: '#ECFDF5', text: '#059669', border: '#A7F3D0' };
-      case 'INTAKE':
-        return { bg: '#FEF3C7', text: '#D97706', border: '#FCD34D' };
-      case 'ON_HOLD':
-        return { bg: '#FEF2F2', text: '#DC2626', border: '#FECACA' };
-      case 'ARCHIVED':
-        return { bg: '#F3F4F6', text: '#6B7280', border: '#D1D5DB' };
-      default:
-        return { bg: '#F3F4F6', text: '#6B7280', border: '#D1D5DB' };
-    }
-  };
-
   const handleRetry = async () => {
     try {
       setLoading(true);
@@ -190,12 +172,12 @@ export default function ClientDetails() {
   };
 
   if (loading) {
-    return <LoadingScreen />;
+    return <LoadingState message="Loading client details..." />;
   }
 
   if (error || !client) {
     return (
-      <div style={{ padding: '20px', backgroundColor: '#F8FAFC', minHeight: '100vh' }}>
+      <div className="p-6">
         <ErrorState 
           message={error || 'Client not found'} 
           onRetry={handleRetry} 
@@ -222,706 +204,326 @@ export default function ClientDetails() {
   const activeProjectsCount = projects.length;
   const activePermitsCount = permits.length;
 
+  const outstandingBalance =
+    invoices.reduce((sum, inv) => sum + Number(inv.total_amount || 0), 0) -
+    payments.reduce((sum, pmt) => sum + Number(pmt.amount || 0), 0);
+
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100%',
-      backgroundColor: '#F8FAFC'
-    }}>
-      {/* Back Button & Edit Controls */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 32px' }}>
-        <button
-          onClick={handleBackClick}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            color: '#64748B',
-            background: 'none',
-            border: 'none',
-            padding: '0',
-            fontSize: '14px',
-            fontWeight: '500',
-            cursor: 'pointer',
-            transition: 'color 0.2s ease'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.color = '#1E293B'}
-          onMouseLeave={(e) => e.currentTarget.style.color = '#64748B'}
-        >
-          <ArrowLeft size={20} />
-          <span>Back to Clients</span>
-        </button>
-
-        {!isEditing ? (
-          <button
-            onClick={() => {
-              setIsEditing(true);
-              setEditedClient(client);
-            }}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: '#2563EB',
-              color: '#FFFFFF',
-              border: 'none',
-              borderRadius: '8px',
-              fontSize: '14px',
-              fontWeight: '500',
-              cursor: 'pointer'
-            }}
-          >
-            Edit Client
-          </button>
-        ) : (
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button
-              onClick={handleCancel}
-              disabled={isSaving}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: '#FFFFFF',
-                color: '#64748B',
-                border: '1px solid #E2E8F0',
-                borderRadius: '8px',
-                fontSize: '14px',
-                cursor: isSaving ? 'not-allowed' : 'pointer',
-                opacity: isSaving ? 0.5 : 1
+    <div className="mx-auto max-w-6xl p-6">
+      <PageHeader
+        title="Client Details"
+        subtitle={clientId ? `Client ID: ${clientId}` : undefined}
+        icon={<User size={32} />}
+        showBack
+        onBack={handleBackClick}
+        actions={
+          !isEditing ? (
+            <Button
+              onClick={() => {
+                setIsEditing(true);
+                setEditedClient(client);
               }}
             >
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: '#059669',
-                color: '#FFFFFF',
-                border: 'none',
-                borderRadius: '8px',
-                fontSize: '14px',
-                cursor: isSaving ? 'not-allowed' : 'pointer',
-                opacity: isSaving ? 0.5 : 1
-              }}
-            >
-              {isSaving ? 'Saving...' : 'Save Changes'}
-            </button>
-          </div>
-        )}
-      </div>
+              Edit Client
+            </Button>
+          ) : (
+            <>
+              <Button variant="outline" onClick={handleCancel} disabled={isSaving}>
+                Cancel
+              </Button>
+              <Button onClick={handleSave} disabled={isSaving}>
+                {isSaving && <Loader2 className="animate-spin" aria-hidden="true" />}
+                {isSaving ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </>
+          )
+        }
+      />
 
-      {/* Content */}
-      <div style={{
-        flex: 1,
-        overflowY: 'auto',
-        padding: '0 32px 80px 32px'
-      }}>
-        <div style={{
-          maxWidth: '900px',
-          margin: '0 auto'
-        }}>
-          {/* Client Header */}
-          <div style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: '12px',
-            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)',
-            border: '1px solid #E2E8F0',
-            padding: '24px',
-            marginBottom: '24px'
-          }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              justifyContent: 'space-between'
-            }}>
-              <div style={{ flex: 1 }}>
+      <div className="mt-6 space-y-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-start justify-between gap-6">
+              <div className="min-w-0 flex-1 space-y-2">
                 {isEditing ? (
                   <>
-                    <input
+                    <Input
                       type="text"
                       value={editedClient?.['Full Name'] || editedClient?.['Client Name'] || ''}
                       onChange={(e) => {
                         handleEditChange('Full Name', e.target.value);
                         handleEditChange('Client Name', e.target.value);
                       }}
-                      style={{
-                        fontSize: '28px',
-                        fontWeight: '600',
-                        color: '#1E293B',
-                        marginBottom: '8px',
-                        width: '100%',
-                        padding: '8px',
-                        border: '2px solid #2563EB',
-                        borderRadius: '8px',
-                        outline: 'none'
-                      }}
                       placeholder="Client Name"
+                      className="h-auto text-2xl font-semibold"
                     />
-                    <input
+                    <Input
                       type="text"
                       value={editedClient?.['Company Name'] || ''}
                       onChange={(e) => handleEditChange('Company Name', e.target.value)}
-                      style={{
-                        fontSize: '16px',
-                        color: '#64748B',
-                        marginBottom: '4px',
-                        width: '100%',
-                        padding: '6px',
-                        border: '1px solid #D1D5DB',
-                        borderRadius: '6px',
-                        outline: 'none'
-                      }}
                       placeholder="Company Name (optional)"
+                      className="h-auto text-base"
                     />
                   </>
                 ) : (
                   <>
-                    <h1 style={{
-                      fontSize: '28px',
-                      fontWeight: '600',
-                      color: '#1E293B',
-                      marginBottom: '8px'
-                    }}>{clientName}</h1>
+                    <h2 className="text-2xl font-semibold tracking-tight text-foreground">{clientName}</h2>
                     {companyName && (
-                      <p style={{
-                        fontSize: '16px',
-                        color: '#64748B',
-                        marginBottom: '4px'
-                      }}>{companyName}</p>
+                      <p className="text-base text-muted-foreground">{companyName}</p>
                     )}
                   </>
                 )}
-                <p style={{
-                  fontSize: '13px',
-                  color: '#94A3B8',
-                  marginBottom: '8px'
-                }}>Client ID: {clientId}</p>
-                {/* Client Status */}
-                {isEditing ? (
-                  <select
-                    value={editedClient?.status || client?.status || ''}
-                    onChange={(e) => handleEditChange('status', e.target.value)}
-                    style={{
-                      padding: '6px 12px',
-                      borderRadius: '6px',
-                      fontSize: '13px',
-                      fontWeight: '500',
-                      border: '2px solid #2563EB',
-                      outline: 'none',
-                      backgroundColor: 'white'
-                    }}
-                  >
-                    <option value="">Select status...</option>
-                    {CLIENT_STATUS_OPTIONS.map(opt => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                ) : (
-                  client?.status && (
-                    <span style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      padding: '4px 12px',
-                      borderRadius: '6px',
-                      fontSize: '13px',
-                      fontWeight: '500',
-                      backgroundColor: getClientStatusColor(client.status).bg,
-                      color: getClientStatusColor(client.status).text,
-                      border: `1px solid ${getClientStatusColor(client.status).border}`
-                    }}>
-                      {formatEnumLabel(client.status)}
-                    </span>
-                  )
-                )}
-              </div>
-              <div style={{
-                width: '56px',
-                height: '56px',
-                borderRadius: '12px',
-                background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-                boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.3)'
-              }}>
-                <User size={28} style={{ color: '#FFFFFF' }} />
-              </div>
-            </div>
-          </div>
 
-          {/* Contact Information */}
-          <div style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: '12px',
-            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)',
-            border: '1px solid #E2E8F0',
-            padding: '24px',
-            marginBottom: '24px'
-          }}>
-            <h2 style={{
-              fontSize: '18px',
-              fontWeight: '600',
-              color: '#1E293B',
-              marginBottom: '20px'
-            }}>Contact Information</h2>
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '16px'
-            }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '12px'
-              }}>
-                <Mail size={20} style={{ color: '#94A3B8', flexShrink: 0, marginTop: '2px' }} />
-                <div style={{ flex: 1 }}>
-                  <p style={{
-                    fontSize: '12px',
-                    color: '#94A3B8',
-                    marginBottom: '4px'
-                  }}>Email</p>
-                  {isEditing ? (
-                    <input
-                      type="email"
-                      value={editedClient?.Email || ''}
-                      onChange={(e) => handleEditChange('Email', e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '8px 12px',
-                        border: '1px solid #D1D5DB',
-                        borderRadius: '8px',
-                        fontSize: '14px',
-                        outline: 'none'
-                      }}
-                    />
-                  ) : (
-                    <a href={`mailto:${email}`} style={{
-                      color: '#2563EB',
-                      fontSize: '14px',
-                      textDecoration: 'none',
-                      wordBreak: 'break-all'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
-                    onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
-                    >
-                      {email || 'Not set'}
-                    </a>
-                  )}
-                </div>
-              </div>
-              <div style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '12px'
-              }}>
-                <Phone size={20} style={{ color: '#94A3B8', flexShrink: 0, marginTop: '2px' }} />
-                <div style={{ flex: 1 }}>
-                  <p style={{
-                    fontSize: '12px',
-                    color: '#94A3B8',
-                    marginBottom: '4px'
-                  }}>Phone</p>
-                  {isEditing ? (
-                    <input
-                      type="tel"
-                      value={editedClient?.Phone || ''}
-                      onChange={(e) => handleEditChange('Phone', e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '8px 12px',
-                        border: '1px solid #D1D5DB',
-                        borderRadius: '8px',
-                        fontSize: '14px',
-                        outline: 'none'
-                      }}
-                    />
-                  ) : (
-                    <a href={`tel:${phone}`} style={{
-                      color: '#2563EB',
-                      fontSize: '14px',
-                      textDecoration: 'none'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
-                    onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
-                    >
-                      {phone || 'Not set'}
-                    </a>
-                  )}
-                </div>
-              </div>
-              <div style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '12px'
-              }}>
-                <FileText size={20} style={{ color: '#94A3B8', flexShrink: 0, marginTop: '2px' }} />
-                <div style={{ flex: 1 }}>
-                  <p style={{
-                    fontSize: '12px',
-                    color: '#94A3B8',
-                    marginBottom: '4px'
-                  }}>Preferred Contact Method</p>
+                {clientId && (
+                  <p className="text-sm text-muted-foreground">Client ID: {clientId}</p>
+                )}
+
+                <div>
                   {isEditing ? (
                     <select
-                      value={editedClient?.['Preferred Contact Method'] || ''}
-                      onChange={(e) => handleEditChange('Preferred Contact Method', e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '8px 12px',
-                        border: '1px solid #D1D5DB',
-                        borderRadius: '8px',
-                        fontSize: '14px',
-                        outline: 'none'
-                      }}
+                      value={editedClient?.status || client?.status || ''}
+                      onChange={(e) => handleEditChange('status', e.target.value)}
+                      className="h-9 w-full max-w-xs rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                     >
-                      <option value="">Select method...</option>
-                      <option value="Email">Email</option>
-                      <option value="Phone">Phone</option>
-                      <option value="Text">Text</option>
+                      <option value="">Select status...</option>
+                      {CLIENT_STATUS_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
                     </select>
                   ) : (
-                    <p style={{
-                      fontSize: '14px',
-                      color: '#1E293B'
-                    }}>{preferredContact || 'Not set'}</p>
+                    client?.status && <StatusBadge status={client.status} type="client" />
                   )}
                 </div>
               </div>
-            </div>
-          </div>
 
-          {/* Address Information */}
-          {(address || city || state || zip || isEditing) && (
-            <div style={{
-              backgroundColor: '#FFFFFF',
-              borderRadius: '12px',
-              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)',
-              border: '1px solid #E2E8F0',
-              padding: '24px',
-              marginBottom: '24px'
-            }}>
-              <h2 style={{
-                fontSize: '18px',
-                fontWeight: '600',
-                color: '#1E293B',
-                marginBottom: '20px'
-              }}>Address</h2>
+              <div className="rounded-xl bg-primary p-4 text-primary-foreground">
+                <User size={28} aria-hidden="true" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Contact Information</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-start gap-3">
+              <Mail size={20} className="mt-0.5 text-muted-foreground" aria-hidden="true" />
+              <div className="min-w-0 flex-1 space-y-1">
+                <p className="text-xs text-muted-foreground">Email</p>
+                {isEditing ? (
+                  <Input
+                    type="email"
+                    value={editedClient?.Email || ''}
+                    onChange={(e) => handleEditChange('Email', e.target.value)}
+                  />
+                ) : (
+                  <a
+                    href={email ? `mailto:${email}` : undefined}
+                    className="break-all text-sm text-primary hover:underline"
+                  >
+                    {email || 'Not set'}
+                  </a>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <Phone size={20} className="mt-0.5 text-muted-foreground" aria-hidden="true" />
+              <div className="min-w-0 flex-1 space-y-1">
+                <p className="text-xs text-muted-foreground">Phone</p>
+                {isEditing ? (
+                  <Input
+                    type="tel"
+                    value={editedClient?.Phone || ''}
+                    onChange={(e) => handleEditChange('Phone', e.target.value)}
+                  />
+                ) : (
+                  <a
+                    href={phone ? `tel:${phone}` : undefined}
+                    className="text-sm text-primary hover:underline"
+                  >
+                    {phone || 'Not set'}
+                  </a>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <FileText size={20} className="mt-0.5 text-muted-foreground" aria-hidden="true" />
+              <div className="min-w-0 flex-1 space-y-1">
+                <p className="text-xs text-muted-foreground">Preferred Contact Method</p>
+                {isEditing ? (
+                  <select
+                    value={editedClient?.['Preferred Contact Method'] || ''}
+                    onChange={(e) => handleEditChange('Preferred Contact Method', e.target.value)}
+                    className="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  >
+                    <option value="">Select method...</option>
+                    <option value="Email">Email</option>
+                    <option value="Phone">Phone</option>
+                    <option value="Text">Text</option>
+                  </select>
+                ) : (
+                  <p className="text-sm text-foreground">{preferredContact || 'Not set'}</p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {(address || city || state || zip || isEditing) && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Address</CardTitle>
+            </CardHeader>
+            <CardContent>
               {isEditing ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <input
+                <div className="space-y-3">
+                  <Input
                     type="text"
                     value={editedClient?.Address || ''}
                     onChange={(e) => handleEditChange('Address', e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      border: '1px solid #D1D5DB',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      outline: 'none'
-                    }}
                     placeholder="Street Address"
                   />
-                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '12px' }}>
-                    <input
+                  <div className="grid gap-3 md:grid-cols-3">
+                    <Input
                       type="text"
                       value={editedClient?.City || ''}
                       onChange={(e) => handleEditChange('City', e.target.value)}
-                      style={{
-                        padding: '8px 12px',
-                        border: '1px solid #D1D5DB',
-                        borderRadius: '8px',
-                        fontSize: '14px',
-                        outline: 'none'
-                      }}
                       placeholder="City"
+                      className="md:col-span-1"
                     />
-                    <input
+                    <Input
                       type="text"
                       value={editedClient?.State || ''}
                       onChange={(e) => handleEditChange('State', e.target.value)}
-                      style={{
-                        padding: '8px 12px',
-                        border: '1px solid #D1D5DB',
-                        borderRadius: '8px',
-                        fontSize: '14px',
-                        outline: 'none'
-                      }}
                       placeholder="State"
+                      className="md:col-span-1"
                     />
-                    <input
+                    <Input
                       type="text"
                       value={editedClient?.ZIP || editedClient?.['Zip Code'] || ''}
                       onChange={(e) => {
                         handleEditChange('ZIP', e.target.value);
                         handleEditChange('Zip Code', e.target.value);
                       }}
-                      style={{
-                        padding: '8px 12px',
-                        border: '1px solid #D1D5DB',
-                        borderRadius: '8px',
-                        fontSize: '14px',
-                        outline: 'none'
-                      }}
                       placeholder="ZIP"
+                      className="md:col-span-1"
                     />
                   </div>
                 </div>
               ) : (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '12px'
-                }}>
-                  <MapPin size={20} style={{ color: '#94A3B8', flexShrink: 0, marginTop: '2px' }} />
-                  <div>
-                    {address && <p style={{
-                      fontSize: '14px',
-                      color: '#1E293B',
-                      marginBottom: '4px'
-                    }}>{address}</p>}
+                <div className="flex items-start gap-3">
+                  <MapPin size={20} className="mt-0.5 text-muted-foreground" aria-hidden="true" />
+                  <div className="space-y-1">
+                    {address && <p className="text-sm text-foreground">{address}</p>}
                     {(city || state || zip) && (
-                      <p style={{
-                        fontSize: '14px',
-                        color: '#475569'
-                      }}>
-                        {city}{city && (state || zip) && ', '}
+                      <p className="text-sm text-muted-foreground">
+                        {city}
+                        {city && (state || zip) && ', '}
                         {state} {zip}
                       </p>
                     )}
                   </div>
                 </div>
               )}
-            </div>
-          )}
+            </CardContent>
+          </Card>
+        )}
 
-          {/* Client Details */}
-          <div style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: '12px',
-            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)',
-            border: '1px solid #E2E8F0',
-            padding: '24px',
-            marginBottom: '24px'
-          }}>
-            <h2 style={{
-              fontSize: '18px',
-              fontWeight: '600',
-              color: '#1E293B',
-              marginBottom: '20px'
-            }}>Client Details</h2>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-              gap: '16px'
-            }}>
+        <Card>
+          <CardHeader>
+            <CardTitle>Client Details</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-3">
               {dateAdded && (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '12px'
-                }}>
-                  <Calendar size={20} style={{ color: '#94A3B8', flexShrink: 0, marginTop: '2px' }} />
-                  <div>
-                    <p style={{
-                      fontSize: '12px',
-                      color: '#94A3B8',
-                      marginBottom: '4px'
-                    }}>Date Added</p>
-                    <p style={{
-                      fontSize: '14px',
-                      color: '#1E293B'
-                    }}>{dateAdded}</p>
+                <div className="flex items-start gap-3">
+                  <Calendar size={20} className="mt-0.5 text-muted-foreground" aria-hidden="true" />
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Date Added</p>
+                    <p className="text-sm text-foreground">{dateAdded}</p>
                   </div>
                 </div>
               )}
-              <div style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '12px'
-              }}>
-                <FileText size={20} style={{ color: '#94A3B8', flexShrink: 0, marginTop: '2px' }} />
-                <div>
-                  <p style={{
-                    fontSize: '12px',
-                    color: '#94A3B8',
-                    marginBottom: '4px'
-                  }}>Active Projects</p>
-                  <button
-                    onClick={() => setCurrentView('projects')}
-                    style={{
-                      fontSize: '16px',
-                      fontWeight: '600',
-                      color: activeProjectsCount > 0 ? '#2563EB' : '#1E293B',
-                      background: 'none',
-                      border: 'none',
-                      padding: 0,
-                      cursor: activeProjectsCount > 0 ? 'pointer' : 'default',
-                      textDecoration: activeProjectsCount > 0 ? 'underline' : 'none',
-                      textAlign: 'left'
-                    }}
-                    disabled={activeProjectsCount === 0}
-                    onMouseEnter={(e) => {
-                      if (activeProjectsCount > 0) {
-                        e.currentTarget.style.color = '#1D4ED8';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (activeProjectsCount > 0) {
-                        e.currentTarget.style.color = '#2563EB';
-                      }
-                    }}
-                  >
-                    {activeProjectsCount}
-                  </button>
+
+              <div className="flex items-start gap-3">
+                <FileText size={20} className="mt-0.5 text-muted-foreground" aria-hidden="true" />
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Active Projects</p>
+                  {activeProjectsCount > 0 ? (
+                    <Button
+                      variant="link"
+                      className="h-auto p-0 text-base font-semibold"
+                      onClick={() => setCurrentView('projects')}
+                    >
+                      {activeProjectsCount}
+                    </Button>
+                  ) : (
+                    <p className="text-base font-semibold text-foreground">{activeProjectsCount}</p>
+                  )}
                 </div>
               </div>
-              <div style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '12px'
-              }}>
-                <FileText size={20} style={{ color: '#94A3B8', flexShrink: 0, marginTop: '2px' }} />
-                <div>
-                  <p style={{
-                    fontSize: '12px',
-                    color: '#94A3B8',
-                    marginBottom: '4px'
-                  }}>Active Permits</p>
-                  <button
-                    onClick={() => setCurrentView('permits')}
-                    style={{
-                      fontSize: '16px',
-                      fontWeight: '600',
-                      color: activePermitsCount > 0 ? '#2563EB' : '#1E293B',
-                      background: 'none',
-                      border: 'none',
-                      padding: 0,
-                      cursor: activePermitsCount > 0 ? 'pointer' : 'default',
-                      textDecoration: activePermitsCount > 0 ? 'underline' : 'none',
-                      textAlign: 'left'
-                    }}
-                    disabled={activePermitsCount === 0}
-                    onMouseEnter={(e) => {
-                      if (activePermitsCount > 0) {
-                        e.currentTarget.style.color = '#1D4ED8';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (activePermitsCount > 0) {
-                        e.currentTarget.style.color = '#2563EB';
-                      }
-                    }}
-                  >
-                    {activePermitsCount}
-                  </button>
+
+              <div className="flex items-start gap-3">
+                <FileText size={20} className="mt-0.5 text-muted-foreground" aria-hidden="true" />
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Active Permits</p>
+                  {activePermitsCount > 0 ? (
+                    <Button
+                      variant="link"
+                      className="h-auto p-0 text-base font-semibold"
+                      onClick={() => setCurrentView('permits')}
+                    >
+                      {activePermitsCount}
+                    </Button>
+                  ) : (
+                    <p className="text-base font-semibold text-foreground">{activePermitsCount}</p>
+                  )}
                 </div>
               </div>
             </div>
-          </div>
+          </CardContent>
+        </Card>
 
-          {/* Financial Summary */}
-          {(invoices.length > 0 || payments.length > 0) && (
-            <div style={{
-              backgroundColor: '#FFFFFF',
-              borderRadius: '12px',
-              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)',
-              border: '1px solid #E2E8F0',
-              padding: '24px',
-              marginBottom: '24px'
-            }}>
-              <h2 style={{
-                fontSize: '18px',
-                fontWeight: '600',
-                color: '#1E293B',
-                marginBottom: '20px'
-              }}>Financial Summary</h2>
-              
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                gap: '24px'
-              }}>
-                {/* Invoices */}
+        {(invoices.length > 0 || payments.length > 0) && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Financial Summary</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-6 lg:grid-cols-2">
                 {invoices.length > 0 && (
-                  <div>
-                    <h3 style={{
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      color: '#64748B',
-                      marginBottom: '12px',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.05em'
-                    }}>Invoices</h3>
-                    <div style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '8px'
-                    }}>
-                      {invoices.map(invoice => (
-                        <div key={invoice.invoice_id} style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          padding: '12px',
-                          backgroundColor: '#F8FAFC',
-                          borderRadius: '8px',
-                          border: '1px solid #E2E8F0'
-                        }}>
-                          <div>
-                            <div style={{
-                              fontSize: '14px',
-                              fontWeight: '500',
-                              color: '#1E293B',
-                              marginBottom: '4px'
-                            }}>{invoice.invoice_number}</div>
-                            <div style={{
-                              fontSize: '12px',
-                              color: '#64748B'
-                            }}>
+                  <div className="space-y-3">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Invoices</p>
+                    <div className="space-y-2">
+                      {invoices.map((invoice) => (
+                        <div
+                          key={invoice.invoice_id}
+                          className="flex items-center justify-between gap-4 rounded-md border p-3"
+                        >
+                          <div className="min-w-0">
+                            <div className="text-sm font-medium text-foreground">{invoice.invoice_number}</div>
+                            <div className="text-xs text-muted-foreground">
                               {invoice.invoice_date ? new Date(invoice.invoice_date).toLocaleDateString() : 'No date'}
                             </div>
                           </div>
-                          <div style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'flex-end',
-                            gap: '4px'
-                          }}>
-                            <div style={{
-                              fontSize: '16px',
-                              fontWeight: '600',
-                              color: '#1E293B'
-                            }}>
+                          <div className="flex flex-col items-end gap-2">
+                            <div className="text-sm font-semibold text-foreground">
                               ${Number(invoice.total_amount || 0).toFixed(2)}
                             </div>
-                            <div style={{
-                              fontSize: '11px',
-                              padding: '2px 8px',
-                              borderRadius: '4px',
-                              backgroundColor: invoice.status === 'PAID' ? '#DCFCE7' : invoice.status === 'SENT' ? '#FEF3C7' : '#F1F5F9',
-                              color: invoice.status === 'PAID' ? '#166534' : invoice.status === 'SENT' ? '#92400E' : '#475569',
-                              fontWeight: '500'
-                            }}>
-                              {invoice.status || 'DRAFT'}
-                            </div>
+                            <StatusBadge status={invoice.status || 'draft'} type="invoice" />
                           </div>
                         </div>
                       ))}
-                      <div style={{
-                        marginTop: '8px',
-                        padding: '12px',
-                        backgroundColor: '#EFF6FF',
-                        borderRadius: '8px',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        fontWeight: '600'
-                      }}>
-                        <span style={{ color: '#1E40AF' }}>Total Invoiced</span>
-                        <span style={{ color: '#1E40AF', fontSize: '18px' }}>
+
+                      <div className="flex items-center justify-between rounded-md bg-muted p-3">
+                        <span className="text-sm font-semibold text-foreground">Total Invoiced</span>
+                        <span className="text-sm font-semibold text-foreground">
                           ${invoices.reduce((sum, inv) => sum + Number(inv.total_amount || 0), 0).toFixed(2)}
                         </span>
                       </div>
@@ -929,84 +531,33 @@ export default function ClientDetails() {
                   </div>
                 )}
 
-                {/* Payments */}
                 {payments.length > 0 && (
-                  <div>
-                    <h3 style={{
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      color: '#64748B',
-                      marginBottom: '12px',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.05em'
-                    }}>Payments Received</h3>
-                    <div style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '8px'
-                    }}>
-                      {payments.map(payment => (
-                        <div key={payment.payment_id} style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          padding: '12px',
-                          backgroundColor: '#F8FAFC',
-                          borderRadius: '8px',
-                          border: '1px solid #E2E8F0'
-                        }}>
-                          <div>
-                            <div style={{
-                              fontSize: '14px',
-                              fontWeight: '500',
-                              color: '#1E293B',
-                              marginBottom: '4px'
-                            }}>{payment.payment_method || 'Payment'}</div>
-                            <div style={{
-                              fontSize: '12px',
-                              color: '#64748B'
-                            }}>
+                  <div className="space-y-3">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Payments Received</p>
+                    <div className="space-y-2">
+                      {payments.map((payment) => (
+                        <div
+                          key={payment.payment_id}
+                          className="flex items-center justify-between gap-4 rounded-md border p-3"
+                        >
+                          <div className="min-w-0">
+                            <div className="text-sm font-medium text-foreground">{payment.payment_method || 'Payment'}</div>
+                            <div className="text-xs text-muted-foreground">
                               {payment.payment_date ? new Date(payment.payment_date).toLocaleDateString() : 'No date'}
                             </div>
                           </div>
-                          <div style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'flex-end',
-                            gap: '4px'
-                          }}>
-                            <div style={{
-                              fontSize: '16px',
-                              fontWeight: '600',
-                              color: '#059669'
-                            }}>
+                          <div className="flex flex-col items-end gap-2">
+                            <div className="text-sm font-semibold text-foreground">
                               ${Number(payment.amount || 0).toFixed(2)}
                             </div>
-                            <div style={{
-                              fontSize: '11px',
-                              padding: '2px 8px',
-                              borderRadius: '4px',
-                              backgroundColor: payment.status === 'POSTED' ? '#DCFCE7' : '#FEF3C7',
-                              color: payment.status === 'POSTED' ? '#166534' : '#92400E',
-                              fontWeight: '500'
-                            }}>
-                              {payment.status || 'PENDING'}
-                            </div>
+                            <StatusBadge status={payment.status || 'pending'} type="payment" />
                           </div>
                         </div>
                       ))}
-                      <div style={{
-                        marginTop: '8px',
-                        padding: '12px',
-                        backgroundColor: '#DCFCE7',
-                        borderRadius: '8px',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        fontWeight: '600'
-                      }}>
-                        <span style={{ color: '#166534' }}>Total Paid</span>
-                        <span style={{ color: '#166534', fontSize: '18px' }}>
+
+                      <div className="flex items-center justify-between rounded-md bg-muted p-3">
+                        <span className="text-sm font-semibold text-foreground">Total Paid</span>
+                        <span className="text-sm font-semibold text-foreground">
                           ${payments.reduce((sum, pmt) => sum + Number(pmt.amount || 0), 0).toFixed(2)}
                         </span>
                       </div>
@@ -1015,112 +566,44 @@ export default function ClientDetails() {
                 )}
               </div>
 
-              {/* Outstanding Balance */}
               {invoices.length > 0 && payments.length > 0 && (
-                <div style={{
-                  marginTop: '24px',
-                  padding: '16px',
-                  backgroundColor: '#FEF3C7',
-                  borderRadius: '8px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  border: '2px solid #F59E0B'
-                }}>
-                  <span style={{ fontSize: '16px', fontWeight: '600', color: '#92400E' }}>
-                    Outstanding Balance
-                  </span>
-                  <span style={{ fontSize: '24px', fontWeight: '700', color: '#92400E' }}>
-                    ${
-                      (
-                        invoices.reduce((sum, inv) => sum + Number(inv.total_amount || 0), 0) -
-                        payments.reduce((sum, pmt) => sum + Number(pmt.amount || 0), 0)
-                      ).toFixed(2)
-                    }
-                  </span>
+                <div className="mt-6 flex items-center justify-between rounded-md border p-4">
+                  <span className="text-sm font-semibold text-foreground">Outstanding Balance</span>
+                  <span className="text-lg font-semibold text-foreground">${outstandingBalance.toFixed(2)}</span>
                 </div>
               )}
-            </div>
-          )}
+            </CardContent>
+          </Card>
+        )}
 
-          {/* Notes */}
-          {notes && (
-            <div style={{
-              backgroundColor: '#FFFFFF',
-              borderRadius: '12px',
-              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)',
-              border: '1px solid #E2E8F0',
-              padding: '24px',
-              marginBottom: '24px'
-            }}>
-              <h2 style={{
-                fontSize: '18px',
-                fontWeight: '600',
-                color: '#1E293B',
-                marginBottom: '12px'
-              }}>Notes</h2>
-              <p style={{
-                fontSize: '14px',
-                color: '#475569',
-                lineHeight: '1.6',
-                whiteSpace: 'pre-wrap'
-              }}>{notes}</p>
-            </div>
-          )}
+        {notes && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Notes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="whitespace-pre-wrap text-sm text-foreground">{notes}</p>
+            </CardContent>
+          </Card>
+        )}
 
-          {/* All Fields (Debug/Admin View) */}
-          <details style={{
-            backgroundColor: '#F8FAFC',
-            borderRadius: '12px',
-            border: '1px solid #E2E8F0',
-            padding: '24px'
-          }}>
-            <summary style={{
-              fontSize: '14px',
-              fontWeight: '500',
-              color: '#64748B',
-              cursor: 'pointer',
-              transition: 'color 0.2s ease'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.color = '#1E293B'}
-            onMouseLeave={(e) => e.currentTarget.style.color = '#64748B'}
-            >
-              View All Fields
-            </summary>
-            <div style={{
-              marginTop: '16px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '8px'
-            }}>
-              {Object.entries(client).map(([key, value]) => (
-                <div key={key} style={{
-                  display: 'flex',
-                  borderBottom: '1px solid #E2E8F0',
-                  paddingBottom: '8px'
-                }}>
-                  <span style={{
-                    fontSize: '13px',
-                    fontWeight: '500',
-                    color: '#64748B',
-                    width: '33.333%',
-                    flexShrink: 0
-                  }}>{key}:</span>
-                  <span style={{
-                    fontSize: '13px',
-                    color: '#1E293B',
-                    width: '66.667%',
-                    wordBreak: 'break-all'
-                  }}>
-                    {typeof value === 'object' && value !== null 
-                      ? JSON.stringify(value, null, 2) 
-                      : (value || '—')}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </details>
-        </div>
+        <details className="rounded-lg border bg-muted/30 p-6">
+          <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground">
+            View All Fields
+          </summary>
+          <div className="mt-4 space-y-2">
+            {Object.entries(client).map(([key, value]) => (
+              <div key={key} className="flex gap-4 border-b pb-2">
+                <span className="w-1/3 shrink-0 text-xs font-medium text-muted-foreground">{key}:</span>
+                <span className="w-2/3 break-all text-xs text-foreground">
+                  {typeof value === 'object' && value !== null
+                    ? JSON.stringify(value, null, 2)
+                    : (value || '—')}
+                </span>
+              </div>
+            ))}
+          </div>
+        </details>
       </div>
     </div>
   );

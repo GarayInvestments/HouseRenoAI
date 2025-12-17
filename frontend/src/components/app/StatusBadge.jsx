@@ -39,6 +39,14 @@ import { cn } from '@/lib/utils';
 
 // Status configurations by type
 const statusConfig = {
+  client: {
+    active: { variant: 'success', icon: PlayCircle, label: 'Active' },
+    completed: { variant: 'secondary', icon: CheckCircle, label: 'Completed' },
+    intake: { variant: 'warning', icon: Clock, label: 'Intake' },
+    'on_hold': { variant: 'info', icon: PauseCircle, label: 'On Hold' },
+    'on hold': { variant: 'info', icon: PauseCircle, label: 'On Hold' },
+    archived: { variant: 'secondary', icon: Ban, label: 'Archived' },
+  },
   permit: {
     pending: { variant: 'warning', icon: Clock, label: 'Pending' },
     'under review': { variant: 'info', icon: AlertCircle, label: 'Under Review' },
