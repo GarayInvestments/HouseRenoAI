@@ -1,8 +1,8 @@
 # House Renovators AI - Implementation Tracker
 
-**Version**: 7.0 (Phase 3 Design System - ClientDetails Complete)  
-**Last Updated**: December 16, 2025 7:06 PM EST  
-**Overall Progress**: All core features complete, design system migration 65% complete (11/17 pages, all deploying)
+**Version**: 7.2 (Phase 3 Design System - Guardrails + InvoiceDetails Date Fix)  
+**Last Updated**: December 16, 2025 8:19 PM EST  
+**Overall Progress**: All core features complete, design system migration 71% complete (12/17 pages, all deploying)
 
 > **Purpose**: Track active work and immediate next steps. Completed milestones archived in `docs/history/PHASE_COMPLETIONS/`.
 
@@ -11,7 +11,7 @@
 ## 🎯 UP NEXT (Priority Order)
 
 ### 1. Frontend Design System - Phase 3 (In Progress)
-**Status**: 65% complete (11/17 pages)  
+**Status**: 71% complete (12/17 pages)  
 **Effort**: 3-5 hours remaining  
 **Goal**: Complete remaining 7 pages using proven pattern
 
@@ -27,10 +27,10 @@
 - ✅ ProjectDetails.jsx (1286→773 lines, 40% reduction) - Completed: Dec 16 6:29 PM EST
 - ✅ PaymentDetails.jsx (503→335 lines, 33% reduction) - Completed: Dec 16 6:47 PM EST
 - ✅ ClientDetails.jsx (1103→578 lines, 48% reduction) - Completed: Dec 16 7:06 PM EST
+- ✅ InvoiceDetails.jsx (806→452 lines, 44% reduction) - Completed: Dec 16 8:06 PM EST
 
 **Remaining** (Priority Order):
-1. InvoiceDetails.jsx (806 lines)
-2. InspectionDetails.jsx (1022 lines)
+1. InspectionDetails.jsx (1022 lines)
 4. SiteVisits.jsx
 5. OversightActions.jsx
 6. Qualifiers.jsx
@@ -49,6 +49,32 @@
 ---
 
 ## 🟢 COMPLETED TODAY (December 16, 2025)
+
+### ✅ Workflow Guardrails (8:19 PM EST)
+**Goal**: Prevent broken frontend commits + reduce lint noise  
+**Delivered**:
+- ESLint ignores expanded to exclude generated Vite artifacts (`.vite/`) and dependencies (`node_modules/`)
+- Repo-managed pre-commit hook added to run `npm --prefix frontend run build` when `frontend/` files are staged
+- Enablement script added: `scripts/setup/enable-githooks.ps1`
+
+---
+
+### ✅ InvoiceDetails.jsx Date Input Fix (8:19 PM EST)
+**Issue**: Browser `type="date"` inputs reject ISO timestamps (`YYYY-MM-DDTHH:mm:ss...`)  
+**Fix**: Normalize invoice/due dates to `YYYY-MM-DD` for date input values  
+**Validation**: ✅ Local production build succeeded
+
+### ✅ InvoiceDetails.jsx Migration (8:06 PM EST)
+**Result**: 806→452 lines (44% reduction)  
+**Deployment**: ✅ Successful (local production build)
+
+**Migrated Components**:
+- Header standardized to PageHeader + NavigationArrows + Button actions
+- Status standardized via StatusBadge (type="invoice")
+- Converted inline styles → Tailwind utility classes + Card structure
+- Preserved line_items parsing (double-encoded JSON handling) + edit/save mapping
+
+---
 
 ### ✅ ClientDetails.jsx Migration (7:06 PM EST)
 **Result**: 1103→578 lines (48% reduction)  

@@ -1,0 +1,33 @@
+#!/bin/sh
+# Repo-managed pre-commit hook (enabled via `git config core.hooksPath .githooks`).
+# Runs frontend production build when frontend files are staged.
+
+set -eu
+
+if git rev-parse --verify HEAD >/dev/null 2>&1; then
+  BASE=HEAD
+else
+  BASE=$(git hash-object -t tree /dev/null)
+fi
+
+# Only run if staged changes touch the frontend.
+CHANGED=$(git diff --cached --name-only --diff-filter=ACMRT "$BASE")
+if ! printf "%s\n" "$CHANGED" | grep -q '^frontend/'; then
+  exit 0
+fi
+
+# If the frontend folder exists, run build.
+if [ ! -d "frontend" ]; then
+  echo "pre-commit: frontend/ not found; skipping frontend build." >&2
+  exit 0
+fi
+
+echo "pre-commit: frontend changes detected; running 'npm run build'..." >&2
+
+# Prefer npm --prefix so we don't depend on shell cd semantics.
+if command -v npm >/dev/null 2>&1; then
+  npm --prefix frontend run build
+else
+  echo "pre-commit: npm not found in PATH. Install Node.js/npm or commit with --no-verify." >&2
+  exit 1
+fi

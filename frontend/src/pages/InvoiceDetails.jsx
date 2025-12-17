@@ -1,18 +1,23 @@
-import { FileText, ArrowLeft, Calendar, DollarSign, User, Building2, Mail, Phone, Download, Edit, Trash2 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { Building2, Calendar, Download, Edit, FileText, Loader2, Mail, Phone, User } from 'lucide-react';
+
 import api from '../lib/api';
+import ErrorState from '../components/ErrorState';
+import NavigationArrows from '../components/NavigationArrows';
+import useDetailsNavigation from '../hooks/useDetailsNavigation';
+import { INVOICE_STATUS_OPTIONS, formatEnumLabel } from '../constants/enums';
 import { useAppStore } from '../stores/appStore';
 import useInvoicesStore from '../stores/invoicesStore';
-import LoadingScreen from '../components/LoadingScreen';
-import ErrorState from '../components/ErrorState';
-import { INVOICE_STATUS_OPTIONS, formatEnumLabel } from '../constants/enums';
-import useDetailsNavigation from '../hooks/useDetailsNavigation';
-import NavigationArrows from '../components/NavigationArrows';
+
+import { LoadingState, PageHeader, StatusBadge } from '@/components/app';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 
 export default function InvoiceDetails() {
-  const { currentInvoiceId, navigateToInvoices, navigateToInvoiceDetails } = useAppStore();
+  const { currentInvoiceId, navigateToInvoiceDetails, navigateToInvoices } = useAppStore();
   const { selectedInvoice, fetchInvoice, invoices } = useInvoicesStore();
-  
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [project, setProject] = useState(null);
@@ -30,25 +35,23 @@ export default function InvoiceDetails() {
   const loadInvoiceDetails = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const invoiceData = await fetchInvoice(currentInvoiceId);
-      
+
       // Load related project and client (check both snake_case and Title Case)
       const projectId = invoiceData.project_id || invoiceData['Project ID'];
-      
       if (projectId) {
         const projectData = await api.getProject(projectId);
         setProject(projectData);
       }
-      
+
       const clientId = invoiceData.client_id || invoiceData['Client ID'];
-      
       if (clientId) {
         const clientData = await api.getClient(clientId);
         setClient(clientData);
       }
-      
+
       setLoading(false);
     } catch (err) {
       console.error('Failed to load invoice details:', err);
@@ -58,12 +61,7 @@ export default function InvoiceDetails() {
   };
 
   // Navigation hook for swipe and arrow navigation
-  const navigation = useDetailsNavigation(
-    invoices,
-    currentInvoiceId,
-    navigateToInvoiceDetails,
-    'invoice_id'
-  );
+  const navigation = useDetailsNavigation(invoices, currentInvoiceId, navigateToInvoiceDetails, 'invoice_id');
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Not set';
@@ -75,37 +73,43 @@ export default function InvoiceDetails() {
     if (amount === null || amount === undefined) return '$0.00';
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'USD',
     }).format(amount);
+  };
+
+  const toDateInputValue = (value) => {
+    if (!value) return '';
+    if (typeof value !== 'string') return '';
+    return value.includes('T') ? value.slice(0, 10) : value;
   };
 
   const handleSave = async () => {
     try {
       setIsSaving(true);
-      
+
       // Map frontend display field names to backend database column names
       const fieldMapping = {
         'Invoice Status': 'status',
         'Invoice Date': 'invoice_date',
         'Due Date': 'due_date',
-        'Subtotal': 'subtotal',
+        Subtotal: 'subtotal',
         'Tax Amount': 'tax_amount',
-        'Total Amount': 'total_amount'
+        'Total Amount': 'total_amount',
       };
-      
+
       // Convert editedInvoice keys from display names to database column names
       const mappedData = {};
-      Object.keys(editedInvoice).forEach(key => {
+      Object.keys(editedInvoice).forEach((key) => {
         const dbFieldName = fieldMapping[key] || key;
         mappedData[dbFieldName] = editedInvoice[key];
       });
-      
+
       await api.updateInvoice(currentInvoiceId, mappedData);
-      await loadInvoiceDetails(); // Reload to get fresh data
+      await loadInvoiceDetails();
       setIsEditing(false);
       setEditedInvoice(null);
-    } catch (error) {
-      console.error('Failed to save invoice:', error);
+    } catch (saveError) {
+      console.error('Failed to save invoice:', saveError);
       alert('Failed to save changes. Please try again.');
     } finally {
       setIsSaving(false);
@@ -118,11 +122,11 @@ export default function InvoiceDetails() {
   };
 
   const handleEditChange = (field, value) => {
-    setEditedInvoice(prev => ({ ...prev, [field]: value }));
+    setEditedInvoice((prev) => ({ ...prev, [field]: value }));
   };
 
   if (loading) {
-    return <LoadingScreen message="Loading invoice details..." />;
+    return <LoadingState message="Loading invoice details..." />;
   }
 
   if (error) {
@@ -130,12 +134,7 @@ export default function InvoiceDetails() {
   }
 
   if (!selectedInvoice) {
-    return (
-      <ErrorState 
-        message="Invoice not found" 
-        onRetry={() => navigateToInvoices()} 
-      />
-    );
+    return <ErrorState message="Invoice not found" onRetry={() => navigateToInvoices()} />;
   }
 
   // Extract invoice fields (support both database and legacy naming)
@@ -150,7 +149,7 @@ export default function InvoiceDetails() {
   const amountPaid = selectedInvoice.amount_paid || selectedInvoice['Amount Paid'] || 0;
   const balanceDue = selectedInvoice.balance_due || selectedInvoice['Balance Due'] || (totalAmount - amountPaid);
   const notes = selectedInvoice.notes || selectedInvoice['Notes'] || '';
-  
+
   // Parse line_items - handle double-encoded JSON strings from database
   let lineItems = selectedInvoice.line_items || selectedInvoice['Line Items'] || [];
   if (typeof lineItems === 'string') {
@@ -159,14 +158,19 @@ export default function InvoiceDetails() {
       const parsed = JSON.parse(lineItems);
       // If still a string, parse again (double-encoded case)
       lineItems = typeof parsed === 'string' ? JSON.parse(parsed) : parsed;
-    } catch (e) {
-      console.error('Failed to parse line_items:', e);
+    } catch (parseError) {
+      console.error('Failed to parse line_items:', parseError);
       lineItems = [];
     }
   }
 
   // Extract project fields
-  const projectName = project?.project_name || project?.['Project Name'] || project?.data?.project_name || project?.data?.['Project Name'] || 'Unknown Project';
+  const projectName =
+    project?.project_name ||
+    project?.['Project Name'] ||
+    project?.data?.project_name ||
+    project?.data?.['Project Name'] ||
+    'Unknown Project';
   const projectAddress = project?.address || project?.['Address'] || project?.data?.address || project?.data?.['Address'] || '';
 
   // Extract client fields
@@ -174,662 +178,326 @@ export default function InvoiceDetails() {
   const clientEmail = client?.email || client?.['Email'] || '';
   const clientPhone = client?.phone || client?.['Phone'] || '';
 
-  const getStatusColor = (status) => {
-    const lowerStatus = status?.toLowerCase();
-    if (lowerStatus === 'paid') {
-      return { bg: '#ECFDF5', text: '#059669', border: '#A7F3D0' };
-    }
-    if (lowerStatus === 'sent') {
-      return { bg: '#DBEAFE', text: '#2563EB', border: '#93C5FD' };
-    }
-    if (lowerStatus === 'draft') {
-      return { bg: '#F3F4F6', text: '#6B7280', border: '#D1D5DB' };
-    }
-    if (lowerStatus === 'overdue') {
-      return { bg: '#FEE2E2', text: '#DC2626', border: '#FECACA' };
-    }
-    return { bg: '#F3F4F6', text: '#6B7280', border: '#D1D5DB' };
-  };
-
-  const statusColor = getStatusColor(status);
+  const isOverdue = status?.toString().toLowerCase() === 'overdue';
 
   return (
-    <div 
-      style={{ 
-        padding: '24px',
-        maxWidth: '1200px',
-        margin: '0 auto',
-        minHeight: '100vh',
-        backgroundColor: '#F9FAFB'
-      }}
-      {...navigation.touchHandlers}
-    >
-      {/* Header */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '24px',
-        flexWrap: 'wrap',
-        gap: '16px'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button
-            onClick={navigateToInvoices}
-            style={{
-              padding: '8px',
-              backgroundColor: 'white',
-              border: '1px solid #E5E7EB',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-          >
-            <ArrowLeft size={20} color="#374151" />
-          </button>
-          
-          <div>
-            <h1 style={{ 
-              fontSize: '28px', 
-              fontWeight: '700',
-              color: '#111827',
-              margin: '0 0 4px 0'
-            }}>
-              {invoiceNumber}
-            </h1>
-            <p style={{ 
-              fontSize: '14px', 
-              color: '#6B7280',
-              margin: 0
-            }}>
-              {businessId}
-            </p>
-          </div>
+    <div className="mx-auto max-w-6xl p-6" {...navigation.touchHandlers}>
+      <PageHeader
+        icon={<FileText size={32} />}
+        title={invoiceNumber}
+        subtitle={businessId || undefined}
+        showBack
+        onBack={navigateToInvoices}
+        actions={
+          <>
+            <NavigationArrows
+              currentIndex={navigation.currentIndex}
+              totalItems={navigation.totalItems}
+              hasPrevious={navigation.hasPrevious}
+              hasNext={navigation.hasNext}
+              onPrevious={navigation.goToPrevious}
+              onNext={navigation.goToNext}
+              itemLabel="invoice"
+            />
 
-          <span style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '6px 12px',
-            fontSize: '13px',
-            fontWeight: '600',
-            backgroundColor: statusColor.bg,
-            color: statusColor.text,
-            border: `1px solid ${statusColor.border}`,
-            borderRadius: '6px',
-            textTransform: 'capitalize'
-          }}>
-            {isEditing ? (
-              <select
-                value={editedInvoice?.status || ''}
-                onChange={(e) => handleEditChange('status', e.target.value)}
-                style={{
-                  padding: '4px 8px',
-                  fontSize: '13px',
-                  fontWeight: '600',
-                  border: '2px solid #2563EB',
-                  borderRadius: '6px',
-                  outline: 'none',
-                  backgroundColor: 'white'
+            <Button variant="outline" onClick={() => {}}>
+              <Download size={16} aria-hidden="true" />
+              Download
+            </Button>
+
+            {!isEditing ? (
+              <Button
+                onClick={() => {
+                  setIsEditing(true);
+                  setEditedInvoice(selectedInvoice);
                 }}
               >
-                <option value="">Select status...</option>
-                {INVOICE_STATUS_OPTIONS.map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
+                <Edit size={16} aria-hidden="true" />
+                Edit
+              </Button>
             ) : (
-              formatEnumLabel(status)
+              <>
+                <Button variant="outline" onClick={handleCancel} disabled={isSaving}>
+                  Cancel
+                </Button>
+                <Button onClick={handleSave} disabled={isSaving}>
+                  {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
+                  {isSaving ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </>
             )}
-          </span>
-        </div>
-        
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-          {/* Navigation Arrows */}
-          <NavigationArrows
-            currentIndex={navigation.currentIndex}
-            totalItems={navigation.totalItems}
-            hasPrevious={navigation.hasPrevious}
-            hasNext={navigation.hasNext}
-            onPrevious={navigation.goToPrevious}
-            onNext={navigation.goToNext}
-            itemLabel="invoice"
-          />
-          
-          <button
-            onClick={() => {/* TODO: Download PDF */}}
-            style={{
-              padding: '10px 16px',
-              backgroundColor: 'white',
-              color: '#374151',
-              border: '1px solid #E5E7EB',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: '600',
-              fontSize: '14px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}
+          </>
+        }
+      />
+
+      <div className="mt-4">
+        {isEditing ? (
+          <select
+            value={editedInvoice?.status || ''}
+            onChange={(e) => handleEditChange('status', e.target.value)}
+            className="h-9 w-full max-w-xs rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
-            <Download size={16} />
-            Download
-          </button>
-          
-          {!isEditing ? (
-            <button
-              onClick={() => {
-                setIsEditing(true);
-                setEditedInvoice(selectedInvoice);
-              }}
-              style={{
-                padding: '10px 16px',
-                backgroundColor: '#2563EB',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontWeight: '600',
-                fontSize: '14px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
-            >
-              <Edit size={16} />
-              Edit
-            </button>
-          ) : (
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button
-                onClick={handleCancel}
-                disabled={isSaving}
-                style={{
-                  padding: '10px 16px',
-                  backgroundColor: 'white',
-                  color: '#64748B',
-                  border: '1px solid #E5E7EB',
-                  borderRadius: '8px',
-                  cursor: isSaving ? 'not-allowed' : 'pointer',
-                  fontWeight: '600',
-                  fontSize: '14px',
-                  opacity: isSaving ? 0.5 : 1
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={isSaving}
-                style={{
-                  padding: '10px 16px',
-                  backgroundColor: '#059669',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: isSaving ? 'not-allowed' : 'pointer',
-                  fontWeight: '600',
-                  fontSize: '14px',
-                  opacity: isSaving ? 0.5 : 1
-                }}
-              >
-                {isSaving ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
-          )}
-        </div>
+            <option value="">Select status...</option>
+            {INVOICE_STATUS_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <StatusBadge status={status} type="invoice" />
+        )}
       </div>
 
-      {/* Invoice Content */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr',
-        gap: '20px'
-      }}>
-        {/* Client & Project Info */}
-        <div style={{
-          backgroundColor: 'white',
-          padding: '24px',
-          borderRadius: '12px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          border: '1px solid #E5E7EB'
-        }}>
-          <h2 style={{
-            fontSize: '18px',
-            fontWeight: '600',
-            color: '#111827',
-            marginBottom: '16px'
-          }}>
-            Bill To
-          </h2>
-          
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-            gap: '20px'
-          }}>
-            <div>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                marginBottom: '8px'
-              }}>
-                <User size={18} color="#2563EB" />
-                <span style={{ fontSize: '16px', fontWeight: '600', color: '#111827' }}>
-                  {clientName}
-                </span>
-              </div>
-              {clientEmail && (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  fontSize: '14px',
-                  color: '#6B7280',
-                  marginBottom: '4px'
-                }}>
-                  <Mail size={14} />
-                  {clientEmail}
+      <div className="mt-6 space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Bill To</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-6 md:grid-cols-3">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <User size={18} className="text-primary" aria-hidden="true" />
+                  <span className="text-base font-semibold text-foreground">{clientName}</span>
                 </div>
-              )}
-              {clientPhone && (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  fontSize: '14px',
-                  color: '#6B7280'
-                }}>
-                  <Phone size={14} />
-                  {clientPhone}
+                {clientEmail && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Mail size={14} aria-hidden="true" />
+                    <span className="break-all">{clientEmail}</span>
+                  </div>
+                )}
+                {clientPhone && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Phone size={14} aria-hidden="true" />
+                    <span>{clientPhone}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Building2 size={18} className="text-primary" aria-hidden="true" />
+                  <span className="text-base font-semibold text-foreground">{projectName}</span>
                 </div>
-              )}
-            </div>
-
-            <div>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                marginBottom: '8px'
-              }}>
-                <Building2 size={18} color="#2563EB" />
-                <span style={{ fontSize: '16px', fontWeight: '600', color: '#111827' }}>
-                  {projectName}
-                </span>
+                {projectAddress && <p className="text-sm text-muted-foreground">{projectAddress}</p>}
               </div>
-              {projectAddress && (
-                <div style={{
-                  fontSize: '14px',
-                  color: '#6B7280'
-                }}>
-                  {projectAddress}
+
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Invoice Date</p>
+                  {isEditing ? (
+                    <Input
+                      type="date"
+                      value={toDateInputValue(editedInvoice?.invoice_date)}
+                      onChange={(e) => handleEditChange('invoice_date', e.target.value)}
+                      className="max-w-xs"
+                    />
+                  ) : (
+                    <div className="flex items-center gap-2 text-sm text-foreground">
+                      <Calendar size={16} className="text-muted-foreground" aria-hidden="true" />
+                      <span>{formatDate(invoiceDate)}</span>
+                    </div>
+                  )}
                 </div>
-              )}
+
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Due Date</p>
+                  {isEditing ? (
+                    <Input
+                      type="date"
+                      value={toDateInputValue(editedInvoice?.due_date)}
+                      onChange={(e) => handleEditChange('due_date', e.target.value)}
+                      className="max-w-xs"
+                    />
+                  ) : (
+                    <p className={isOverdue ? 'text-sm font-medium text-destructive' : 'text-sm font-medium text-foreground'}>
+                      {formatDate(dueDate)}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>QuickBooks Details</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">Email Status</p>
+                <p className={selectedInvoice.email_status ? 'text-sm font-medium text-foreground' : 'text-sm font-medium text-muted-foreground'}>
+                  {selectedInvoice.email_status ? formatEnumLabel(selectedInvoice.email_status) : 'Not synced'}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">Print Status</p>
+                <p className={selectedInvoice.print_status ? 'text-sm font-medium text-foreground' : 'text-sm font-medium text-muted-foreground'}>
+                  {selectedInvoice.print_status ? formatEnumLabel(selectedInvoice.print_status) : 'Not synced'}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">Billing Email</p>
+                <p className={selectedInvoice.bill_email ? 'text-sm font-medium text-foreground' : 'text-sm font-medium text-muted-foreground'}>
+                  {selectedInvoice.bill_email || 'Not synced'}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">Payment Terms</p>
+                <p className={selectedInvoice.payment_terms ? 'text-sm font-medium text-foreground' : 'text-sm font-medium text-muted-foreground'}>
+                  {selectedInvoice.payment_terms || 'Not synced'}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">Currency</p>
+                <p className={selectedInvoice.currency_code ? 'text-sm font-medium text-foreground' : 'text-sm font-medium text-muted-foreground'}>
+                  {selectedInvoice.currency_code || 'Not synced'}
+                </p>
+              </div>
             </div>
 
-            <div>
-              <div style={{
-                marginBottom: '8px'
-              }}>
-                <span style={{ fontSize: '12px', color: '#6B7280', display: 'block', marginBottom: '4px' }}>
-                  Invoice Date
-                </span>
-                {isEditing ? (
-                  <input
-                    type="date"
-                    value={editedInvoice?.invoice_date || ''}
-                    onChange={(e) => handleEditChange('invoice_date', e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '6px 10px',
-                      border: '1px solid #D1D5DB',
-                      borderRadius: '6px',
-                      fontSize: '14px',
-                      outline: 'none'
-                    }}
-                  />
-                ) : (
-                  <span style={{ fontSize: '14px', color: '#111827', fontWeight: '500' }}>
-                    {formatDate(invoiceDate)}
+            {selectedInvoice.customer_memo && (
+              <div className="mt-6 border-t pt-4">
+                <p className="text-xs text-muted-foreground">Customer Memo</p>
+                <p className="mt-1 text-sm text-foreground">{selectedInvoice.customer_memo}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Line Items</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {Array.isArray(lineItems) && lineItems.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-muted-foreground">Description</th>
+                      <th className="px-3 py-3 text-right text-xs font-semibold text-muted-foreground">Quantity</th>
+                      <th className="px-3 py-3 text-right text-xs font-semibold text-muted-foreground">Rate</th>
+                      <th className="px-3 py-3 text-right text-xs font-semibold text-muted-foreground">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lineItems.map((item, index) => {
+                      const qty = item.quantity !== undefined && item.quantity !== null ? item.quantity : (item.Quantity || 0);
+                      const displayQty = qty === 0 ? 1 : qty;
+                      const unitPrice = item.unit_price || item.rate || item.Rate || item['Unit Price'] || 0;
+
+                      return (
+                        <tr key={index} className="border-b last:border-0">
+                          <td className="px-3 py-3 text-sm text-foreground">
+                            {item.description || item.Description || item.item_name || 'N/A'}
+                          </td>
+                          <td className="px-3 py-3 text-right text-sm text-muted-foreground">{displayQty}</td>
+                          <td className="px-3 py-3 text-right text-sm text-muted-foreground">{formatCurrency(unitPrice)}</td>
+                          <td className="px-3 py-3 text-right text-sm font-medium text-foreground">
+                            {formatCurrency(item.amount || item.Amount || 0)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="py-8 text-center text-sm text-muted-foreground">No line items</p>
+            )}
+
+            <div className="mt-6 flex flex-col items-end border-t pt-6">
+              <div className="w-full max-w-sm space-y-3">
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-sm text-muted-foreground">Subtotal</span>
+                  {isEditing ? (
+                    <Input
+                      type="number"
+                      value={editedInvoice?.subtotal || ''}
+                      onChange={(e) => handleEditChange('subtotal', parseFloat(e.target.value) || 0)}
+                      className="max-w-[140px] text-right"
+                    />
+                  ) : (
+                    <span className="text-sm font-medium text-foreground">{formatCurrency(subtotal)}</span>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-sm text-muted-foreground">Tax</span>
+                  {isEditing ? (
+                    <Input
+                      type="number"
+                      value={editedInvoice?.tax_amount || ''}
+                      onChange={(e) => handleEditChange('tax_amount', parseFloat(e.target.value) || 0)}
+                      className="max-w-[140px] text-right"
+                    />
+                  ) : (
+                    <span className="text-sm font-medium text-foreground">{formatCurrency(taxAmount)}</span>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between gap-4 border-t pt-3">
+                  <span className="text-sm font-semibold text-foreground">Total</span>
+                  {isEditing ? (
+                    <Input
+                      type="number"
+                      value={editedInvoice?.total_amount || ''}
+                      onChange={(e) => handleEditChange('total_amount', parseFloat(e.target.value) || 0)}
+                      className="max-w-[140px] text-right font-semibold"
+                    />
+                  ) : (
+                    <span className="text-sm font-semibold text-foreground">{formatCurrency(totalAmount)}</span>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-sm text-muted-foreground">Amount Paid</span>
+                  <span className="text-sm font-medium text-foreground">{formatCurrency(amountPaid)}</span>
+                </div>
+
+                <div className="flex items-center justify-between gap-4 border-t pt-3">
+                  <span className="text-sm font-semibold text-foreground">Balance Due</span>
+                  <span className={balanceDue > 0 ? 'text-base font-semibold text-destructive' : 'text-base font-semibold text-foreground'}>
+                    {formatCurrency(balanceDue)}
                   </span>
-                )}
-              </div>
-              <div>
-                <span style={{ fontSize: '12px', color: '#6B7280', display: 'block', marginBottom: '4px' }}>
-                  Due Date
-                </span>
-                {isEditing ? (
-                  <input
-                    type="date"
-                    value={editedInvoice?.due_date || ''}
-                    onChange={(e) => handleEditChange('due_date', e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '6px 10px',
-                      border: '1px solid #D1D5DB',
-                      borderRadius: '6px',
-                      fontSize: '14px',
-                      outline: 'none'
-                    }}
-                  />
-                ) : (
-                  <span style={{ 
-                    fontSize: '14px', 
-                    color: status.toLowerCase() === 'overdue' ? '#DC2626' : '#111827',
-                    fontWeight: '500'
-                  }}>
-                    {formatDate(dueDate)}
-                  </span>
-                )}
+                </div>
               </div>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
-        {/* QuickBooks Info */}
-        <div style={{
-          backgroundColor: 'white',
-          padding: '24px',
-          borderRadius: '12px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          border: '1px solid #E5E7EB'
-        }}>
-          <h2 style={{
-            fontSize: '18px',
-            fontWeight: '600',
-            color: '#111827',
-            marginBottom: '16px'
-          }}>
-            QuickBooks Details
-          </h2>
-          
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-            gap: '16px'
-          }}>
-            <div>
-              <span style={{ fontSize: '12px', color: '#6B7280', display: 'block', marginBottom: '4px' }}>
-                Email Status
-              </span>
-              <span style={{ fontSize: '14px', color: selectedInvoice.email_status ? '#111827' : '#9CA3AF', fontWeight: '500' }}>
-                {selectedInvoice.email_status ? formatEnumLabel(selectedInvoice.email_status) : 'Not synced'}
-              </span>
-            </div>
-            
-            <div>
-              <span style={{ fontSize: '12px', color: '#6B7280', display: 'block', marginBottom: '4px' }}>
-                Print Status
-              </span>
-              <span style={{ fontSize: '14px', color: selectedInvoice.print_status ? '#111827' : '#9CA3AF', fontWeight: '500' }}>
-                {selectedInvoice.print_status ? formatEnumLabel(selectedInvoice.print_status) : 'Not synced'}
-              </span>
-            </div>
-            
-            <div>
-              <span style={{ fontSize: '12px', color: '#6B7280', display: 'block', marginBottom: '4px' }}>
-                Billing Email
-              </span>
-              <span style={{ fontSize: '14px', color: selectedInvoice.bill_email ? '#111827' : '#9CA3AF', fontWeight: '500' }}>
-                {selectedInvoice.bill_email || 'Not synced'}
-              </span>
-            </div>
-            
-            <div>
-              <span style={{ fontSize: '12px', color: '#6B7280', display: 'block', marginBottom: '4px' }}>
-                Payment Terms
-              </span>
-              <span style={{ fontSize: '14px', color: selectedInvoice.payment_terms ? '#111827' : '#9CA3AF', fontWeight: '500' }}>
-                {selectedInvoice.payment_terms || 'Not synced'}
-              </span>
-            </div>
-            
-            <div>
-              <span style={{ fontSize: '12px', color: '#6B7280', display: 'block', marginBottom: '4px' }}>
-                Currency
-              </span>
-              <span style={{ fontSize: '14px', color: selectedInvoice.currency_code ? '#111827' : '#9CA3AF', fontWeight: '500' }}>
-                {selectedInvoice.currency_code || 'Not synced'}
-              </span>
-            </div>
-          </div>
-          
-          {selectedInvoice.customer_memo && (
-            <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #E5E7EB' }}>
-              <span style={{ fontSize: '12px', color: '#6B7280', display: 'block', marginBottom: '4px' }}>
-                Customer Memo
-              </span>
-              <p style={{ fontSize: '14px', color: '#111827', margin: 0 }}>
-                {selectedInvoice.customer_memo}
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Line Items */}
-        <div style={{
-          backgroundColor: 'white',
-          padding: '24px',
-          borderRadius: '12px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          border: '1px solid #E5E7EB'
-        }}>
-          <h2 style={{
-            fontSize: '18px',
-            fontWeight: '600',
-            color: '#111827',
-            marginBottom: '16px'
-          }}>
-            Line Items
-          </h2>
-
-          {Array.isArray(lineItems) && lineItems.length > 0 ? (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ borderBottom: '2px solid #E5E7EB' }}>
-                    <th style={{ textAlign: 'left', padding: '12px', fontSize: '13px', fontWeight: '600', color: '#6B7280' }}>Description</th>
-                    <th style={{ textAlign: 'right', padding: '12px', fontSize: '13px', fontWeight: '600', color: '#6B7280' }}>Quantity</th>
-                    <th style={{ textAlign: 'right', padding: '12px', fontSize: '13px', fontWeight: '600', color: '#6B7280' }}>Rate</th>
-                    <th style={{ textAlign: 'right', padding: '12px', fontSize: '13px', fontWeight: '600', color: '#6B7280' }}>Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {lineItems.map((item, index) => {
-                    // Handle flat-fee items (qty=0 means show as qty=1 for display)
-                    const qty = item.quantity !== undefined && item.quantity !== null ? item.quantity : (item.Quantity || 0);
-                    const displayQty = qty === 0 ? 1 : qty;
-                    const unitPrice = item.unit_price || item.rate || item.Rate || item['Unit Price'] || 0;
-                    
-                    return (
-                      <tr key={index} style={{ borderBottom: '1px solid #F3F4F6' }}>
-                        <td style={{ padding: '12px', fontSize: '14px', color: '#111827' }}>
-                          {item.description || item.Description || item.item_name || 'N/A'}
-                        </td>
-                        <td style={{ textAlign: 'right', padding: '12px', fontSize: '14px', color: '#6B7280' }}>
-                          {displayQty}
-                        </td>
-                        <td style={{ textAlign: 'right', padding: '12px', fontSize: '14px', color: '#6B7280' }}>
-                          {formatCurrency(unitPrice)}
-                        </td>
-                        <td style={{ textAlign: 'right', padding: '12px', fontSize: '14px', fontWeight: '500', color: '#111827' }}>
-                          {formatCurrency(item.amount || item.Amount || 0)}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <p style={{ fontSize: '14px', color: '#6B7280', textAlign: 'center', padding: '20px' }}>
-              No line items
-            </p>
-          )}
-
-          {/* Totals */}
-          <div style={{
-            marginTop: '24px',
-            paddingTop: '20px',
-            borderTop: '2px solid #E5E7EB',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'flex-end'
-          }}>
-            <div style={{ width: '300px', maxWidth: '100%' }}>
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                marginBottom: '8px',
-                alignItems: 'center'
-              }}>
-                <span style={{ fontSize: '14px', color: '#6B7280' }}>Subtotal:</span>
-                {isEditing ? (
-                  <input
-                    type="number"
-                    value={editedInvoice?.subtotal || ''}
-                    onChange={(e) => handleEditChange('subtotal', parseFloat(e.target.value) || 0)}
-                    style={{
-                      width: '120px',
-                      padding: '4px 8px',
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      border: '1px solid #D1D5DB',
-                      borderRadius: '4px',
-                      textAlign: 'right',
-                      outline: 'none'
-                    }}
-                  />
-                ) : (
-                  <span style={{ fontSize: '14px', fontWeight: '500', color: '#111827' }}>
-                    {formatCurrency(subtotal)}
-                  </span>
-                )}
-              </div>
-              
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                marginBottom: '12px',
-                alignItems: 'center'
-              }}>
-                <span style={{ fontSize: '14px', color: '#6B7280' }}>Tax:</span>
-                {isEditing ? (
-                  <input
-                    type="number"
-                    value={editedInvoice?.tax_amount || ''}
-                    onChange={(e) => handleEditChange('tax_amount', parseFloat(e.target.value) || 0)}
-                    style={{
-                      width: '120px',
-                      padding: '4px 8px',
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      border: '1px solid #D1D5DB',
-                      borderRadius: '4px',
-                      textAlign: 'right',
-                      outline: 'none'
-                    }}
-                  />
-                ) : (
-                  <span style={{ fontSize: '14px', fontWeight: '500', color: '#111827' }}>
-                    {formatCurrency(taxAmount)}
-                  </span>
-                )}
-              </div>
-
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                paddingTop: '12px',
-                borderTop: '1px solid #E5E7EB',
-                marginBottom: '8px',
-                alignItems: 'center'
-              }}>
-                <span style={{ fontSize: '16px', fontWeight: '600', color: '#111827' }}>Total:</span>
-                {isEditing ? (
-                  <input
-                    type="number"
-                    value={editedInvoice?.total_amount || ''}
-                    onChange={(e) => handleEditChange('total_amount', parseFloat(e.target.value) || 0)}
-                    style={{
-                      width: '120px',
-                      padding: '4px 8px',
-                      fontSize: '16px',
-                      fontWeight: '700',
-                      border: '1px solid #D1D5DB',
-                      borderRadius: '4px',
-                      textAlign: 'right',
-                      outline: 'none'
-                    }}
-                  />
-                ) : (
-                  <span style={{ fontSize: '16px', fontWeight: '700', color: '#111827' }}>
-                    {formatCurrency(totalAmount)}
-                  </span>
-                )}
-              </div>
-
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                marginBottom: '8px'
-              }}>
-                <span style={{ fontSize: '14px', color: '#6B7280' }}>Amount Paid:</span>
-                <span style={{ fontSize: '14px', fontWeight: '500', color: '#059669' }}>
-                  {formatCurrency(amountPaid)}
-                </span>
-              </div>
-
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                paddingTop: '12px',
-                borderTop: '2px solid #E5E7EB'
-              }}>
-                <span style={{ fontSize: '16px', fontWeight: '600', color: '#111827' }}>Balance Due:</span>
-                <span style={{ 
-                  fontSize: '18px', 
-                  fontWeight: '700', 
-                  color: balanceDue > 0 ? '#DC2626' : '#059669'
-                }}>
-                  {formatCurrency(balanceDue)}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Notes */}
         {notes && (
-          <div style={{
-            backgroundColor: 'white',
-            padding: '24px',
-            borderRadius: '12px',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-            border: '1px solid #E5E7EB'
-          }}>
-            <h2 style={{
-              fontSize: '18px',
-              fontWeight: '600',
-              color: '#111827',
-              marginBottom: '12px'
-            }}>
-              Notes
-            </h2>
-            <p style={{
-              fontSize: '14px',
-              color: '#6B7280',
-              lineHeight: '1.6',
-              whiteSpace: 'pre-wrap'
-            }}>
-              {notes}
-            </p>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Notes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="whitespace-pre-wrap text-sm text-foreground">{notes}</p>
+            </CardContent>
+          </Card>
         )}
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Debug Information</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-md border bg-muted/30 p-3 font-mono text-xs text-muted-foreground">
+              <div><span className="font-semibold">Invoice ID:</span> {currentInvoiceId}</div>
+              <div><span className="font-semibold">Business ID:</span> {businessId}</div>
+              <div><span className="font-semibold">Project ID:</span> {selectedInvoice.project_id || selectedInvoice['Project ID'] || 'N/A'}</div>
+              <div><span className="font-semibold">Client ID:</span> {selectedInvoice.client_id || selectedInvoice['Client ID'] || 'N/A'}</div>
+              <div><span className="font-semibold">QuickBooks ID:</span> {selectedInvoice.qb_invoice_id || 'Not synced'}</div>
+              <div><span className="font-semibold">Last Sync:</span> {selectedInvoice.last_sync_at || 'Never'}</div>
+              <div><span className="font-semibold">Line Items Type:</span> {typeof selectedInvoice.line_items}</div>
+              <div><span className="font-semibold">Line Items Count:</span> {Array.isArray(lineItems) ? lineItems.length : 'Not array'}</div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
