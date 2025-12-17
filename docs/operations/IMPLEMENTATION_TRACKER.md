@@ -1,8 +1,8 @@
 # House Renovators AI - Implementation Tracker
 
-**Version**: 7.2 (Phase 3 Design System - Guardrails + InvoiceDetails Date Fix)  
-**Last Updated**: December 16, 2025 8:19 PM EST  
-**Overall Progress**: All core features complete, design system migration 71% complete (12/17 pages, all deploying)
+**Version**: 7.3 (Phase 3 Design System - InspectionDetails + Permit 404 Resilience)  
+**Last Updated**: December 16, 2025 9:10 PM EST  
+**Overall Progress**: All core features complete, design system migration 76% complete (13/17 pages, all deploying)
 
 > **Purpose**: Track active work and immediate next steps. Completed milestones archived in `docs/history/PHASE_COMPLETIONS/`.
 
@@ -11,9 +11,9 @@
 ## 🎯 UP NEXT (Priority Order)
 
 ### 1. Frontend Design System - Phase 3 (In Progress)
-**Status**: 71% complete (12/17 pages)  
+**Status**: 76% complete (13/17 pages)  
 **Effort**: 3-5 hours remaining  
-**Goal**: Complete remaining 7 pages using proven pattern
+**Goal**: Complete remaining 6 pages using proven pattern
 
 **Completed**:
 - ✅ Permits.jsx (523→221 lines, 58% reduction)
@@ -28,13 +28,13 @@
 - ✅ PaymentDetails.jsx (503→335 lines, 33% reduction) - Completed: Dec 16 6:47 PM EST
 - ✅ ClientDetails.jsx (1103→578 lines, 48% reduction) - Completed: Dec 16 7:06 PM EST
 - ✅ InvoiceDetails.jsx (806→452 lines, 44% reduction) - Completed: Dec 16 8:06 PM EST
+- ✅ InspectionDetails.jsx (1022→591 lines, 42% reduction) - Completed: Dec 16 9:10 PM EST
 
 **Remaining** (Priority Order):
-1. InspectionDetails.jsx (1022 lines)
-4. SiteVisits.jsx
-5. OversightActions.jsx
-6. Qualifiers.jsx
-7. Settings.jsx
+1. SiteVisits.jsx
+2. OversightActions.jsx
+3. Qualifiers.jsx
+4. Settings.jsx
 
 **Pattern Established**:
 - Replace inline styles with Tailwind utility classes
@@ -49,6 +49,11 @@
 ---
 
 ## 🟢 COMPLETED TODAY (December 16, 2025)
+
+### ✅ InspectionDetails.jsx Migration + Permit 404 Resilience (9:10 PM EST)
+**Result**: 1022→591 lines (42% reduction)  
+**Fix**: Related Permit/Project 404s no longer crash InspectionDetails; permit lookup now supports UUID + business_id in api.js  
+**Validation**: ✅ Local production build succeeded
 
 ### ✅ Workflow Guardrails (8:19 PM EST)
 **Goal**: Prevent broken frontend commits + reduce lint noise  

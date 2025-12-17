@@ -76,8 +76,14 @@ const statusConfig = {
   },
   inspection: {
     scheduled: { variant: 'info', icon: Clock, label: 'Scheduled' },
-    passed: { variant: 'success', icon: CheckCircle, label: 'Passed' },
+    'in-progress': { variant: 'info', icon: PlayCircle, label: 'In Progress' },
+    'in progress': { variant: 'info', icon: PlayCircle, label: 'In Progress' },
+    completed: { variant: 'success', icon: CheckCircle, label: 'Completed' },
     failed: { variant: 'destructive', icon: XCircle, label: 'Failed' },
+    cancelled: { variant: 'secondary', icon: Ban, label: 'Cancelled' },
+    canceled: { variant: 'secondary', icon: Ban, label: 'Cancelled' },
+    // Some datasets may track inspection outcome as a "status"
+    passed: { variant: 'success', icon: CheckCircle, label: 'Passed' },
     'needs review': { variant: 'warning', icon: AlertCircle, label: 'Needs Review' },
   },
 };

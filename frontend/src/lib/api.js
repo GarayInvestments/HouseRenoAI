@@ -46,12 +46,15 @@ class ApiService {
     const config = {
       headers: {
         'Content-Type': 'application/json',
-        ...(token && { 'Authorization': `Bearer ${token}` }),
+        ...(token && { Authorization: `Bearer ${token}` }),
         ...options.headers,
       },
       ...options,
-      ...(options.body && { body: JSON.stringify(options.body) }),
     };
+
+    if (options.body !== undefined && options.body !== null) {
+      config.body = typeof options.body === 'string' ? options.body : JSON.stringify(options.body);
+    }
 
     console.log('[API] Request config:', { url, method: config.method, hasBody: !!config.body });
 
@@ -117,6 +120,33 @@ class ApiService {
     }
   }
 
+  isUuid(value) {
+    if (!value || typeof value !== 'string') return false;
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+  }
+
+  async resolveInspectionUuid(inspectionIdOrBusinessId) {
+    if (this.isUuid(inspectionIdOrBusinessId)) return inspectionIdOrBusinessId;
+
+    const inspection = await this.getInspection(inspectionIdOrBusinessId);
+    const resolvedId = inspection?.inspection_id || inspection?.id;
+    if (!resolvedId) {
+      throw new Error('Inspection not found');
+    }
+    return resolvedId;
+  }
+
+  async resolvePermitUuid(permitIdOrBusinessId) {
+    if (this.isUuid(permitIdOrBusinessId)) return permitIdOrBusinessId;
+
+    const permit = await this.getPermit(permitIdOrBusinessId);
+    const resolvedId = permit?.permit_id || permit?.id;
+    if (!resolvedId) {
+      throw new Error('Permit not found');
+    }
+    return resolvedId;
+  }
+
   // Chat endpoints
   async sendChatMessage(message, sessionId = null, context = {}) {
     return this.request('/chat', {
@@ -179,7 +209,18 @@ class ApiService {
   }
 
   async getPermit(permitId) {
-    return this.request(`/permits/${permitId}`, {
+    if (!permitId) {
+      throw new Error('Permit ID is required');
+    }
+
+    // Backend supports both UUID and business_id lookups
+    if (this.isUuid(permitId)) {
+      return this.request(`/permits/${permitId}`, {
+        method: 'GET',
+      });
+    }
+
+    return this.request(`/permits/by-business-id/${permitId}`, {
       method: 'GET',
     });
   }
@@ -192,7 +233,8 @@ class ApiService {
   }
 
   async updatePermit(permitId, permitData) {
-    return this.request(`/permits/${permitId}`, {
+    const resolvedPermitId = await this.resolvePermitUuid(permitId);
+    return this.request(`/permits/${resolvedPermitId}`, {
       method: 'PUT',
       body: JSON.stringify(permitData),
     });
@@ -277,7 +319,8 @@ class ApiService {
 
   // Permits endpoints (extended)
   async deletePermit(permitId) {
-    return this.request(`/permits/${permitId}`, {
+    const resolvedPermitId = await this.resolvePermitUuid(permitId);
+    return this.request(`/permits/${resolvedPermitId}`, {
       method: 'DELETE',
     });
   }
@@ -350,7 +393,13 @@ class ApiService {
   }
 
   async getInspection(inspectionId) {
-    return this.request(`/inspections/${inspectionId}`, {
+    if (this.isUuid(inspectionId)) {
+      return this.request(`/inspections/${inspectionId}`, {
+        method: 'GET',
+      });
+    }
+
+    return this.request(`/inspections/by-business-id/${encodeURIComponent(inspectionId)}`, {
       method: 'GET',
     });
   }
@@ -363,27 +412,31 @@ class ApiService {
   }
 
   async updateInspection(inspectionId, inspectionData) {
-    return this.request(`/inspections/${inspectionId}`, {
+    const resolvedId = await this.resolveInspectionUuid(inspectionId);
+    return this.request(`/inspections/${resolvedId}`, {
       method: 'PUT',
       body: JSON.stringify(inspectionData),
     });
   }
 
   async deleteInspection(inspectionId) {
-    return this.request(`/inspections/${inspectionId}`, {
+    const resolvedId = await this.resolveInspectionUuid(inspectionId);
+    return this.request(`/inspections/${resolvedId}`, {
       method: 'DELETE',
     });
   }
 
   async addInspectionPhoto(inspectionId, photoData) {
-    return this.request(`/inspections/${inspectionId}/photos`, {
+    const resolvedId = await this.resolveInspectionUuid(inspectionId);
+    return this.request(`/inspections/${resolvedId}/photos`, {
       method: 'POST',
       body: JSON.stringify(photoData),
     });
   }
 
   async addInspectionDeficiency(inspectionId, deficiencyData) {
-    return this.request(`/inspections/${inspectionId}/deficiencies`, {
+    const resolvedId = await this.resolveInspectionUuid(inspectionId);
+    return this.request(`/inspections/${resolvedId}/deficiencies`, {
       method: 'POST',
       body: JSON.stringify(deficiencyData),
     });
