@@ -203,9 +203,13 @@ class ApiService {
 
   // Permits endpoints
   async getPermits() {
-    return this.request('/permits', {
+    const data = await this.request('/permits', {
       method: 'GET',
     });
+
+    // Backend returns PermitListResponse: { items, total, skip, limit }
+    // Some callers expect a plain array.
+    return data?.items ?? data;
   }
 
   async getPermit(permitId) {
