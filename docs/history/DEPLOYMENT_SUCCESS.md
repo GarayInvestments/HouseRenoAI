@@ -102,9 +102,8 @@ curl https://houserenovators-api.fly.dev/v1/quickbooks/status
 ### Created/Updated
 - `fly.toml`: Fly.io deployment configuration
 - `.dockerignore`: Optimized Docker build
-- `railway.json`: Railway config (not used, kept for reference)
 - `vercel.json`: Vercel config (not used, kept for reference)
-- `railway-env.txt`: Environment variables template
+- Railway config: removed in Dec 2025 cleanup (no longer used)
 
 ### Environment Variables (Fly.io Secrets)
 - `DATABASE_URL`: Supabase PostgreSQL connection
@@ -141,7 +140,7 @@ curl https://houserenovators-api.fly.dev/v1/quickbooks/status
 
 1. **Render free tier** has strict network egress limitations
 2. **Vercel's `@vercel/python`** is for simple functions, not ASGI frameworks
-3. **Railway free tier** changed to database-only deployments
+3. **Railway** free tier changed to database-only deployments; project is not using Railway
 4. **Fly.io** offers the best free tier for full-stack Python apps
 5. **Mangum** adapter needed for Vercel, not for Fly.io
 6. **Always stage secrets** before deploying in Fly.io
