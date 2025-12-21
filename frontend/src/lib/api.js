@@ -43,9 +43,12 @@ class ApiService {
       console.log(`[API] Request to ${endpoint} with token`);
     }
     
+    const isFormData = options.body instanceof FormData;
+
     const config = {
       headers: {
-        'Content-Type': 'application/json',
+        // Only set Content-Type for JSON bodies; for FormData the browser sets boundary
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
         ...(token && { Authorization: `Bearer ${token}` }),
         ...options.headers,
       },
@@ -53,7 +56,9 @@ class ApiService {
     };
 
     if (options.body !== undefined && options.body !== null) {
-      config.body = typeof options.body === 'string' ? options.body : JSON.stringify(options.body);
+      config.body = isFormData
+        ? options.body
+        : typeof options.body === 'string' ? options.body : JSON.stringify(options.body);
     }
 
     console.log('[API] Request config:', { url, method: config.method, hasBody: !!config.body });

@@ -21,6 +21,8 @@ import ProjectDetails from './pages/ProjectDetails';
 import Clients from './pages/Clients';
 import ClientDetails from './pages/ClientDetails';
 import LicensedBusinesses from './pages/LicensedBusinesses_NEW';
+import ClientForm from './pages/ClientForm';
+import ProjectForm from './pages/ProjectForm';
 import Qualifiers from './pages/Qualifiers';
 import OversightActions from './pages/OversightActions';
 import Documents from './pages/Documents';
@@ -88,6 +90,18 @@ function App() {
         setCurrentView('auth-reset-password');
         setIsLoading(false);
         return;
+      } else if (path === '/subcontractor-form') {
+        setCurrentView('subcontractor-form');
+        setIsLoading(false);
+        return;
+      } else if (path === '/client-form') {
+        setCurrentView('client-form');
+        setIsLoading(false);
+        return;
+      } else if (path === '/project-form') {
+        setCurrentView('project-form');
+        setIsLoading(false);
+        return;
       }
       
       // Initialize auth - validates session and restores user state
@@ -118,6 +132,18 @@ function App() {
       // Keep URL with query params for password reset
       if (!window.location.pathname.includes('/auth/reset-password')) {
         window.history.pushState({}, '', '/auth/reset-password' + window.location.search);
+      }
+    } else if (currentView === 'subcontractor-form') {
+      if (!window.location.pathname.includes('/subcontractor-form')) {
+        window.history.pushState({}, '', '/subcontractor-form' + window.location.search);
+      }
+    } else if (currentView === 'client-form') {
+      if (!window.location.pathname.includes('/client-form')) {
+        window.history.pushState({}, '', '/client-form' + window.location.search);
+      }
+    } else if (currentView === 'project-form') {
+      if (!window.location.pathname.includes('/project-form')) {
+        window.history.pushState({}, '', '/project-form' + window.location.search);
       }
     } else if (window.location.pathname !== '/') {
       // Return to home for other views
@@ -185,6 +211,10 @@ function App() {
         return <AuthResetPassword />;
       case 'subcontractor-form':
         return <SubcontractorForm projectId={currentProjectId} permitId={currentPermitId} />;
+      case 'client-form':
+        return <ClientForm />;
+      case 'project-form':
+        return <ProjectForm />;
       case 'dashboard':
         return <Dashboard />;
       case 'ai-assistant':
@@ -223,7 +253,7 @@ function App() {
   };
 
   // Public pages (no sidebar/topbar) - Use AuthLayout
-  const isPublicPage = ['login', 'privacy', 'terms', 'auth-confirm', 'auth-reset-password', 'subcontractor-form'].includes(currentView);
+  const isPublicPage = ['login', 'privacy', 'terms', 'auth-confirm', 'auth-reset-password', 'subcontractor-form', 'client-form', 'project-form'].includes(currentView);
 
   if (isPublicPage) {
     // Use AuthLayout for login/auth pages
@@ -231,7 +261,7 @@ function App() {
       return <AuthLayout>{renderContent()}</AuthLayout>;
     }
     // Public form pages (no layout needed)
-    if (currentView === 'subcontractor-form') {
+    if (currentView === 'subcontractor-form' || currentView === 'client-form' || currentView === 'project-form') {
       return renderContent();
     }
     // No layout for privacy/terms (keep existing simple structure)

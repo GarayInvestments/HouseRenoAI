@@ -29,6 +29,7 @@ from app.routes.licensed_businesses import router as licensed_businesses_router
 from app.routes.qualifiers import router as qualifiers_router
 from app.routes.oversight_actions import router as oversight_actions_router
 from app.routes.subcontractors import router as subcontractors_router
+from app.routes.intake import router as intake_router
 from app.middleware.auth_middleware import JWTAuthMiddleware as LegacyJWTAuthMiddleware
 
 # Configure logging
@@ -156,6 +157,7 @@ app.include_router(licensed_businesses_router, prefix=f"/{settings.API_VERSION}/
 app.include_router(qualifiers_router, prefix=f"/{settings.API_VERSION}/qualifiers", tags=["compliance"])
 app.include_router(oversight_actions_router, prefix=f"/{settings.API_VERSION}/oversight-actions", tags=["compliance"])
 app.include_router(subcontractors_router, tags=["subcontractors"])
+app.include_router(intake_router, tags=["intake"])
 
 # Add custom exception handler for Pydantic validation errors
 @app.exception_handler(RequestValidationError)
