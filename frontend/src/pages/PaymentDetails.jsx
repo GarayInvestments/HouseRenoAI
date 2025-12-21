@@ -99,7 +99,7 @@ function PaymentDetails() {
   };
 
   if (loading) {
-    return <LoadingState message="Loading payment details..." />;
+    return <LoadingState message="Loading payment details..." layout="details" />;
   }
 
   if (error) {

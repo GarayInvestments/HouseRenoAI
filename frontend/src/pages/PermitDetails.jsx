@@ -154,7 +154,7 @@ export default function PermitDetails() {
   };
 
   if (loading) {
-    return <LoadingState message="Loading permit details..." />;
+    return <LoadingState message="Loading permit details..." layout="details" />;
   }
 
   if (error || !permit) {

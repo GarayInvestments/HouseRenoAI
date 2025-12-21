@@ -217,7 +217,7 @@ export default function Clients() {
   }, [clients, searchQuery]);
 
   if (loading) {
-    return <LoadingState message="Loading clients..." />;
+    return <LoadingState message="Loading clients..." layout="list" />;
   }
 
   if (error) {

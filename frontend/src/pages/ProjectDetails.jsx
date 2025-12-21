@@ -10,19 +10,21 @@ import {
   Building,
   Loader2,
   AlertCircle,
-  Hash
+  Hash,
+  UserPlus
 } from 'lucide-react';
 import api from '../lib/api';
 import { useAppStore } from '../stores/appStore';
-import LoadingScreen from '../components/LoadingScreen';
+import { PROJECT_STATUS_OPTIONS, PROJECT_TYPE_OPTIONS, formatEnumLabel } from '../constants/enums';
 import ErrorState from '../components/ErrorState';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import StatusBadge from '@/components/app/StatusBadge';
+import { LoadingState } from '@/components/app';
 
 export default function ProjectDetails() {
-  const { currentProjectId, navigateToProjects } = useAppStore();
+  const { currentProjectId, navigateToProjects, setCurrentView, setCurrentProjectId } = useAppStore();
   const [project, setProject] = useState(null);
   const [invoices, setInvoices] = useState([]);
   const [payments, setPayments] = useState([]);
@@ -216,7 +218,7 @@ export default function ProjectDetails() {
   };
 
   if (loading) {
-    return <LoadingScreen />;
+    return <LoadingState message="Loading project details..." layout="details" />;
   }
 
   if (error || !project) {
@@ -247,14 +249,27 @@ export default function ProjectDetails() {
           </Button>
 
           {!isEditing ? (
-            <Button
-              onClick={() => {
-                setIsEditing(true);
-                setEditedProject(project);
-              }}
-            >
-              Edit Project
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setCurrentProjectId(currentProjectId);
+                  setCurrentView('subcontractor-form');
+                }}
+                className="border-blue-600 text-blue-600 hover:bg-blue-50"
+              >
+                <UserPlus size={16} className="mr-2" />
+                Submit Subcontractor
+              </Button>
+              <Button
+                onClick={() => {
+                  setIsEditing(true);
+                  setEditedProject(project);
+                }}
+              >
+                Edit Project
+              </Button>
+            </div>
           ) : (
             <div className="flex gap-2">
               <Button

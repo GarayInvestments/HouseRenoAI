@@ -145,7 +145,7 @@ export default function Invoices() {
   const stats = useMemo(() => getInvoiceStats(), [invoices]);
 
   if (loading && invoices.length === 0) {
-    return <LoadingState message="Loading invoices..." />;
+    return <LoadingState message="Loading invoices..." layout="list" />;
   }
 
   if (error && invoices.length === 0) {

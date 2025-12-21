@@ -126,7 +126,7 @@ export default function InvoiceDetails() {
   };
 
   if (loading) {
-    return <LoadingState message="Loading invoice details..." />;
+    return <LoadingState message="Loading invoice details..." layout="details" />;
   }
 
   if (error) {

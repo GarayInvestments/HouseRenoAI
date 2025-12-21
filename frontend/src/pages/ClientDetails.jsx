@@ -172,7 +172,7 @@ export default function ClientDetails() {
   };
 
   if (loading) {
-    return <LoadingState message="Loading client details..." />;
+    return <LoadingState message="Loading client details..." layout="details" />;
   }
 
   if (error || !client) {

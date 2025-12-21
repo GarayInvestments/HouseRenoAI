@@ -2,8 +2,8 @@ import { Eye, Plus, Filter, Calendar, Building2, UserCheck, FolderKanban, Loader
 import { useState, useEffect, useMemo } from 'react';
 import api from '../lib/api';
 import { useAppStore } from '../stores/appStore';
-import LoadingScreen from '../components/LoadingScreen';
 import ErrorState from '../components/ErrorState';
+import { LoadingState } from '@/components/app';
 
 export default function OversightActions() {
   const [actions, setActions] = useState([]);
@@ -80,7 +80,7 @@ export default function OversightActions() {
 
   const actionTypes = ['SITE_VISIT', 'PLAN_REVIEW', 'PERMIT_REVIEW', 'CLIENT_MEETING', 'INSPECTION_SUPPORT', 'OTHER'];
 
-  if (loading) return <LoadingScreen />;
+  if (loading) return <LoadingState message="Loading oversight actions..." layout="list" />;
   if (error) return <ErrorState message={error} onRetry={fetchData} />;
 
   return (

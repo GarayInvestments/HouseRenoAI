@@ -1,7 +1,7 @@
 # House Renovators AI - Implementation Tracker
 
 **Version**: 7.3 (Phase 3 Design System - InspectionDetails + Permit 404 Resilience)  
-**Last Updated**: December 16, 2025 9:10 PM EST  
+**Last Updated**: December 17, 2025 8:32 AM EST  
 **Overall Progress**: All core features complete, design system migration 76% complete (13/17 pages, all deploying)
 
 > **Purpose**: Track active work and immediate next steps. Completed milestones archived in `docs/history/PHASE_COMPLETIONS/`.
@@ -48,7 +48,30 @@
 
 ---
 
-## 🟢 COMPLETED TODAY (December 16, 2025)
+## 🟢 COMPLETED TODAY (December 17, 2025)
+
+### ✅ UI: Skeleton loading states across app (8:32 AM EST)
+**Goal**: Improve perceived performance and reduce layout shifts while data loads
+**Delivered**:
+- Added shadcn-compatible `Skeleton` primitive
+- Enhanced `LoadingState` to support skeleton layouts (`list`, `details`, `default`)
+- Switched key list/detail pages from spinner overlays to skeleton layouts
+**Validation**: ✅ Frontend production build succeeded
+
+### ✅ Fix: ProjectDetails enum label crash (8:32 AM EST)
+**Issue**: Runtime error `formatEnumLabel is not defined` in ProjectDetails
+**Fix**: Import `formatEnumLabel` and relevant enum option arrays
+**Validation**: ✅ Frontend production build succeeded
+
+---
+
+## 🟢 COMPLETED YESTERDAY (December 16, 2025)
+
+### ✅ Ops: Keep Fly machine warm (9:56 PM EST)
+**Issue**: Multi-minute "Waiting for server response" observed across multiple endpoints (including /health)
+**Root Cause**: Fly host incident + cold-start behavior (min_machines_running=0)
+**Fix**: Updated Fly config to keep 1 machine running (min_machines_running=1, auto_stop_machines=false)
+**Validation**: ✅ Deployed successfully; /health responding normally (~217ms from local test)
 
 ### ✅ InspectionDetails.jsx Migration + Permit 404 Resilience (9:10 PM EST)
 **Result**: 1022→591 lines (42% reduction)  
@@ -189,7 +212,7 @@
 
 ---
 
-## 🟢 COMPLETED YESTERDAY (December 15, 2025)
+## 🟢 COMPLETED TWO DAYS AGO (December 15, 2025)
 
 ### ✅ Frontend Design System Phase 3 (11:47 PM EST)
 **Delivered**: Migrated 5 list pages to design system  

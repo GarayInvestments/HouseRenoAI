@@ -2,8 +2,8 @@ import { Building2, Plus, Search, FileText, Calendar, Loader2, CheckCircle2, XCi
 import { useState, useEffect, useMemo } from 'react';
 import api from '../lib/api';
 import { useAppStore } from '../stores/appStore';
-import LoadingScreen from '../components/LoadingScreen';
 import ErrorState from '../components/ErrorState';
+import { LoadingState } from '@/components/app';
 
 export default function LicensedBusinesses() {
   const [businesses, setBusinesses] = useState([]);
@@ -60,7 +60,7 @@ export default function LicensedBusinesses() {
     }
   };
 
-  if (loading) return <LoadingScreen />;
+  if (loading) return <LoadingState message="Loading licensed businesses..." layout="list" />;
   if (error) return <ErrorState message={error} onRetry={fetchBusinesses} />;
 
   return (

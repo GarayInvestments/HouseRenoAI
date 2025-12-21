@@ -1080,6 +1080,79 @@ class ComplianceJustification(Base):
     )
 
 
+class Subcontractor(Base):
+    """
+    Subcontractor information for a project/permit.
+    Tracks trades, licensing, insurance, and bonding requirements.
+    """
+    __tablename__ = "subcontractors"
+    
+    # Primary key
+    subcontractor_id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, server_default=text("gen_random_uuid()"))
+    
+    # Business ID - human-friendly immutable ID (SUB-00001, SUB-00002, etc.)
+    business_id: Mapped[str | None] = mapped_column(String(20), unique=True, index=True, server_default=FetchedValue())
+    
+    # Foreign keys - link to project AND permit
+    project_id: Mapped[str | None] = mapped_column(UUID(as_uuid=False), index=True)  # FK to projects.project_id
+    permit_id: Mapped[str | None] = mapped_column(UUID(as_uuid=False), index=True)  # FK to permits.permit_id
+    
+    # Basic info
+    full_name: Mapped[str] = mapped_column(String(255))  # Company or individual name
+    email: Mapped[str | None] = mapped_column(String(255), index=True)
+    phone: Mapped[str | None] = mapped_column(String(20))
+    company_name: Mapped[str | None] = mapped_column(String(255))
+    
+    # Trade/specialty
+    trade: Mapped[str] = mapped_column(String(100))  # e.g., "ELECTRICAL", "PLUMBING", "HVAC", "ROOFING", etc.
+    
+    # Licensing
+    license_number: Mapped[str | None] = mapped_column(String(100))  # NC license number if applicable
+    license_state: Mapped[str | None] = mapped_column(String(2))  # State code (NC, SC, VA, etc.)
+    license_expires: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    
+    # Bonding - required for Mecklenburg County projects
+    bond_number: Mapped[str | None] = mapped_column(String(100))  # Surety bond number
+    bond_amount: Mapped[float | None] = mapped_column(Numeric(12, 2))  # Bond coverage amount
+    bond_expires: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    
+    # Insurance
+    coi_document_id: Mapped[str | None] = mapped_column(String(255))  # Document ID/path for COI file
+    coi_uploaded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    
+    workers_comp_document_id: Mapped[str | None] = mapped_column(String(255))  # Document ID/path for Workers Comp
+    workers_comp_uploaded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    workers_comp_expires: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    
+    # Status tracking
+    status: Mapped[str] = mapped_column(String(50), server_default=text("'pending_approval'"))  # pending_approval, approved, rejected
+    approved_by: Mapped[str | None] = mapped_column(UUID(as_uuid=False))  # FK to users.id
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    rejection_reason: Mapped[str | None] = mapped_column(Text)
+    
+    # Additional info
+    notes: Mapped[str | None] = mapped_column(Text)
+    extra: Mapped[Dict[str, Any] | None] = mapped_column(JSONB)  # For future extensibility
+    
+    # Audit
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), 
+        server_default=text("CURRENT_TIMESTAMP")
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=text("CURRENT_TIMESTAMP"),
+        onupdate=datetime.utcnow
+    )
+    
+    __table_args__ = (
+        Index('ix_subcontractors_project', 'project_id'),
+        Index('ix_subcontractors_permit', 'permit_id'),
+        Index('ix_subcontractors_status', 'status'),
+        Index('ix_subcontractors_trade', 'trade'),
+    )
+
+
 __all__ = [
     'Base',
     'Client',
@@ -1096,4 +1169,5 @@ __all__ = [
     'LicensedBusinessQualifier',
     'OversightAction',
     'ComplianceJustification',
+    'Subcontractor',
 ]

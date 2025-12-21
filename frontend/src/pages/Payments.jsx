@@ -156,7 +156,7 @@ export default function Payments() {
   };
 
   if (loading && payments.length === 0) {
-    return <LoadingState message="Loading payments..." />;
+    return <LoadingState message="Loading payments..." layout="list" />;
   }
 
   if (error && payments.length === 0) {

@@ -59,6 +59,7 @@ class Settings:
             "https://portal.houserenovatorsllc.com",
             "http://localhost:3000",
             "http://localhost:5173",  # Vite dev server
+            "http://localhost:5174",  # Vite dev server (alternate port)
             "https://house-renovators-pwa.pages.dev",  # Cloudflare Pages
             "https://houserenoai.pages.dev",  # Cloudflare Pages (current)
         ]
@@ -74,6 +75,7 @@ class Settings:
             "https://portal.houserenovatorsllc.com",
             "http://localhost:3000",
             "http://localhost:5173",
+            "http://localhost:5174",  # Vite dev server (alternate port)
             "https://house-renovators-pwa.pages.dev",
             "https://house-renovators-ai-portal.pages.dev",  # Old Cloudflare Pages domain
             "https://houserenoai.pages.dev",  # Current Cloudflare Pages domain

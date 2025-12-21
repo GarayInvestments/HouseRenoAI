@@ -243,7 +243,7 @@ export default function InspectionDetails() {
   };
 
   if (loading) {
-    return <LoadingState message="Loading inspection details..." />;
+    return <LoadingState message="Loading inspection details..." layout="details" />;
   }
 
   if (error) {

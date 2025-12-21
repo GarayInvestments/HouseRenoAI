@@ -47,7 +47,7 @@ export default function LicensedBusinesses() {
     ownerCompanies: businesses.filter(b => b.is_owner_company).length
   }), [businesses]);
 
-  if (loading) return <LoadingState />;
+  if (loading) return <LoadingState layout="list" />;
   if (error) return <EmptyState icon="alert" title="Error loading businesses" description={error} />;
 
   return (
@@ -146,12 +146,12 @@ export default function LicensedBusinesses() {
 
                     <div className="grid gap-3 sm:grid-cols-2 text-sm">
                       <div className="flex items-center gap-2 text-muted-foreground">
-                        <FileText className="h-4 w-4 flex-shrink-0" />
+                        <FileText className="h-4 w-4 shrink-0" />
                         <span className="font-medium text-foreground">License:</span>
                         <span className="text-foreground">{business.license_number}</span>
                       </div>
                       <div className="flex items-center gap-2 text-muted-foreground">
-                        <Building2 className="h-4 w-4 flex-shrink-0" />
+                        <Building2 className="h-4 w-4 shrink-0" />
                         <span className="font-medium text-foreground">ID:</span>
                         <span className="text-foreground">{business.business_id}</span>
                       </div>

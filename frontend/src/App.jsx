@@ -30,6 +30,7 @@ import TermsOfService from './pages/TermsOfService';
 import Login from './pages/Login';
 import AuthConfirm from './pages/AuthConfirm';
 import AuthResetPassword from './pages/AuthResetPassword';
+import SubcontractorForm from './pages/SubcontractorForm';
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -182,6 +183,8 @@ function App() {
         return <AuthConfirm />;
       case 'auth-reset-password':
         return <AuthResetPassword />;
+      case 'subcontractor-form':
+        return <SubcontractorForm projectId={currentProjectId} permitId={currentPermitId} />;
       case 'dashboard':
         return <Dashboard />;
       case 'ai-assistant':
@@ -220,12 +223,16 @@ function App() {
   };
 
   // Public pages (no sidebar/topbar) - Use AuthLayout
-  const isPublicPage = ['login', 'privacy', 'terms', 'auth-confirm', 'auth-reset-password'].includes(currentView);
+  const isPublicPage = ['login', 'privacy', 'terms', 'auth-confirm', 'auth-reset-password', 'subcontractor-form'].includes(currentView);
 
   if (isPublicPage) {
     // Use AuthLayout for login/auth pages
     if (currentView === 'login' || currentView === 'auth-confirm' || currentView === 'auth-reset-password') {
       return <AuthLayout>{renderContent()}</AuthLayout>;
+    }
+    // Public form pages (no layout needed)
+    if (currentView === 'subcontractor-form') {
+      return renderContent();
     }
     // No layout for privacy/terms (keep existing simple structure)
     return renderContent();

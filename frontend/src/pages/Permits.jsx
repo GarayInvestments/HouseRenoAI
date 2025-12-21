@@ -140,7 +140,7 @@ export default function Permits() {
   };
 
   if (loading) {
-    return <LoadingState message="Loading permits..." />;
+    return <LoadingState message="Loading permits..." layout="list" />;
   }
 
   if (error) {

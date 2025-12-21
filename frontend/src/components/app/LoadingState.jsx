@@ -1,5 +1,6 @@
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import Skeleton from '@/components/ui/skeleton';
 
 /**
  * LoadingState - Centralized loading indicator
@@ -28,6 +29,8 @@ export default function LoadingState({
   message = 'Loading...',
   showMessage = true,
   fullPage = true,
+  variant,
+  layout = 'default',
   className,
   ...props
 }) {
@@ -38,6 +41,58 @@ export default function LoadingState({
   };
 
   const config = sizeConfig[size] || sizeConfig.md;
+
+  const resolvedVariant = variant || (fullPage ? 'skeleton' : 'spinner');
+
+  const skeletonContent = (
+    <div
+      className={cn(
+        'w-full',
+        fullPage && 'min-h-[400px] flex items-center justify-center',
+        className
+      )}
+      role="status"
+      aria-live="polite"
+      {...props}
+    >
+      <div className="w-full max-w-5xl space-y-6 px-6 py-8">
+        <div className="space-y-3">
+          <Skeleton className="h-8 w-1/3" />
+          {showMessage && <Skeleton className="h-4 w-1/2" />}
+        </div>
+
+        {layout === 'list' && (
+          <div className="space-y-3">
+            {Array.from({ length: 8 }).map((_, idx) => (
+              <Skeleton key={idx} className="h-12 w-full" />
+            ))}
+          </div>
+        )}
+
+        {layout === 'details' && (
+          <>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Skeleton className="h-28 w-full" />
+              <Skeleton className="h-28 w-full" />
+            </div>
+            <Skeleton className="h-64 w-full" />
+          </>
+        )}
+
+        {layout === 'default' && (
+          <div className="space-y-4">
+            <Skeleton className="h-28 w-full" />
+            <Skeleton className="h-28 w-full" />
+            <Skeleton className="h-28 w-full" />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  if (resolvedVariant === 'skeleton') {
+    return skeletonContent;
+  }
 
   const content = (
     <div

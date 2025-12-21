@@ -127,7 +127,7 @@ export default function Projects() {
   };
 
   if (loading) {
-    return <LoadingState message="Loading projects..." />;
+    return <LoadingState message="Loading projects..." layout="list" />;
   }
 
   if (error) {

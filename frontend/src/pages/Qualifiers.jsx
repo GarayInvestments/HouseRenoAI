@@ -2,8 +2,8 @@ import { UserCheck, Plus, Search, FileText, Building2, Loader2, AlertCircle, XCi
 import { useState, useEffect, useMemo } from 'react';
 import api from '../lib/api';
 import { useAppStore } from '../stores/appStore';
-import LoadingScreen from '../components/LoadingScreen';
 import ErrorState from '../components/ErrorState';
+import { LoadingState } from '@/components/app';
 
 export default function Qualifiers() {
   const [qualifiers, setQualifiers] = useState([]);
@@ -154,7 +154,7 @@ export default function Qualifiers() {
     }
   };
 
-  if (loading) return <LoadingScreen />;
+  if (loading) return <LoadingState message="Loading qualifiers..." layout="list" />;
   if (error) return <ErrorState message={error} onRetry={fetchData} />;
 
   return (

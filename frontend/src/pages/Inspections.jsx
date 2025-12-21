@@ -3,7 +3,6 @@ import { useState, useEffect, useMemo } from 'react';
 import api from '../lib/api';
 import { useAppStore } from '../stores/appStore';
 import useInspectionsStore from '../stores/inspectionsStore';
-import LoadingScreen from '../components/LoadingScreen';
 import ErrorState from '../components/ErrorState';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import StatusBadge from '@/components/app/StatusBadge';
 import StatsCard from '@/components/app/StatsCard';
 import EmptyState from '@/components/app/EmptyState';
+import { LoadingState } from '@/components/app';
 
 export default function Inspections() {
   const { navigateToInspectionDetails } = useAppStore();
@@ -121,7 +121,7 @@ export default function Inspections() {
   };
 
   if (loading && inspections.length === 0) {
-    return <LoadingScreen message="Loading inspections..." />;
+    return <LoadingState message="Loading inspections..." layout="list" />;
   }
 
   if (error && inspections.length === 0) {
