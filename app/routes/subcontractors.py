@@ -13,7 +13,7 @@ Endpoints:
 - PATCH /v1/subcontractors/{subcontractor_id}/reject - Reject subcontractor (admin)
 """
 
-from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form, Query
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form, Query, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from datetime import datetime
@@ -23,6 +23,7 @@ import logging
 
 from app.db.session import get_db
 from app.db.models import Subcontractor, Project, Permit, User
+from app.services.supabase_auth_service import SupabaseAuthService
 from app.routes.auth_supabase import get_current_user
 
 logger = logging.getLogger(__name__)
@@ -63,6 +64,7 @@ async def submit_subcontractor_form(
     coi_file: Optional[UploadFile] = File(None),
     workers_comp_file: Optional[UploadFile] = File(None),
     db: AsyncSession = Depends(get_db),
+    authorization: str | None = Header(None),
 ):
     """
     Public endpoint for submitting subcontractor information via form.
@@ -113,6 +115,19 @@ async def submit_subcontractor_form(
         logger.info(f"Workers Comp uploaded: {workers_comp_doc_id}")
     
     # Create subcontractor record
+    # Optional identity capture
+    extra = {}
+    if authorization and authorization.lower().startswith("bearer "):
+        token = authorization.split(" ", 1)[1]
+        auth = SupabaseAuthService()
+        payload = auth.verify_jwt(token)
+        if payload:
+            extra.update({
+                "submitted_by_email": payload.get("email"),
+                "submitted_by_user_id": payload.get("sub"),
+                "submitted_at": datetime.utcnow().isoformat(),
+            })
+
     subcontractor = Subcontractor(
         subcontractor_id=str(uuid4()),
         project_id=project_id,
@@ -132,6 +147,7 @@ async def submit_subcontractor_form(
         workers_comp_uploaded_at=workers_comp_uploaded_at,
         status="pending_approval",
         notes=notes,
+        extra=extra or None,
     )
     
     db.add(subcontractor)

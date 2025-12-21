@@ -9,7 +9,8 @@ Endpoints:
 - POST /v1/intake/project
 """
 
-from fastapi import APIRouter, HTTPException, Depends, Form
+from fastapi import APIRouter, HTTPException, Depends, Form, Header
+from fastapi import Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from datetime import datetime
@@ -18,6 +19,7 @@ import logging
 
 from app.db.session import get_db
 from app.db.models import Client, Project, ClientStatus, ProjectStatus
+from app.services.supabase_auth_service import SupabaseAuthService
 
 logger = logging.getLogger(__name__)
 
@@ -35,10 +37,24 @@ async def intake_client(
     zip_code: Optional[str] = Form(None),
     client_type: Optional[str] = Form(None),
     db: AsyncSession = Depends(get_db),
+    authorization: str | None = Header(None),
 ):
     """Public client intake form. Creates a `Client` with status INTAKE."""
     if not (full_name or email or phone):
         raise HTTPException(status_code=400, detail="Provide at least name, email, or phone")
+
+    extra = {}
+    # Optional identity capture via Supabase Auth
+    if authorization and authorization.lower().startswith("bearer "):
+        token = authorization.split(" ", 1)[1]
+        auth = SupabaseAuthService()
+        payload = auth.verify_jwt(token)
+        if payload:
+            extra.update({
+                "submitted_by_email": payload.get("email"),
+                "submitted_by_user_id": payload.get("sub"),
+                "submitted_at": datetime.utcnow().isoformat(),
+            })
 
     client = Client(
         full_name=full_name,
@@ -50,6 +66,7 @@ async def intake_client(
         zip_code=zip_code,
         client_type=client_type,
         status=ClientStatus.INTAKE,
+        extra=extra or None,
     )
 
     db.add(client)
@@ -69,22 +86,42 @@ async def intake_client(
 @router.post("/project")
 async def intake_project(
     client_id: Optional[str] = Form(None),
+    client_business_id: Optional[str] = Form(None),
     project_name: Optional[str] = Form(None),
     project_address: Optional[str] = Form(None),
     project_type: Optional[str] = Form(None),
     description: Optional[str] = Form(None),
     notes: Optional[str] = Form(None),
     db: AsyncSession = Depends(get_db),
+    authorization: str | None = Header(None),
 ):
     """Public project intake form. Creates a `Project` linked to a client."""
-    if not client_id:
-        raise HTTPException(status_code=400, detail="client_id is required to create a project")
+    # Resolve client by id or business_id
+    if not client_id and not client_business_id:
+        raise HTTPException(status_code=400, detail="client_id or client_business_id is required")
 
     # Verify client exists
+    if client_business_id and not client_id:
+        result = await db.execute(select(Client).where(Client.business_id == client_business_id))
+        client = result.scalar_one_or_none()
+        if client:
+            client_id = client.client_id
     result = await db.execute(select(Client).where(Client.client_id == client_id))
     client = result.scalar_one_or_none()
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
+
+    extra = {}
+    if authorization and authorization.lower().startswith("bearer "):
+        token = authorization.split(" ", 1)[1]
+        auth = SupabaseAuthService()
+        payload = auth.verify_jwt(token)
+        if payload:
+            extra.update({
+                "submitted_by_email": payload.get("email"),
+                "submitted_by_user_id": payload.get("sub"),
+                "submitted_at": datetime.utcnow().isoformat(),
+            })
 
     project = Project(
         client_id=client_id,
@@ -94,6 +131,7 @@ async def intake_project(
         description=description,
         notes=notes,
         status=ProjectStatus.PLANNING,
+        extra=extra or None,
     )
 
     db.add(project)

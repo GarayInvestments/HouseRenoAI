@@ -167,20 +167,11 @@ export default function SubcontractorForm({ projectId = null, permitId = null })
         submitData.append('workers_comp_file', files.workers_comp_file);
       }
 
-      // Submit to backend using API service
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-      const response = await fetch(`${apiUrl}/v1/subcontractors/form`, {
+      // Submit via centralized API service (handles token if present)
+      const result = await api.request('/subcontractors/form', {
         method: 'POST',
         body: submitData,
-        // Don't set Content-Type header - browser will set it with boundary
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to submit form');
-      }
-
-      const result = await response.json();
       
       setSuccess(true);
       setSuccessMessage(
